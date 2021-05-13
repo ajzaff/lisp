@@ -17,6 +17,10 @@ func TestTokenizeBasic(t *testing.T) {
 		src:  []byte("foo"),
 		want: []Pos{0, 3},
 	}, {
+		name: "id 2",
+		src:  []byte("foo-bar"),
+		want: []Pos{0, 7},
+	}, {
 		name: "int",
 		src:  []byte("0"),
 		want: []Pos{0, 1},
@@ -24,6 +28,14 @@ func TestTokenizeBasic(t *testing.T) {
 		name: "float",
 		src:  []byte("1.0"),
 		want: []Pos{0, 3},
+	}, {
+		name: "float 2",
+		src:  []byte("1."),
+		want: []Pos{0, 2},
+	}, {
+		name: "float 3",
+		src:  []byte(".1"),
+		want: []Pos{0, 2},
 	}, {
 		name: "string",
 		src:  []byte(`"a"`),
@@ -48,41 +60,6 @@ func TestTokenizeBasic(t *testing.T) {
 			got, gotErr := Tokenize(tc.src)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Tokenize() got diff (-want, +got):\n%s", diff)
-			}
-			if (gotErr == nil) == tc.wantErr {
-				t.Errorf("Tokenize() got err: %q, want err? %v", gotErr, tc.wantErr)
-			}
-		})
-	}
-}
-
-func TestTokenizeError(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		src     []byte
-		want    []Pos
-		wantErr bool
-	}{{
-		name:    "missing end",
-		src:     []byte("("),
-		wantErr: true,
-	}, {
-		name:    "unexpected end",
-		src:     []byte(")"),
-		wantErr: true,
-	}, {
-		name:    "bad id",
-		src:     []byte("a-"),
-		wantErr: true,
-	}, {
-		name:    "bad id 2",
-		src:     []byte("-a"),
-		wantErr: true,
-	}} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, gotErr := Tokenize(tc.src)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Tokenize() got diff: (-want, +got):\n%s", diff)
 			}
 			if (gotErr == nil) == tc.wantErr {
 				t.Errorf("Tokenize() got err: %q, want err? %v", gotErr, tc.wantErr)
