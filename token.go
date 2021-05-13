@@ -13,7 +13,6 @@ const (
 	Id     // main
 	Int    // 12345
 	Float  // 123.45
-	Char   // 'a'
 	String // "abc"
 
 	LParen // (
@@ -37,6 +36,10 @@ const (
 	stateIdentNoDash
 	stateInt
 	stateFloat
+	stateString
+	stateEscape
+	stateByte
+	stateUnicode
 )
 
 func Tokenize(src []byte) ([]Pos, error) {
@@ -50,7 +53,8 @@ func Tokenize(src []byte) ([]Pos, error) {
 	for i, r := range string(src) {
 		if unicode.IsSpace(r) {
 			switch state {
-			case stateBegin, stateIdent, stateInt, stateFloat:
+			case stateBegin:
+			case stateIdent, stateInt, stateFloat:
 				pos = append(pos, Pos(i))
 				state = stateBegin
 			default:
@@ -60,7 +64,28 @@ func Tokenize(src []byte) ([]Pos, error) {
 				line++
 				col = 1
 			}
-		} else if r == '-' || r == '_' {
+		} else if r == '"' {
+			switch state {
+			case stateBegin:
+				pos = append(pos, Pos(i))
+				state = stateString
+			case stateString:
+				pos = append(pos, Pos(i+1))
+				state = stateBegin
+			case stateEscape:
+				state = stateString
+			default:
+			}
+		} else if r == '\\' {
+			switch state {
+			case stateString:
+				state = stateEscape
+			case stateEscape:
+				state = stateString
+			default:
+				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
+			}
+		} else if r == '-' {
 			switch state {
 			case stateIdent:
 				state = stateIdentNoDash
@@ -96,7 +121,24 @@ func Tokenize(src []byte) ([]Pos, error) {
 			case stateBegin:
 				state = stateIdent
 				pos = append(pos, Pos(i))
-			case stateIdent:
+			case stateIdent, stateString:
+			case stateEscape:
+				switch r {
+				case 't', 'n':
+					state = stateString
+				case 'u':
+					state = stateUnicode
+				case 'x':
+					state = stateByte
+				default:
+					return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
+				}
+			case stateByte, stateUnicode:
+				switch {
+				case r >= 'A' && r <= 'F' || r >= 'a' && r <= 'f':
+				default:
+					return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
+				}
 			case stateIdentNoDash:
 				state = stateIdent
 			default:
@@ -109,7 +151,13 @@ func Tokenize(src []byte) ([]Pos, error) {
 				pos = append(pos, Pos(i))
 			case stateIdentNoDash:
 				state = stateIdent
-			case stateIdent, stateInt, stateFloat:
+			case stateIdent, stateInt, stateFloat, stateByte, stateUnicode:
+			default:
+				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
+			}
+		} else {
+			switch state {
+			case stateString:
 			default:
 				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
 			}
