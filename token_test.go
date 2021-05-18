@@ -13,6 +13,11 @@ func TestTokenizeBasic(t *testing.T) {
 		want    []Pos
 		wantErr bool
 	}{{
+		name: "empty",
+	}, {
+		name: "whitespace",
+		src:  []byte("  \t\n"),
+	}, {
 		name: "id",
 		src:  []byte("foo"),
 		want: []Pos{0, 3},
@@ -20,6 +25,10 @@ func TestTokenizeBasic(t *testing.T) {
 		name: "id 2",
 		src:  []byte("foo-bar"),
 		want: []Pos{0, 7},
+	}, {
+		name: "id 3",
+		src:  []byte("  \t\n x"),
+		want: []Pos{5, 6},
 	}, {
 		name: "int",
 		src:  []byte("0"),
@@ -40,6 +49,10 @@ func TestTokenizeBasic(t *testing.T) {
 		name: "string",
 		src:  []byte(`"a"`),
 		want: []Pos{0, 3},
+	}, {
+		name: "string 2",
+		src:  []byte(`"a b c"`),
+		want: []Pos{0, 7},
 	}, {
 		name: "expr",
 		src:  []byte("(abc)"),

@@ -19,6 +19,10 @@ const (
 	RParen // )
 )
 
+type Pos int
+
+const NoPos = -1
+
 type TokenError struct {
 	Line, Col int
 	Pos       Pos
@@ -28,18 +32,18 @@ func (t *TokenError) Error() string {
 	return fmt.Sprintf("tokenize error: at line %d: col %d", t.Line, t.Col)
 }
 
-type state int
+type tokenState int
 
 const (
-	stateStart state = iota
-	stateArgs
-	stateIdent
-	stateInt
-	stateFloat
-	stateString
-	stateEscape
-	stateByte
-	stateUnicode
+	tokenStart tokenState = iota
+	tokenArgs
+	tokenIdent
+	tokenInt
+	tokenFloat
+	tokenString
+	tokenEscape
+	tokenByte
+	tokenUnicode
 )
 
 func Tokenize(src []byte) ([]Pos, error) {
@@ -48,14 +52,15 @@ func Tokenize(src []byte) ([]Pos, error) {
 		line = 1
 		col  = 1
 	)
-	state := stateStart
+	state := tokenStart
 	for i, r := range string(src) {
-		if unicode.IsSpace(r) {
+		switch {
+		case unicode.IsSpace(r):
 			switch state {
-			case stateStart, stateArgs, stateString:
-			case stateIdent, stateInt, stateFloat:
+			case tokenStart, tokenArgs, tokenString:
+			case tokenIdent, tokenInt, tokenFloat:
 				pos = append(pos, Pos(i))
-				state = stateArgs
+				state = tokenArgs
 			default:
 				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
 			}
@@ -63,77 +68,77 @@ func Tokenize(src []byte) ([]Pos, error) {
 				line++
 				col = 1
 			}
-		} else if r == '"' {
+		case r == '"':
 			switch state {
-			case stateStart, stateArgs:
+			case tokenStart, tokenArgs:
 				pos = append(pos, Pos(i))
-				state = stateString
-			case stateString:
+				state = tokenString
+			case tokenString:
 				pos = append(pos, Pos(i+1))
-				state = stateArgs
-			case stateEscape:
-				state = stateString
+				state = tokenArgs
+			case tokenEscape:
+				state = tokenString
 			default:
 			}
-		} else if r == '\\' {
+		case r == '\\':
 			switch state {
-			case stateString:
-				state = stateEscape
-			case stateEscape:
-				state = stateString
-			default:
-				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
-			}
-		} else if r == '.' {
-			switch state {
-			case stateStart:
-				pos = append(pos, Pos(i))
-				state = stateIdent
-			case stateArgs:
-				pos = append(pos, Pos(i))
-				state = stateFloat
-			case stateInt:
-				state = stateFloat
+			case tokenString:
+				state = tokenEscape
+			case tokenEscape:
+				state = tokenString
 			default:
 				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
 			}
-		} else if r == '(' || r == ')' {
+		case r == '.':
 			switch state {
-			case stateStart, stateArgs:
-			case stateIdent, stateInt, stateFloat:
+			case tokenStart:
+				pos = append(pos, Pos(i))
+				state = tokenIdent
+			case tokenArgs:
+				pos = append(pos, Pos(i))
+				state = tokenFloat
+			case tokenInt:
+				state = tokenFloat
+			default:
+				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
+			}
+		case r == '(' || r == ')':
+			switch state {
+			case tokenStart, tokenArgs:
+			case tokenIdent, tokenInt, tokenFloat:
 				pos = append(pos, Pos(i))
 			default:
 				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
 			}
 			pos = append(pos, Pos(i), Pos(i+1))
-			state = stateStart
-		} else if unicode.IsNumber(r) {
+			state = tokenStart
+		case unicode.IsNumber(r):
 			switch state {
-			case stateStart, stateArgs:
-				state = stateInt
+			case tokenStart, tokenArgs:
+				state = tokenInt
 				pos = append(pos, Pos(i))
-			case stateIdent, stateInt, stateFloat, stateByte, stateUnicode:
+			case tokenIdent, tokenInt, tokenFloat, tokenByte, tokenUnicode:
 			default:
 				return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
 			}
-		} else if unicode.IsPrint(r) {
+		case unicode.IsPrint(r):
 			switch state {
-			case stateStart, stateArgs:
-				state = stateIdent
+			case tokenStart, tokenArgs:
+				state = tokenIdent
 				pos = append(pos, Pos(i))
-			case stateIdent, stateString:
-			case stateEscape:
+			case tokenIdent, tokenString:
+			case tokenEscape:
 				switch r {
 				case 't', 'n':
-					state = stateString
+					state = tokenString
 				case 'u':
-					state = stateUnicode
+					state = tokenUnicode
 				case 'x':
-					state = stateByte
+					state = tokenByte
 				default:
 					return nil, &TokenError{Line: line, Col: col, Pos: Pos(i)}
 				}
-			case stateByte, stateUnicode:
+			case tokenByte, tokenUnicode:
 				switch {
 				case r >= 'A' && r <= 'F' || r >= 'a' && r <= 'f':
 				default:
@@ -146,7 +151,7 @@ func Tokenize(src []byte) ([]Pos, error) {
 		col++
 	}
 	switch state {
-	case stateIdent, stateInt, stateFloat:
+	case tokenIdent, tokenInt, tokenFloat:
 		pos = append(pos, Pos(len(src)))
 	}
 	return pos, nil
