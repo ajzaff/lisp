@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -39,20 +38,5 @@ func main() {
 		panic(err)
 	}
 
-	printNode(n, "", "  ")
-}
-
-func printNode(n innit.Node, prefix, indent string) {
-	switch n := n.(type) {
-	case *innit.BasicLit:
-		fmt.Printf("%s%#v\n", prefix, *n)
-	case *innit.Expr:
-		fmt.Printf("%sinnit.Expr(\n", prefix)
-		printNode(n.X, prefix+indent, indent)
-		fmt.Printf("%s)\n", prefix)
-	case innit.NodeList:
-		for _, x := range n {
-			printNode(x, prefix, indent)
-		}
-	}
+	innit.StdPrinter(os.Stdout).Print(n)
 }

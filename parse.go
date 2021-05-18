@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func Parse(src []byte) (Node, error) {
+func Parse(src []byte) ([]Node, error) {
 	tokens, err := Tokenize(src)
 	if err != nil {
 		return nil, err
@@ -13,8 +13,8 @@ func Parse(src []byte) (Node, error) {
 	return parseTokens(src, tokens)
 }
 
-func parseTokens(src []byte, tokens []Pos) (Node, error) {
-	var out NodeList
+func parseTokens(src []byte, tokens []Pos) ([]Node, error) {
+	var out []Node
 	var stack []*Expr
 	for i := 0; i < len(tokens); i += 2 {
 		pos := tokens[i]
