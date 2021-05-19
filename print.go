@@ -19,11 +19,16 @@ func CompactPrinter(w io.Writer) *Printer {
 	return &Printer{w, "", "", ""}
 }
 
-func (p *Printer) Print(n []Node) {
-	for i, x := range n {
+func (p *Printer) Print(n Node) {
+	list, ok := n.(NodeList)
+	if !ok {
+		printRec(n, p.W, p.Prefix, p.Indent)
+		return
+	}
+	for i, x := range list {
 		printRec(x, p.W, p.Prefix, p.Indent)
 		endl := p.NewLine
-		if endl == "" && i < len(n) {
+		if endl == "" && i < len(list) {
 			if _, ok := x.(*BasicLit); ok {
 				endl = " "
 			}
@@ -38,12 +43,16 @@ func printRec(n Node, w io.Writer, prefix, indent string) {
 		fmt.Fprint(w, n.Value)
 	case *Expr:
 		fmt.Fprintf(w, "%s(", prefix)
-		for i, x := range n.X {
+		printRec(n.X, w, prefix, indent)
+		fmt.Printf(")")
+	case NodeList:
+		for i, x := range n {
 			printRec(x, w, prefix, indent)
-			if i+1 < len(n.X) {
+			if i+1 < len(n) {
 				fmt.Fprint(w, " ")
 			}
 		}
-		fmt.Printf(")")
+	default:
+		panic(fmt.Errorf("innit.Print: internal error: unexpected node type: %T", n))
 	}
 }

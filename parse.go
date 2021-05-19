@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func Parse(src []byte) ([]Node, error) {
+func Parse(src []byte) (Node, error) {
 	tokens, err := Tokenize(src)
 	if err != nil {
 		return nil, err
@@ -13,8 +13,8 @@ func Parse(src []byte) ([]Node, error) {
 	return parseTokens(src, tokens)
 }
 
-func parseTokens(src []byte, tokens []Pos) ([]Node, error) {
-	var out []Node
+func parseTokens(src []byte, tokens []Pos) (Node, error) {
+	var out NodeList
 	var stack []*Expr
 	for i := 0; i < len(tokens); i += 2 {
 		pos := tokens[i]
@@ -45,7 +45,7 @@ func parseTokens(src []byte, tokens []Pos) ([]Node, error) {
 			} else {
 				stack[len(stack)-1].X = append(stack[len(stack)-1].X, lit)
 			}
-		case tok[0] >= '0' && tok[0] <= '9':
+		case (tok[0] == '.' && len(tok) > 1) || tok[0] >= '0' && tok[0] <= '9':
 			lit := &BasicLit{
 				ValuePos: Pos(i),
 				Value:    tok,
@@ -68,6 +68,14 @@ func parseTokens(src []byte, tokens []Pos) ([]Node, error) {
 				stack[len(stack)-1].X = append(stack[len(stack)-1].X, id)
 			}
 		}
+	}
+	if len(stack) > 0 {
+		err := fmt.Errorf("innit.Parse: unexpected EOF")
+		if len(tokens) >= 2 {
+			pos, end := tokens[len(tokens)-2], tokens[len(tokens)-1]
+			err = fmt.Errorf("%v: at %q", err, string(src[pos:end]))
+		}
+		return nil, err
 	}
 	return out, nil
 }
