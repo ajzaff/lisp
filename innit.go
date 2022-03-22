@@ -1,16 +1,31 @@
+// Package innit implements a simple LISP-like AST useful as a research
+// language or wherever a bare-minimum language is required.
+//
+// It supports basic identifiers, numbers, strings, and expressions.
 package innit
 
+// Pos defines a position in the slice of code runes.
+type Pos int
+
+// NoPos is the flag value when no position is defined.
+const NoPos = -1
+
+// Node is an interface for AST nodes which have a start and end position.
 type Node interface {
 	Pos() Pos
 	End() Pos
 }
 
+// BasicLit is a basic literal node.
+//
+// BasicLit can hold any token value. See token.go for more details.
 type BasicLit struct {
 	Tok      Token
 	ValuePos Pos
 	Value    string
 }
 
+// Expr defines a NodeList enclosed by parens.
 type Expr struct {
 	LParen Pos
 	X      NodeList
@@ -22,6 +37,10 @@ func (x *BasicLit) End() Pos { return x.ValuePos + Pos(len(x.Value)) }
 func (x *Expr) Pos() Pos     { return x.LParen }
 func (x *Expr) End() Pos     { return x.RParen + 1 }
 
+// NodeList defines a slice of nodes.
+//
+// The start and end positions correspond to the start and end positions
+// of the first and last nodes respectively, otherwise, NoPos is used.
 type NodeList []Node
 
 func (x NodeList) Pos() Pos {

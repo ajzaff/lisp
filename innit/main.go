@@ -18,12 +18,17 @@ var (
 func main() {
 	flag.Parse()
 
+	if *file == "" {
+		doRepl()
+		return
+	}
+
 	src, err := ioutil.ReadFile(*file)
 	if err != nil {
 		panic(err)
 	}
 
-	toks, err := innit.Tokenize(src)
+	toks, err := innit.Tokenize(string(src))
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +40,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	n, err := innit.Parse(src)
+	n, err := innit.Parse(string(src))
 	if err != nil {
 		panic(err)
 	}

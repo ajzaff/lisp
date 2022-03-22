@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 )
 
+// Token is an enumeration which specifies a kind of AST token.
 type Token int
 
 const (
@@ -22,17 +23,15 @@ const (
 	RParen // )
 )
 
-type Pos int
-
-const NoPos = -1
-
-func Tokenize(src []byte) ([]Pos, error) {
-	s := &tokenState{src: src, line: 1, col: 1}
+// Tokenize takes source code and returns a set of token positions.
+func Tokenize(src string) ([]Pos, error) {
+	s := &tokenState{src: []byte(src), line: 1, col: 1}
 	for fn := tokenStart(s); fn != nil; fn = fn() {
 	}
 	return s.pos, s.err
 }
 
+// TokenError implements an error at a specified line and column.
 type TokenError struct {
 	Line, Col int
 	Pos       Pos

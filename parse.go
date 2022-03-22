@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func Parse(src []byte) (Node, error) {
+func Parse(src string) (Node, error) {
 	tokens, err := Tokenize(src)
 	if err != nil {
 		return nil, err
@@ -13,7 +13,7 @@ func Parse(src []byte) (Node, error) {
 	return parseTokens(src, tokens)
 }
 
-func parseTokens(src []byte, tokens []Pos) (Node, error) {
+func parseTokens(src string, tokens []Pos) (Node, error) {
 	var out NodeList
 	var stack []*Expr
 	for i := 0; i < len(tokens); i += 2 {
@@ -50,7 +50,7 @@ func parseTokens(src []byte, tokens []Pos) (Node, error) {
 				ValuePos: Pos(i),
 				Value:    tok,
 			}
-			if strings.IndexRune(tok, '.') >= 0 {
+			if strings.ContainsRune(tok, '.') {
 				lit.Tok = Float
 			} else {
 				lit.Tok = Int

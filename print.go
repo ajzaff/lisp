@@ -5,35 +5,39 @@ import (
 	"io"
 )
 
+// Printer implements direct printing of AST nodes.
 type Printer struct {
-	W io.Writer
+	io.Writer
 
 	Prefix, Indent, NewLine string
 }
 
+// StdPrinter returns a printer which uses spaces and new lines.
 func StdPrinter(w io.Writer) *Printer {
 	return &Printer{w, "", "  ", "\n"}
 }
 
+// CompactPrinter returns a printer using the least characters possible.
 func CompactPrinter(w io.Writer) *Printer {
 	return &Printer{w, "", "", ""}
 }
 
+// Print the node n.
 func (p *Printer) Print(n Node) {
 	list, ok := n.(NodeList)
 	if !ok {
-		printRec(n, p.W, p.Prefix, p.Indent)
+		printRec(n, p.Writer, p.Prefix, p.Indent)
 		return
 	}
 	for i, x := range list {
-		printRec(x, p.W, p.Prefix, p.Indent)
+		printRec(x, p.Writer, p.Prefix, p.Indent)
 		endl := p.NewLine
 		if endl == "" && i < len(list) {
 			if _, ok := x.(*BasicLit); ok {
 				endl = " "
 			}
 		}
-		fmt.Fprint(p.W, endl)
+		fmt.Fprint(p.Writer, endl)
 	}
 }
 
