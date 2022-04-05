@@ -16,10 +16,10 @@ type Node interface {
 	End() Pos
 }
 
-// BasicLit is a basic literal node.
+// Lit is a basic literal node.
 //
-// BasicLit can hold any token value. See token.go for more details.
-type BasicLit struct {
+// Lit can hold any token value. See token.go for more details.
+type Lit struct {
 	Tok      Token
 	ValuePos Pos
 	Value    string
@@ -32,10 +32,10 @@ type Expr struct {
 	RParen Pos
 }
 
-func (x *BasicLit) Pos() Pos { return x.ValuePos }
-func (x *BasicLit) End() Pos { return x.ValuePos + Pos(len(x.Value)) }
-func (x *Expr) Pos() Pos     { return x.LParen }
-func (x *Expr) End() Pos     { return x.RParen + 1 }
+func (x *Lit) Pos() Pos  { return x.ValuePos }
+func (x *Lit) End() Pos  { return x.ValuePos + Pos(len(x.Value)) }
+func (x *Expr) Pos() Pos { return x.LParen }
+func (x *Expr) End() Pos { return x.RParen + 1 }
 
 // NodeList defines a slice of nodes.
 //

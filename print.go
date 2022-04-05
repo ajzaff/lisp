@@ -14,49 +14,47 @@ type Printer struct {
 
 // StdPrinter returns a printer which uses spaces and new lines.
 func StdPrinter(w io.Writer) *Printer {
-	return &Printer{w, "", "  ", "\n"}
+	return &Printer{
+		Writer:  w,
+		Indent:  "  ",
+		NewLine: "\n",
+	}
 }
 
 // CompactPrinter returns a printer using the least characters possible.
 func CompactPrinter(w io.Writer) *Printer {
-	return &Printer{w, "", "", ""}
+	return &Printer{Writer: w}
 }
 
-// Print the node n.
+// Print the Node n.
 func (p *Printer) Print(n Node) {
-	list, ok := n.(NodeList)
-	if !ok {
-		printRec(n, p.Writer, p.Prefix, p.Indent)
-		return
-	}
-	for i, x := range list {
-		printRec(x, p.Writer, p.Prefix, p.Indent)
-		endl := p.NewLine
-		if endl == "" && i < len(list) {
-			if _, ok := x.(*BasicLit); ok {
-				endl = " "
-			}
-		}
-		fmt.Fprint(p.Writer, endl)
-	}
-}
+	var stack []int
 
-func printRec(n Node, w io.Writer, prefix, indent string) {
-	switch n := n.(type) {
-	case *BasicLit:
-		fmt.Fprint(w, n.Value)
-	case *Expr:
-		fmt.Fprintf(w, "%s(", prefix)
-		printRec(n.X, w, prefix, indent)
-		fmt.Printf(")")
-	case NodeList:
-		for i, x := range n {
-			printRec(x, w, prefix, indent)
-			if i+1 < len(n) {
-				fmt.Fprint(w, " ")
+	var v Visitor
+	v.SetExprVisitor(func(e *Expr) {
+		stack = append(stack, len(e.X))
+		fmt.Fprint(p.Writer, p.Prefix, "(")
+	})
+	v.SetLitVisitor(func(e *Lit) {
+		switch n := len(stack); n {
+		case 0:
+			fmt.Fprint(p.Writer, p.Prefix, e.Value)
+		default:
+			fmt.Fprint(p.Writer, e.Value)
+			if stack[n-1]--; stack[n-1] <= 0 {
+				fmt.Fprint(p.Writer, ")")
+				stack = stack[:n-1]
+				if len(stack) == 0 {
+					fmt.Fprint(p.Writer, p.NewLine)
+				}
 			}
 		}
-	default:
-		panic(fmt.Errorf("innit.Print: internal error: unexpected node type: %T", n))
+		fmt.Fprint(p.Writer, " ")
+	})
+
+	v.Visit(n)
+
+	for i := 0; i < len(stack); i++ {
+		fmt.Fprint(p.Writer, ")")
 	}
 }

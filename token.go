@@ -121,7 +121,7 @@ func tokenStart(s *tokenState) tokenFunc {
 			return tokenStart(s)
 		case unicode.IsNumber(r):
 			s.markLast()
-			return tokenInt(s)
+			return tokenIntOrFloat(s)
 		case isOp(r): // op
 			s.markLast()
 			return tokenOp(s)
@@ -187,11 +187,11 @@ func tokenCharLit(s *tokenState) tokenFunc {
 	}
 }
 
-func tokenInt(s *tokenState) tokenFunc {
+func tokenIntOrFloat(s *tokenState) tokenFunc {
 	return func() tokenFunc {
 		switch r, ok := s.next(); {
 		case r >= '0' && r <= '9':
-			return tokenInt(s)
+			return tokenIntOrFloat(s)
 		case r == '(', r == ')':
 			s.markLast()
 			s.markLast()

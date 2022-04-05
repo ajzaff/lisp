@@ -7,34 +7,34 @@ type Visitor struct {
 	unknownFn  func(Node)
 	nodeFn     func(Node)
 	nodeListFn func(NodeList)
-	basicLitFn func(*BasicLit)
+	litFn      func(*Lit)
 	exprFn     func(*Expr)
 
 	err error
 }
 
-// SetNodeVisitFunc sets the visitor called on unknown-typed Nodes.
-func (v *Visitor) SetUnknownNodeVisitFunc(fn func(Node)) {
+// SetUnknownTypeVisitor sets the visitor called on unknown-typed Nodes.
+func (v *Visitor) SetUnknownTypeVisitor(fn func(Node)) {
 	v.unknownFn = fn
 }
 
-// SetNodeVisitFunc sets the visitor called on every Node.
-func (v *Visitor) SetNodeVisitFunc(fn func(Node)) {
+// SetNodeVisitor sets the visitor called on every Node.
+func (v *Visitor) SetNodeVisitor(fn func(Node)) {
 	v.nodeFn = fn
 }
 
-// SetNodeListVisitFunc sets the visitor called on every *NodeList.
-func (v *Visitor) SetNodeListVisitFunc(fn func(NodeList)) {
+// SetNodeListVisitor sets the visitor called on every *NodeList.
+func (v *Visitor) SetNodeListVisitor(fn func(NodeList)) {
 	v.nodeListFn = fn
 }
 
-// SetNodeListVisitFunc sets the visitor called on every *BasicLit.
-func (v *Visitor) SetBasicLitVisitFunc(fn func(*BasicLit)) {
-	v.basicLitFn = fn
+// SetLitVisitor sets the visitor called on every *Lit.
+func (v *Visitor) SetLitVisitor(fn func(*Lit)) {
+	v.litFn = fn
 }
 
 // SetNodeListVisitFunc sets the visitor called on every *Expr.
-func (v *Visitor) SetExprVisitFunc(fn func(*Expr)) {
+func (v *Visitor) SetExprVisitor(fn func(*Expr)) {
 	v.exprFn = fn
 }
 
@@ -89,9 +89,9 @@ func (v *Visitor) callNodeListFn(e NodeList) bool {
 	return false
 }
 
-func (v *Visitor) callBasicLitFn(e *BasicLit) bool {
-	if v.basicLitFn != nil {
-		v.basicLitFn(e)
+func (v *Visitor) callLitFn(e *Lit) bool {
+	if v.litFn != nil {
+		v.litFn(e)
 		return true
 	}
 	return false
@@ -118,8 +118,8 @@ func (v *Visitor) Visit(node Node) {
 		return
 	}
 	switch n := node.(type) {
-	case *BasicLit:
-		if v.callBasicLitFn(n) && v.hasErr() {
+	case *Lit:
+		if v.callLitFn(n) && v.hasErr() {
 			v.clearSkipErr()
 		}
 	case *Expr:
