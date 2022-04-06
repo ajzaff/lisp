@@ -28,33 +28,37 @@ func CompactPrinter(w io.Writer) *Printer {
 
 // Print the Node n.
 func (p *Printer) Print(n Node) {
-	var stack []int
-
+	var (
+		firstExpr = true
+		exprDepth int
+	)
 	var v Visitor
-	v.SetExprVisitor(func(e *Expr) {
-		stack = append(stack, len(e.X))
+	v.SetBeforeExprVisitor(func(e *Expr) {
+		if exprDepth > 0 {
+			fmt.Fprint(p.Writer, " ")
+		}
 		fmt.Fprint(p.Writer, p.Prefix, "(")
+		firstExpr = true
+		exprDepth++
+	})
+	v.SetAfterExprVisitor(func(e *Expr) {
+		exprDepth--
+		fmt.Fprint(p.Writer, ")")
+		if exprDepth == 0 {
+			fmt.Fprint(p.Writer, p.NewLine)
+		}
 	})
 	v.SetLitVisitor(func(e *Lit) {
-		switch n := len(stack); n {
-		case 0:
-			fmt.Fprint(p.Writer, p.Prefix, e.Value)
-		default:
-			fmt.Fprint(p.Writer, e.Value)
-			if stack[n-1]--; stack[n-1] <= 0 {
-				fmt.Fprint(p.Writer, ")")
-				stack = stack[:n-1]
-				if len(stack) == 0 {
-					fmt.Fprint(p.Writer, p.NewLine)
-				}
-			}
+		if exprDepth == 0 {
+			fmt.Fprint(p.Writer, p.Prefix, e.Value, p.NewLine)
+			return
 		}
-		fmt.Fprint(p.Writer, " ")
+		if !firstExpr {
+			fmt.Fprint(p.Writer, " ")
+		}
+		firstExpr = false
+		fmt.Fprint(p.Writer, e.Value)
 	})
 
 	v.Visit(n)
-
-	for i := 0; i < len(stack); i++ {
-		fmt.Fprint(p.Writer, ")")
-	}
 }

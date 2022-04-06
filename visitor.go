@@ -4,11 +4,14 @@ import "errors"
 
 // Visitor implements a Node visitor.
 type Visitor struct {
-	unknownFn  func(Node)
-	nodeFn     func(Node)
-	nodeListFn func(NodeList)
-	litFn      func(*Lit)
-	exprFn     func(*Expr)
+	unknownFn    func(Node)
+	beforeNodeFn func(Node)
+	afterNodeFn  func(Node)
+	nodeListFn   func(NodeList)
+	litFn        func(*Lit)
+
+	beforeExprFn func(*Expr)
+	afterExprFn  func(*Expr)
 
 	err error
 }
@@ -18,9 +21,14 @@ func (v *Visitor) SetUnknownTypeVisitor(fn func(Node)) {
 	v.unknownFn = fn
 }
 
-// SetNodeVisitor sets the visitor called on every Node.
-func (v *Visitor) SetNodeVisitor(fn func(Node)) {
-	v.nodeFn = fn
+// SetBeforeNodeVisitor sets the visitor called on every Node.
+func (v *Visitor) SetBeforeNodeVisitor(fn func(Node)) {
+	v.beforeNodeFn = fn
+}
+
+// SetAfterNodeVisitor sets the visitor called on every Node.
+func (v *Visitor) SetAfterNodeVisitor(fn func(Node)) {
+	v.afterNodeFn = fn
 }
 
 // SetNodeListVisitor sets the visitor called on every *NodeList.
@@ -34,8 +42,13 @@ func (v *Visitor) SetLitVisitor(fn func(*Lit)) {
 }
 
 // SetNodeListVisitFunc sets the visitor called on every *Expr.
-func (v *Visitor) SetExprVisitor(fn func(*Expr)) {
-	v.exprFn = fn
+func (v *Visitor) SetBeforeExprVisitor(fn func(*Expr)) {
+	v.beforeExprFn = fn
+}
+
+// SetNodeListVisitFunc sets the visitor called on every *Expr.
+func (v *Visitor) SetAfterExprVisitor(fn func(*Expr)) {
+	v.afterExprFn = fn
 }
 
 var (
@@ -73,9 +86,17 @@ func (v *Visitor) callUnknownNodeFn(e Node) bool {
 	return false
 }
 
-func (v *Visitor) callNodeFn(e Node) bool {
-	if v.nodeFn != nil {
-		v.nodeFn(e)
+func (v *Visitor) callBeforeNodeFn(e Node) bool {
+	if v.beforeNodeFn != nil {
+		v.beforeNodeFn(e)
+		return true
+	}
+	return false
+}
+
+func (v *Visitor) callAfterNodeFn(e Node) bool {
+	if v.afterNodeFn != nil {
+		v.afterNodeFn(e)
 		return true
 	}
 	return false
@@ -97,9 +118,17 @@ func (v *Visitor) callLitFn(e *Lit) bool {
 	return false
 }
 
-func (v *Visitor) callExprFn(e *Expr) bool {
-	if v.exprFn != nil {
-		v.exprFn(e)
+func (v *Visitor) callBeforeExprFn(e *Expr) bool {
+	if v.beforeExprFn != nil {
+		v.beforeExprFn(e)
+		return true
+	}
+	return false
+}
+
+func (v *Visitor) callAfterExprFn(e *Expr) bool {
+	if v.afterExprFn != nil {
+		v.afterExprFn(e)
 		return true
 	}
 	return false
@@ -113,7 +142,7 @@ func (v *Visitor) Visit(node Node) {
 		v.clearSkipErr()
 		return
 	}
-	if v.callNodeFn(node) && v.hasErr() {
+	if v.callBeforeNodeFn(node) && v.hasErr() {
 		v.clearSkipErr()
 		return
 	}
@@ -123,11 +152,15 @@ func (v *Visitor) Visit(node Node) {
 			v.clearSkipErr()
 		}
 	case *Expr:
-		if v.callExprFn(n) && v.hasErr() {
+		if v.callBeforeExprFn(n) && v.hasErr() {
 			v.clearSkipErr()
 			return
 		}
 		v.Visit(n.X)
+		if v.callAfterExprFn(n) && v.hasErr() {
+			v.clearSkipErr()
+			return
+		}
 	case NodeList:
 		if v.callNodeListFn(n) && v.hasErr() {
 			v.clearSkipErr()
@@ -146,5 +179,9 @@ func (v *Visitor) Visit(node Node) {
 		if v.callUnknownNodeFn(n) && v.hasErr() {
 			v.clearSkipErr()
 		}
+	}
+	if v.callAfterNodeFn(node) && v.hasErr() {
+		v.clearSkipErr()
+		return
 	}
 }

@@ -18,6 +18,26 @@ func TestStdPrint(t *testing.T) {
 		name:  "lit",
 		input: &Lit{Tok: Id, Value: "hello"},
 		want:  "hello\n",
+	}, {
+		name:  "expr",
+		input: &Expr{X: NodeList{&Lit{Tok: Id, Value: "x"}}},
+		want:  "(x)\n",
+	}, {
+		name: "expr",
+		input: &Expr{X: NodeList{
+			&Lit{Tok: Id, Value: "x"},
+			&Lit{Tok: Id, Value: "y"},
+			&Lit{Tok: Id, Value: "z"},
+		}},
+		want: "(x y z)\n",
+	}, {
+		name: "nested expr",
+		input: &Expr{X: NodeList{
+			&Lit{Tok: Id, Value: "x"},
+			&Expr{X: NodeList{&Lit{Tok: Id, Value: "y"}}},
+			&Lit{Tok: Id, Value: "z"},
+		}},
+		want: "(x (y) z)\n",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
