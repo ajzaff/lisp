@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -11,7 +10,6 @@ import (
 
 var (
 	tokenize = flag.Bool("tokenize", false, "Print tokens and exit")
-	compact  = flag.Bool("compact", true, "Use compact printing.")
 	file     = flag.String("file", "", "File to read innit code from.")
 )
 
@@ -43,12 +41,6 @@ func main() {
 	n, err := innit.Parse(string(src))
 	if err != nil {
 		panic(err)
-	}
-
-	if *compact {
-		innit.CompactPrinter(os.Stdout).Print(n)
-		fmt.Println()
-		os.Exit(0)
 	}
 
 	innit.StdPrinter(os.Stdout).Print(n)

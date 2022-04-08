@@ -21,11 +21,6 @@ func StdPrinter(w io.Writer) *Printer {
 	}
 }
 
-// CompactPrinter returns a printer using the least characters possible.
-func CompactPrinter(w io.Writer) *Printer {
-	return &Printer{Writer: w}
-}
-
 // Print the Node n.
 func (p *Printer) Print(n Node) {
 	var (
