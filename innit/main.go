@@ -2,15 +2,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/ajzaff/innit"
 )
 
 var (
-	tokenize = flag.Bool("tokenize", false, "Print tokens and exit")
-	file     = flag.String("file", "", "File to read innit code from.")
+	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
+	print = flag.String("print", "", `Print mode (Optional "tok", "ast". Default uses StdPrinter)`)
+	file  = flag.String("file", "", "File to read innit code from.")
 )
 
 func main() {
@@ -23,25 +27,46 @@ func main() {
 
 	src, err := ioutil.ReadFile(*file)
 	if err != nil {
-		panic(err)
-	}
-
-	toks, err := innit.Tokenize(string(src))
-	if err != nil {
-		panic(err)
-	}
-
-	if *tokenize {
-		for i := 0; i < len(toks); i += 2 {
-			println(string(src[toks[i]:toks[i+1]]))
-		}
-		os.Exit(0)
+		log.Fatal(err)
 	}
 
 	n, err := innit.Parse(string(src))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	innit.StdPrinter(os.Stdout).Print(n)
+	switch *print {
+	case "": // std
+		innit.StdPrinter(os.Stdout).Print(n)
+	case "tok":
+		tokens, err := innit.Tokenize(string(src))
+		if err != nil {
+			panic(err)
+		}
+		for i := 0; i < len(tokens); i += 2 {
+			token := string(src[tokens[i]:tokens[i+1]])
+			println(token)
+		}
+	case "ast":
+		var v innit.Visitor
+		exprVisitor := func(e *innit.Expr) {
+			var sb strings.Builder
+			innit.StdPrinter(&sb).Print(e)
+			fmt.Print("EXPR\t", sb.String())
+		}
+		switch *order {
+		case "": // in-order
+			v.SetBeforeExprVisitor(exprVisitor)
+		case "reverse":
+			v.SetAfterExprVisitor(exprVisitor)
+		default:
+			log.Fatalf("unexpected -order mode: %v", *order)
+		}
+		v.SetLitVisitor(func(e *innit.Lit) {
+			fmt.Println("LIT\t", e.Tok.String(), "\t", e.Value)
+		})
+		v.Visit(n)
+	default:
+		log.Fatalf("unexpected -print mode: %v", *print)
+	}
 }

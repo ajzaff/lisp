@@ -8,13 +8,13 @@ import (
 )
 
 // Token is an enumeration which specifies a kind of AST token.
+//go:generate stringer -type Token
 type Token int
 
 const (
 	Invalid Token = iota
 
-	Id     // main
-	Op     // + - / ++
+	Id     // x y z + - / ++
 	Int    // 12345
 	Float  // 123.45
 	String // "abc"
@@ -41,35 +41,33 @@ func (t *TokenError) Error() string {
 	return fmt.Sprintf("at line %d: col %d", t.Line, t.Col)
 }
 
-func isOp(r rune) bool {
-	return unicode.IsPunct(r) || unicode.IsSymbol(r)
-}
-
 type tokenState struct {
 	src []byte
 
+	line int
+	col  int
+	err  error
+
 	pos []Pos
-	err error
-
-	line, col int
-	last, p   Pos
+	p   Pos
 }
 
-func (s *tokenState) markLast() {
-	s.pos = append(s.pos, s.last)
-}
-
+// mark is called when starting a token.
 func (s *tokenState) mark() {
 	s.pos = append(s.pos, s.p)
 }
 
-func (s *tokenState) decodeNext() (rune, int) {
-	r, size := utf8.DecodeRune(s.src[s.p:])
-	s.last = s.p
+// markEnd is called when ending a token.
+func (s *tokenState) markEnd() {
+	s.mark()
+}
+
+func (s *tokenState) decode() (r rune, size int) {
+	return utf8.DecodeRune(s.src[s.p:])
+}
+
+func (s *tokenState) advance(r rune, size int) (rune, int) {
 	s.p += Pos(size)
-	if r != '\r' {
-		s.col++
-	}
 	if r == '\n' {
 		s.line++
 		s.col = 1
@@ -77,21 +75,31 @@ func (s *tokenState) decodeNext() (rune, int) {
 	return r, size
 }
 
-func (s *tokenState) next() (r rune, ok bool) {
-	if r, size := s.decodeNext(); size != 0 {
-		return r, true
+func (s *tokenState) skipSpace() {
+	for r, size := s.decode(); unicode.IsSpace(r); r, size = s.decode() {
+		s.advance(r, size)
 	}
-	return 0, false
 }
 
-func (s *tokenState) skipSpace() {
-	for {
-		r, _ := utf8.DecodeRune(s.src[s.p:])
-		if !unicode.IsSpace(r) {
-			break
-		}
-		s.decodeNext()
-	}
+func isExprStr(r rune) bool {
+	return r == '(' || r == ')' || r == '"'
+}
+
+func isIdStart(r rune) bool {
+	return r != utf8.RuneError && !isExprStr(r) && unicode.In(r,
+		unicode.L,
+		unicode.M,
+		unicode.P,
+		unicode.S)
+}
+
+func isId(r rune) bool {
+	return r != utf8.RuneError && !isExprStr(r) && unicode.In(r,
+		unicode.L,
+		unicode.N,
+		unicode.M,
+		unicode.P,
+		unicode.S)
 }
 
 var (
@@ -108,28 +116,36 @@ type tokenFunc func() tokenFunc
 func tokenStart(s *tokenState) tokenFunc {
 	s.skipSpace()
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r == '"':
-			s.markLast()
-			return tokenString(s)
-		case r == '.':
-			s.markLast()
-			return tokenFloatOrOp(s)
-		case r == '(', r == ')':
-			s.markLast()
-			s.mark()
-			return tokenStart(s)
-		case unicode.IsNumber(r):
-			s.markLast()
-			return tokenIntOrFloat(s)
-		case isOp(r): // op
-			s.markLast()
-			return tokenOp(s)
-		case unicode.IsGraphic(r): // id
-			s.markLast()
-			return tokenId(s)
-		case !ok: // EOF
+		r, size := s.decode()
+		if size == 0 {
+			return nil // EOF
+		}
+		if r == utf8.RuneError {
+			s.setErr(fmt.Errorf("%v: %v", errRune, r))
 			return nil
+		}
+		switch {
+		case r == '(', r == ')': // Expr
+			s.mark()
+			s.advance(r, size)
+			s.markEnd()
+			return tokenStart(s)
+		case r == '"': // Str
+			s.mark()
+			s.advance(r, size)
+			return tokenString(s)
+		case r == '.': // Id | Float
+			s.mark()
+			s.advance(r, size)
+			return tokenIdOrFloat(s)
+		case unicode.IsNumber(r): // Int | Float
+			s.mark()
+			s.advance(r, size)
+			return tokenNumber(s)
+		case isIdStart(r): // Id
+			s.mark()
+			s.advance(r, size)
+			return tokenId(s)
 		default:
 			s.setErr(fmt.Errorf("%v: %v", errRune, r))
 			return nil
@@ -139,14 +155,17 @@ func tokenStart(s *tokenState) tokenFunc {
 
 func tokenString(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
+		switch r, size := s.advance(s.decode()); {
 		case r == '"':
-			s.mark()
+			s.markEnd()
 			return tokenStart(s)
 		case r == '\\':
 			return tokenEscape(s)
-		case !ok:
+		case size == 0:
 			s.setErr(errEOF)
+			return nil
+		case r == utf8.RuneError:
+			s.setErr(errRune)
 			return nil
 		default:
 			return tokenString(s)
@@ -156,172 +175,114 @@ func tokenString(s *tokenState) tokenFunc {
 
 func tokenEscape(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); r {
+		switch r, size := s.advance(s.decode()); r {
 		case 'n', 't':
 			return tokenString(s)
-		case 'x', 'u':
-			return tokenCharLit(s)
-		default:
-			if !ok {
+		case 'x':
+			return tokenByteLit(s)
+		case utf8.RuneError:
+			if size == 0 {
 				s.setErr(errEOF)
 				return nil
 			}
 			s.setErr(errRune)
 			return nil
+		default:
+			s.setErr(fmt.Errorf("unexpected escape: \\%v", string(r)))
+			return nil
 		}
 	}
 }
 
-func tokenCharLit(s *tokenState) tokenFunc {
+// Byte literals are supported from \x00 to \xff.
+// tokenByteLit{,2} ensure the right format.
+func tokenByteLit(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r >= '0' && r < '9', r >= 'a' && r <= 'f', r >= 'A' && r <= 'F':
-			return tokenCharLit(s)
+		switch r, size := s.decode(); {
+		case unicode.In(r, unicode.N, unicode.ASCII_Hex_Digit):
+			s.advance(r, size)
+			return tokenByteLit2(s)
+		case size == 0:
+			s.setErr(errEOF)
+			return nil
 		default:
-			if !ok {
-				s.setErr(errEOF)
-				return nil
-			}
+			s.setErr(fmt.Errorf("%v: %v", errRune, r))
+			return nil
+		}
+	}
+}
+
+func tokenByteLit2(s *tokenState) tokenFunc {
+	return func() tokenFunc {
+		switch r, size := s.decode(); {
+		case unicode.In(r, unicode.N, unicode.ASCII_Hex_Digit):
+			s.advance(r, size)
 			return tokenString(s)
+		case size == 0:
+			s.setErr(errEOF)
+			return nil
+		default:
+			s.setErr(fmt.Errorf("%v: %v", errRune, r))
+			return nil
 		}
 	}
 }
 
-func tokenIntOrFloat(s *tokenState) tokenFunc {
+func tokenNumber(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r >= '0' && r <= '9':
-			return tokenIntOrFloat(s)
-		case r == '(', r == ')':
-			s.markLast()
-			s.markLast()
-			s.mark()
-			return tokenStart(s)
+		switch r, size := s.decode(); {
+		case unicode.IsNumber(r):
+			s.advance(r, size)
+			return tokenNumber(s)
 		case r == '.':
+			s.advance(r, size)
 			return tokenFloat(s)
-		case unicode.IsSpace(r):
-			s.markLast()
-			return tokenStart(s)
-		case !ok:
-			s.markLast()
-			return nil
 		default:
-			s.setErr(fmt.Errorf("%v: %v", errRune, r))
-			return nil
+			s.markEnd()
+			return tokenStart(s)
 		}
 	}
 }
 
-func tokenFloatOrOp(s *tokenState) tokenFunc {
+// tokenIdOrFloat is invoked on "."
+func tokenIdOrFloat(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r >= '0' && r <= '9':
+		switch r, size := s.decode(); {
+		case unicode.IsNumber(r):
+			s.advance(r, size)
 			return tokenFloat(s)
-		case r == '(', r == ')':
-			s.markLast()
-			s.markLast()
-			s.mark()
-			return tokenStart(s)
-		case unicode.IsSpace(r):
-			s.markLast()
-			return tokenStart(s)
-		case isOp(r):
-			return tokenOp(s)
-		case !ok:
-			s.markLast()
-			return nil
+		case isId(r):
+			s.advance(r, size)
+			return tokenId(s)
 		default:
-			s.setErr(fmt.Errorf("%v: %v", errRune, r))
-			return nil
+			s.markEnd()
+			return tokenStart(s)
 		}
 	}
 }
 
 func tokenFloat(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r >= '0' && r <= '9':
+		switch r, size := s.decode(); {
+		case unicode.IsNumber(r):
+			s.advance(r, size)
 			return tokenFloat(s)
-		case r == '(', r == ')':
-			s.markLast()
-			s.markLast()
-			s.mark()
-			return tokenStart(s)
-		case unicode.IsSpace(r):
-			s.markLast()
-			return tokenStart(s)
-		case !ok:
-			s.markLast()
-			return nil
 		default:
-			s.setErr(fmt.Errorf("%v: %v", errRune, r))
-			return nil
+			s.markEnd()
+			return tokenStart(s)
 		}
 	}
 }
 
 func tokenId(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r == '"':
-			s.markLast()
-			s.markLast()
-			return tokenString(s)
-		case r == '(', r == ')':
-			s.markLast()
-			s.markLast()
-			s.mark()
-			return tokenStart(s)
-		case r == '.':
-			s.markLast()
-			s.markLast()
-			return tokenOp(s)
-		case unicode.IsSpace(r):
-			s.markLast()
-			return tokenStart(s)
-		case isOp(r):
-			s.markLast()
-			s.markLast()
-			return tokenOp(s)
-		case unicode.IsGraphic(r):
+		switch r, size := s.decode(); {
+		case isId(r):
+			s.advance(r, size)
 			return tokenId(s)
-		case !ok:
-			s.markLast()
-			return nil
 		default:
-			s.setErr(fmt.Errorf("%v: %v", errRune, r))
-			return nil
-		}
-	}
-}
-
-func tokenOp(s *tokenState) tokenFunc {
-	return func() tokenFunc {
-		switch r, ok := s.next(); {
-		case r == '"':
-			s.markLast()
-			s.markLast()
-			return tokenString(s)
-		case r == '(', r == ')':
-			s.markLast()
-			s.markLast()
-			s.mark()
+			s.markEnd()
 			return tokenStart(s)
-		case unicode.IsSpace(r):
-			s.markLast()
-			return tokenStart(s)
-		case isOp(r):
-			return tokenOp(s)
-		case unicode.IsGraphic(r):
-			s.markLast()
-			s.markLast()
-			return tokenId(s)
-		case !ok:
-			s.markLast()
-			return nil
-		default:
-			s.setErr(fmt.Errorf("%v: %v", errRune, r))
-			return nil
 		}
 	}
 }

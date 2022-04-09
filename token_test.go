@@ -6,121 +6,164 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestTokenizeBasic(t *testing.T) {
+func TestTokenizeLit(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
-		src     string
+		input   string
+		want    []Pos
+		wantErr bool
+	}{{
+		name:  "id",
+		input: "foo",
+		want:  []Pos{0, 3},
+	}, {
+		name:  "id 2",
+		input: "foo-bar",
+		want:  []Pos{0, 7},
+	}, {
+		name:  "id 3",
+		input: "  \t\n x",
+		want:  []Pos{5, 6},
+	}, {
+		name:  "id 4",
+		input: "a b c",
+		want:  []Pos{0, 1, 2, 3, 4, 5},
+	}, {
+		name:  "id 5",
+		input: `a.0`,
+		want:  []Pos{0, 3},
+	}, {
+		name:  "id 6",
+		input: "a...",
+		want:  []Pos{0, 4},
+	}, {
+		name:  "id 6_2",
+		input: "...a",
+		want:  []Pos{0, 4},
+	}, {
+		name:  "id string",
+		input: `a"abc"`,
+		want:  []Pos{0, 1, 1, 6},
+	}, {
+		name:  "id 7",
+		input: `.+`,
+		want:  []Pos{0, 2},
+	}, {
+		name:  "id 8",
+		input: "ab cd ef",
+		want:  []Pos{0, 2, 3, 5, 6, 8},
+	}, {
+		name:  "int",
+		input: "0",
+		want:  []Pos{0, 1},
+	}, {
+		name:  "int 2",
+		input: "0 1 2",
+		want:  []Pos{0, 1, 2, 3, 4, 5},
+	}, {
+		name:  "float",
+		input: "1.0",
+		want:  []Pos{0, 3},
+	}, {
+		name:  "float 2",
+		input: "1.",
+		want:  []Pos{0, 2},
+	}, {
+		name:  "float 3",
+		input: ".1",
+		want:  []Pos{0, 2},
+	}, {
+		name:  "float 4",
+		input: "1. 2. 3.",
+		want:  []Pos{0, 2, 3, 5, 6, 8},
+	}, {
+		name:  "float 4_2",
+		input: ".1 .2 .3",
+		want:  []Pos{0, 2, 3, 5, 6, 8},
+	}, {
+		name:  "string",
+		input: `"a"`,
+		want:  []Pos{0, 3},
+	}, {
+		name:  "string 2",
+		input: `"a b c"`,
+		want:  []Pos{0, 7},
+	}, {
+		name:  "string 3",
+		input: `"a" "b" "c"`,
+		want:  []Pos{0, 3, 4, 7, 8, 11},
+	}, {
+		name: "string (multiline)",
+		input: `"
+"`,
+		want: []Pos{0, 3},
+	}, {
+		name:  "byte lit",
+		input: `"abc\x00\x11\xff"`,
+		want:  []Pos{0, 17},
+	}, {
+		name:    "byte lit",
+		input:   `"abc\x00\x1"`,
+		want:    []Pos{0},
+		wantErr: true,
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			if !tc.wantErr && len(tc.want)%2 != 0 {
+				t.Fatalf("Tokenize(%q) wants invalid result (cannot have odd length when wantErr=true): %v", tc.name, tc.want)
+			}
+			got, gotErr := Tokenize(tc.input)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("Tokenize(%q) got diff (-want, +got):\n%s", tc.name, diff)
+			}
+			if (gotErr == nil) == tc.wantErr {
+				t.Errorf("Tokenize(%q) got err: %q, want err? %v", tc.name, gotErr, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestTokenizeExpr(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		input   string
 		want    []Pos
 		wantErr bool
 	}{{
 		name: "empty",
 	}, {
-		name: "whitespace",
-		src:  "  \t\n",
+		name:  "whitespace",
+		input: "  \t\n",
 	}, {
-		name: "id",
-		src:  "foo",
-		want: []Pos{0, 3},
+		name:  "expr",
+		input: "(abc)",
+		want:  []Pos{0, 1, 1, 4, 4, 5},
 	}, {
-		name: "id 3",
-		src:  "  \t\n x",
-		want: []Pos{5, 6},
+		name:  "expr 2",
+		input: "(add 1 2)",
+		want:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
 	}, {
-		name: "id 4",
-		src:  "a b c",
-		want: []Pos{0, 1, 2, 3, 4, 5},
+		name:  "expr 3",
+		input: "(add (sub 3 2) 2)",
+		want:  []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
 	}, {
-		name: "id op",
-		src:  "a...",
-		want: []Pos{0, 1, 1, 4},
+		name:  "expr 4",
+		input: "((a))",
+		want:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
 	}, {
-		name: "id string",
-		src:  `a"abc"`,
-		want: []Pos{0, 1, 1, 6},
-	}, {
-		name: "id op id",
-		src:  "foo-bar",
-		want: []Pos{0, 3, 3, 4, 4, 7},
-	}, {
-		name: "id op int",
-		src:  `a.0`,
-		want: []Pos{0, 1, 1, 2, 2, 3},
-	}, {
-		name: "op op",
-		src:  `.+`,
-		want: []Pos{0, 2},
-	}, {
-		name: "int",
-		src:  "0",
-		want: []Pos{0, 1},
-	}, {
-		name: "int 2",
-		src:  "0 1 2",
-		want: []Pos{0, 1, 2, 3, 4, 5},
-	}, {
-		name: "float",
-		src:  "1.0",
-		want: []Pos{0, 3},
-	}, {
-		name: "float 2",
-		src:  "1.",
-		want: []Pos{0, 2},
-	}, {
-		name: "float 3",
-		src:  ".1",
-		want: []Pos{0, 2},
-	}, {
-		name: "float 4",
-		src:  "1. 2. 3.",
-		want: []Pos{0, 2, 3, 5, 6, 8},
-	}, {
-		name: "string",
-		src:  `"a"`,
-		want: []Pos{0, 3},
-	}, {
-		name: "string 2",
-		src:  `"a b c"`,
-		want: []Pos{0, 7},
-	}, {
-		name: "string 3",
-		src:  `"a" "b" "c"`,
-		want: []Pos{0, 3, 4, 7, 8, 11},
-	}, {
-		name: "string (multiline)",
-		src: `"
-"`,
-		want: []Pos{0, 3},
-	}, {
-		name: "expr",
-		src:  "(abc)",
-		want: []Pos{0, 1, 1, 4, 4, 5},
-	}, {
-		name: "expr 2",
-		src:  "(add 1 2)",
-		want: []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
-	}, {
-		name: "expr 3",
-		src:  "(add (sub 3 2) 2)",
-		want: []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
-	}, {
-		name: "expr 4",
-		src:  "((a))",
-		want: []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
-	}, {
-		name: "expr 5",
-		src:  "(a)(b) (c)",
-		want: []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10},
+		name:  "expr 5",
+		input: "(a)(b) (c)",
+		want:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			if len(tc.want)%2 != 0 {
-				t.Fatalf("Tokenize() wants invalid result (cannot have odd length): %v", tc.want)
+			if !tc.wantErr && len(tc.want)%2 != 0 {
+				t.Fatalf("Tokenize(%q) wants invalid result (cannot have odd length when wantErr=true): %v", tc.name, tc.want)
 			}
-			got, gotErr := Tokenize(tc.src)
+			got, gotErr := Tokenize(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Tokenize() got diff (-want, +got):\n%s", diff)
+				t.Errorf("Tokenize(%q) got diff (-want, +got):\n%s", tc.input, diff)
 			}
 			if (gotErr == nil) == tc.wantErr {
-				t.Errorf("Tokenize() got err: %q, want err? %v", gotErr, tc.wantErr)
+				t.Errorf("Tokenize(%q) got err: %q, want err? %v", tc.input, gotErr, tc.wantErr)
 			}
 		})
 	}
