@@ -24,9 +24,9 @@ func StdPrinter(w io.Writer) *Printer {
 // Print the Node n.
 func (p *Printer) Print(n Node) {
 	var (
-		firstWrite bool
-		firstLit   bool
 		exprDepth  int
+		firstWrite = true
+		firstLit   = true
 		newLine    = fmt.Sprint(p.NewLine, p.Prefix)
 	)
 	var v Visitor

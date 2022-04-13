@@ -98,6 +98,10 @@ func TestTokenizeLit(t *testing.T) {
 "`,
 		want: []Pos{0, 3},
 	}, {
+		name:  "string (double escape)",
+		input: `"\\"`,
+		want:  []Pos{0, 4},
+	}, {
 		name:  "byte lit",
 		input: `"abc\x00\x11\xff"`,
 		want:  []Pos{0, 17},

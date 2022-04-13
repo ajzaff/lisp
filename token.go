@@ -176,7 +176,7 @@ func tokenString(s *tokenState) tokenFunc {
 func tokenEscape(s *tokenState) tokenFunc {
 	return func() tokenFunc {
 		switch r, size := s.advance(s.decode()); r {
-		case 'n', 't':
+		case 'n', 't', '\\':
 			return tokenString(s)
 		case 'x':
 			return tokenByteLit(s)
