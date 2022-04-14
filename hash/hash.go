@@ -6,39 +6,35 @@ import (
 	"github.com/ajzaff/innit"
 )
 
-// Hash the node using the given maphash.
-// Must call h.Reset() after each call.
-func Hash(h *maphash.Hash, n innit.Node) uint64 {
+// Node hashes the node using the given maphash.
+func Node(h *maphash.Hash, n innit.Node) {
 	var v innit.Visitor
 	first := true
-	v.SetBeforeExprVisitor(func(*innit.Expr) {
-		first = true
-		h.WriteByte('(')
-	})
-	v.SetAfterExprVisitor(func(*innit.Expr) { h.WriteByte(')') })
+	v.SetBeforeExprVisitor(func(*innit.Expr) { first = true; h.WriteByte('(') })
+	v.SetAfterExprVisitor(func(*innit.Expr) { first = true; h.WriteByte(')') })
 	v.SetLitVisitor(func(e *innit.Lit) {
-		if !first {
+		switch {
+		case first:
+			first = false
+			h.WriteString(e.Value)
+		default:
 			h.WriteByte(' ')
+			h.WriteString(e.Value)
 		}
-		first = false
-		h.WriteString(e.Value)
 	})
 	v.Visit(n)
-	return h.Sum64()
 }
 
 // Expr hashes e with the given maphash.
 // Can be more efficient when the type of node is known.
-func Expr(h *maphash.Hash, e *innit.Expr) uint64 {
+func Expr(h *maphash.Hash, e *innit.Expr) {
 	h.WriteByte('(')
-	Hash(h, e.X)
+	Node(h, e.X)
 	h.WriteByte(')')
-	return h.Sum64()
 }
 
 // Lit hashes e with the given maphash.
 // Can be more efficient when the type of node is known.
-func Lit(h *maphash.Hash, e *innit.Lit) uint64 {
+func Lit(h *maphash.Hash, e *innit.Lit) {
 	h.WriteString(e.Value)
-	return h.Sum64()
 }

@@ -14,6 +14,22 @@ func TestDistictHash(t *testing.T) {
 		input2       string
 		wantDistinct bool
 	}{{
+		name:   "id is independent of src pos",
+		input1: "a",
+		input2: "   a",
+	}, {
+		name:   "int is independent of src pos",
+		input1: "12",
+		input2: "   12",
+	}, {
+		name:   "float is independent of src pos",
+		input1: ".44",
+		input2: "   .44",
+	}, {
+		name:   "str is independent of src pos",
+		input1: `""`,
+		input2: `    ""`,
+	}, {
 		name:         "id and expr are distinct",
 		input1:       "a",
 		input2:       "(a)",
@@ -42,9 +58,11 @@ func TestDistictHash(t *testing.T) {
 			}
 
 			var h maphash.Hash
-			h1 := Hash(&h, n1)
+			Node(&h, n1)
+			h1 := h.Sum64()
 			h.Reset()
-			h2 := Hash(&h, n2)
+			Node(&h, n2)
+			h2 := h.Sum64()
 
 			if tc.wantDistinct && h1 == h2 {
 				t.Errorf("Hash(%q) == Hash(%q) but wanted distinct hashes", tc.input1, tc.input2)
