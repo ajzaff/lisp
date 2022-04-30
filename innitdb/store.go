@@ -56,8 +56,5 @@ func Store(s StoreInterface, n innit.Node, w float64) error {
 		t = append(t, entry)
 	})
 	v.Visit(n)
-	// for _, te := range t {
-	// 	fmt.Printf("%#v\n", te)
-	// }
 	return s.Store(t, w)
 }

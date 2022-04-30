@@ -1,7 +1,6 @@
 package innitdb
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/ajzaff/innit"
@@ -14,5 +13,5 @@ func TestInMemory(t *testing.T) {
 
 	Store(m, n, 1)
 
-	fmt.Printf("%v\n", m)
+	t.Logf("%v\n", m)
 }
