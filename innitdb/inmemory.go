@@ -9,32 +9,44 @@ import (
 )
 
 type InMemory struct {
-	nodes       map[uint64]innit.Node // node hash       => node
-	refs        map[uint64][]uint64   // expr hash       => child nodes
-	inverseRefs map[uint64]uint64     // child node hash => parent expr hash
+	nodes       map[ID]innit.Node // node hash       => node
+	refs        map[ID][]ID       // expr hash       => child nodes
+	inverseRefs map[ID]ID         // child node hash => parent expr hash
 
-	h  maphash.Hash
+	hs maphash.Seed
 	rw sync.RWMutex // guards struct
 }
 
 func NewInMemory() *InMemory {
 	return &InMemory{
-		nodes:       make(map[uint64]innit.Node),
-		refs:        make(map[uint64][]uint64),
-		inverseRefs: make(map[uint64]uint64),
+		nodes:       make(map[ID]innit.Node),
+		refs:        make(map[ID][]ID),
+		inverseRefs: make(map[ID]ID),
 	}
 }
 
-func (m *InMemory) Store(value innit.Node) (rootId uint64) {
+func (m *InMemory) Seed() maphash.Seed { return m.hs }
+
+func (m *InMemory) Load(id ID) innit.Node {
+	m.rw.RLock()
+	defer m.rw.RUnlock()
+
+	return m.nodes[id]
+}
+
+func (m *InMemory) Store(value innit.Node) (rootId ID) {
+	var stack []ID
+	first := true
+
+	var h maphash.Hash
+	h.SetSeed(m.Seed())
+
 	m.rw.Lock()
 	defer m.rw.Unlock()
 
-	var stack []uint64
-	first := true
-
 	var v innit.Visitor
 	v.SetBeforeExprVisitor(func(e *innit.Expr) {
-		id := hash.Expr(&m.h, e)
+		id := hash.Expr(&h, e)
 		if first {
 			rootId = id
 			first = false
@@ -50,7 +62,7 @@ func (m *InMemory) Store(value innit.Node) (rootId uint64) {
 		stack = stack[:len(stack)-1]
 	})
 	v.SetLitVisitor(func(e *innit.Lit) {
-		id := hash.Lit(&m.h, e)
+		id := hash.Lit(&h, e)
 		if first {
 			rootId = id
 			first = false
