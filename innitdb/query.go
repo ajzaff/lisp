@@ -8,6 +8,13 @@ import (
 	"github.com/ajzaff/innit/hash"
 )
 
+type QueryInterface interface {
+	InnitDB
+	LoadInterface
+	EachRef(ID, func(ID) bool)
+	EachInverseRef(ID, func(ID) bool)
+}
+
 type QueryResult struct {
 	matches [][]ID
 	elems   []string
@@ -40,7 +47,7 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 //	r := Query(db, "(?who is-on first)")
 //	r.EachMatch(...)
 //	// []ID{834583485} // "who"
-func Query(db InnitDB, q string) *QueryResult {
+func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
 	qn, err := innit.Parse(q)
 	if err != nil {

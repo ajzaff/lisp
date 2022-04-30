@@ -72,31 +72,51 @@ func main() {
 	case "db":
 		db := innitdb.NewInMemory()
 		innitdb.Store(db, n, 1)
+		refs := make(map[innitdb.ID]struct {
+			innit.Node
+			Fc float64
+		})
 		var h maphash.Hash
 		h.SetSeed(db.Seed())
-		hash.Node(&h, n)
-		rootId := h.Sum64()
-		var visited []uint64
-		frontier := []uint64{rootId}
-		for len(frontier) > 0 {
-			id := frontier[0]
-			visited = append(visited, id)
-			frontier = frontier[1:]
-			db.EachRef(id, func(childId innitdb.ID) bool {
-				frontier = append(frontier, childId)
+		if nl, ok := n.(innit.NodeList); ok {
+			for _, n := range nl {
+				h.Reset()
+				hash.Node(&h, n)
+				id := h.Sum64()
+				fc := innitdb.Load(db, n)
+				refs[id] = struct {
+					innit.Node
+					Fc float64
+				}{n, fc}
+			}
+		} else {
+			hash.Node(&h, n)
+			id := h.Sum64()
+			fc := innitdb.Load(db, n)
+			refs[id] = struct {
+				innit.Node
+				Fc float64
+			}{n, fc}
+		}
+		for id := range refs {
+			db.EachRef(id, func(id innitdb.ID) bool {
+				n, fc := db.Load(id)
+				refs[id] = struct {
+					innit.Node
+					Fc float64
+				}{n, fc}
 				return true
 			})
 		}
-		printed := make(map[uint64]bool)
-		for _, id := range visited {
-			if printed[id] {
+		visited := make(map[innitdb.ID]bool)
+		for id, e := range refs {
+			if visited[id] {
 				continue
 			}
-			printed[id] = true
+			visited[id] = true
 			fmt.Printf("%d\t", id)
-			fmt.Println()
-			// n := innitdb.Load(db, id)
-			// innit.StdPrinter(os.Stdout).Print(n)
+			fmt.Printf("%f\t", e.Fc)
+			innit.StdPrinter(os.Stdout).Print(e.Node)
 		}
 	default:
 		log.Fatalf("unexpected -print mode: %v", *print)

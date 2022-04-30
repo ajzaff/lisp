@@ -11,19 +11,17 @@ type ID = uint64
 
 type InnitDB interface {
 	Seed() maphash.Seed
-	Store(innit.Node, float64) ID
+}
+
+type LoadInterface interface {
+	InnitDB
 	Load(ID) (innit.Node, float64)
-	EachRef(ID, func(ID) bool)
-	EachInverseRef(ID, func(ID) bool)
 }
 
-func Store(db InnitDB, n innit.Node, w float64) ID {
-	return db.Store(n, w)
-}
-
-func Load(db InnitDB, n innit.Node) (innit.Node, float64) {
+func Load(db LoadInterface, n innit.Node) float64 {
 	var h maphash.Hash
 	h.SetSeed(db.Seed())
 	hash.Node(&h, n)
-	return db.Load(h.Sum64())
+	_, w := db.Load(h.Sum64())
+	return w
 }

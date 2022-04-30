@@ -4,11 +4,12 @@ import "errors"
 
 // Visitor implements a Node visitor.
 type Visitor struct {
-	unknownFn    func(Node)
-	beforeNodeFn func(Node)
-	afterNodeFn  func(Node)
-	nodeListFn   func(NodeList)
-	litFn        func(*Lit)
+	unknownFn        func(Node)
+	beforeNodeFn     func(Node)
+	afterNodeFn      func(Node)
+	beforeNodeListFn func(NodeList)
+	afterNodeListFn  func(NodeList)
+	litFn            func(*Lit)
 
 	beforeExprFn func(*Expr)
 	afterExprFn  func(*Expr)
@@ -32,8 +33,13 @@ func (v *Visitor) SetAfterNodeVisitor(fn func(Node)) {
 }
 
 // SetNodeListVisitor sets the visitor called on every *NodeList.
-func (v *Visitor) SetNodeListVisitor(fn func(NodeList)) {
-	v.nodeListFn = fn
+func (v *Visitor) SetBeforeNodeListVisitor(fn func(NodeList)) {
+	v.beforeNodeListFn = fn
+}
+
+// SetNodeListVisitor sets the visitor called on every *NodeList.
+func (v *Visitor) SetAfterNodeListVisitor(fn func(NodeList)) {
+	v.afterNodeListFn = fn
 }
 
 // SetLitVisitor sets the visitor called on every *Lit.
@@ -102,9 +108,17 @@ func (v *Visitor) callAfterNodeFn(e Node) bool {
 	return false
 }
 
-func (v *Visitor) callNodeListFn(e NodeList) bool {
-	if v.nodeListFn != nil {
-		v.nodeListFn(e)
+func (v *Visitor) callBeforeNodeListFn(e NodeList) bool {
+	if v.beforeNodeListFn != nil {
+		v.beforeNodeListFn(e)
+		return true
+	}
+	return false
+}
+
+func (v *Visitor) callAfterNodeListFn(e NodeList) bool {
+	if v.afterNodeListFn != nil {
+		v.afterNodeListFn(e)
 		return true
 	}
 	return false
@@ -162,7 +176,7 @@ func (v *Visitor) Visit(node Node) {
 			return
 		}
 	case NodeList:
-		if v.callNodeListFn(n) && v.hasErr() {
+		if v.callBeforeNodeListFn(n) && v.hasErr() {
 			v.clearSkipErr()
 			return
 		}
@@ -174,6 +188,10 @@ func (v *Visitor) Visit(node Node) {
 				}
 				return
 			}
+		}
+		if v.callAfterNodeListFn(n) && v.hasErr() {
+			v.clearSkipErr()
+			return
 		}
 	default: // unknown
 		if v.callUnknownNodeFn(n) && v.hasErr() {

@@ -9,6 +9,8 @@ import (
 type Printer struct {
 	io.Writer
 
+	Nil string
+
 	Prefix, Indent, NewLine string
 }
 
@@ -16,6 +18,7 @@ type Printer struct {
 func StdPrinter(w io.Writer) *Printer {
 	return &Printer{
 		Writer:  w,
+		Nil:     "<nil>",
 		Indent:  "  ",
 		NewLine: "\n",
 	}
@@ -23,6 +26,10 @@ func StdPrinter(w io.Writer) *Printer {
 
 // Print the Node n.
 func (p *Printer) Print(n Node) {
+	if n == nil {
+		p.Write([]byte(p.Nil))
+		return
+	}
 	var (
 		exprDepth  int
 		firstWrite = true

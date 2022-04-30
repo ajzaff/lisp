@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/ajzaff/innit"
-	"github.com/ajzaff/innit/hash"
 )
 
 type inMemoryEntry struct {
@@ -38,61 +37,25 @@ func (m *InMemory) Load(id ID) (innit.Node, float64) {
 	defer m.rw.RUnlock()
 
 	e := m.entries[id]
+	if e == nil {
+		return nil, 0
+	}
 	return e.Node, e.Weight
 }
 
-func (m *InMemory) Store(value innit.Node, weight float64) (rootId ID) {
-	var stack []ID
-	first := true
-
-	var h maphash.Hash
-	h.SetSeed(m.Seed())
-
+func (m *InMemory) Store(t []*TNode, w float64) error {
 	m.rw.Lock()
 	defer m.rw.Unlock()
-
-	var v innit.Visitor
-	v.SetBeforeExprVisitor(func(e *innit.Expr) {
-		h.Reset()
-		hash.Expr(&h, e)
-		id := h.Sum64()
-		if first {
-			rootId = id
-			first = false
-		}
-		if entry, ok := m.entries[id]; ok {
-			entry.Weight += weight
+	for _, te := range t {
+		if e, ok := m.entries[te.ID]; ok {
+			e.Weight += w
 		} else {
-			m.entries[id] = &inMemoryEntry{Node: e, Weight: weight}
+			m.entries[te.ID] = &inMemoryEntry{Node: te.Node, Weight: w}
 		}
-		for _, parentId := range stack {
-			m.refs[parentId] = append(m.refs[parentId], id)
-			m.inverseRefs[id] = append(m.inverseRefs[id], parentId)
-		}
-		stack = append(stack, id)
-	})
-	v.SetAfterExprVisitor(func(e *innit.Expr) {
-		stack = stack[:len(stack)-1]
-	})
-	v.SetLitVisitor(func(e *innit.Lit) {
-		h.Reset()
-		hash.Lit(&h, e)
-		id := h.Sum64()
-		if first {
-			rootId = id
-			first = false
-		}
-		if entry, ok := m.entries[id]; ok {
-			entry.Weight += weight
-		} else {
-			m.entries[id] = &inMemoryEntry{Node: e, Weight: weight}
-		}
-		for _, parentId := range stack {
-			m.refs[parentId] = append(m.refs[parentId], id)
-			m.inverseRefs[id] = append(m.inverseRefs[id], parentId)
-		}
-	})
-	return rootId
+		m.refs[te.ID] = append(m.refs[te.ID], te.Refs...)
+		m.inverseRefs[te.ID] = append(m.inverseRefs[te.ID], te.InverseRefs...)
+	}
+	return nil
 }
 
 func (m *InMemory) EachRef(root ID, fn func(ID) bool) {
