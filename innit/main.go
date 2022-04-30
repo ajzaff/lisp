@@ -82,8 +82,9 @@ func main() {
 			id := frontier[0]
 			visited = append(visited, id)
 			frontier = frontier[1:]
-			db.EachRef(id, func(childId uint64) {
+			db.EachRef(id, func(childId innitdb.ID) bool {
 				frontier = append(frontier, childId)
+				return true
 			})
 		}
 		printed := make(map[uint64]bool)
