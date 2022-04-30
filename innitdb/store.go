@@ -13,6 +13,7 @@ type StoreInterface interface {
 }
 
 type Transaction struct {
+	Fc    int
 	Nodes []TransactionNode
 }
 
@@ -31,6 +32,7 @@ func Store(s StoreInterface, n innit.Node, fc int) (rootId uint64, err error) {
 		v     innit.Visitor
 		first = true
 	)
+	t.Fc = fc
 	h.SetSeed(s.Seed())
 
 	v.SetBeforeExprVisitor(func(e *innit.Expr) {

@@ -36,6 +36,7 @@ func (m *InMemory) Store(t Transaction) error {
 	defer m.rw.Unlock()
 
 	for _, n := range t.Nodes {
+		m.fd[n.Id] += t.Fc
 		m.nodes[n.Id] = n.Node
 		refs, ok := m.refs[n.Id]
 		if !ok {
