@@ -8,10 +8,15 @@ import (
 	"github.com/ajzaff/innit/hash"
 )
 
+type inMemoryEntry struct {
+	innit.Node
+	Weight float64
+}
+
 type InMemory struct {
-	nodes       map[ID]innit.Node // node hash       => node
-	refs        map[ID][]ID       // expr hash       => child nodes
-	inverseRefs map[ID]ID         // child node hash => parent expr hash
+	entries     map[ID]*inMemoryEntry // node hash       => node
+	refs        map[ID][]ID           // expr hash       => child nodes
+	inverseRefs map[ID][]ID           // child node hash => parent expr hash
 
 	hs maphash.Seed
 	rw sync.RWMutex // guards struct
@@ -19,22 +24,23 @@ type InMemory struct {
 
 func NewInMemory() *InMemory {
 	return &InMemory{
-		nodes:       make(map[ID]innit.Node),
+		entries:     make(map[ID]*inMemoryEntry),
 		refs:        make(map[ID][]ID),
-		inverseRefs: make(map[ID]ID),
+		inverseRefs: make(map[ID][]ID),
 	}
 }
 
 func (m *InMemory) Seed() maphash.Seed { return m.hs }
 
-func (m *InMemory) Load(id ID) innit.Node {
+func (m *InMemory) Load(id ID) (innit.Node, float64) {
 	m.rw.RLock()
 	defer m.rw.RUnlock()
 
-	return m.nodes[id]
+	e := m.entries[id]
+	return e.Node, e.Weight
 }
 
-func (m *InMemory) Store(value innit.Node) (rootId ID) {
+func (m *InMemory) Store(value innit.Node, weight float64) (rootId ID) {
 	var stack []ID
 	first := true
 
@@ -51,10 +57,14 @@ func (m *InMemory) Store(value innit.Node) (rootId ID) {
 			rootId = id
 			first = false
 		}
-		m.nodes[id] = e
+		if entry, ok := m.entries[id]; ok {
+			entry.Weight += weight
+		} else {
+			m.entries[id] = &inMemoryEntry{Node: e, Weight: weight}
+		}
 		for _, parentId := range stack {
 			m.refs[parentId] = append(m.refs[parentId], id)
-			m.inverseRefs[id] = parentId
+			m.inverseRefs[id] = append(m.inverseRefs[id], parentId)
 		}
 		stack = append(stack, id)
 	})
@@ -67,12 +77,32 @@ func (m *InMemory) Store(value innit.Node) (rootId ID) {
 			rootId = id
 			first = false
 		}
-		m.nodes[id] = e
+		if entry, ok := m.entries[id]; ok {
+			entry.Weight += weight
+		} else {
+			m.entries[id] = &inMemoryEntry{Node: e, Weight: weight}
+		}
 		for _, parentId := range stack {
 			m.refs[parentId] = append(m.refs[parentId], id)
-			m.inverseRefs[id] = parentId
+			m.inverseRefs[id] = append(m.inverseRefs[id], parentId)
 		}
 	})
 	v.Visit(value)
 	return rootId
+}
+
+func (m *InMemory) EachRef(root ID, fn func(ID) bool) {
+	for _, r := range m.refs[root] {
+		if !fn(r) {
+			return
+		}
+	}
+}
+
+func (m *InMemory) EachInverseRef(root ID, fn func(ID) bool) {
+	for _, r := range m.inverseRefs[root] {
+		if !fn(r) {
+			return
+		}
+	}
 }

@@ -49,7 +49,7 @@ func Query(db InnitDB, q string) *QueryResult {
 	var h maphash.Hash
 	h.SetSeed(db.Seed())
 	qh := hash.Hash(&h, qn)
-	if v := db.Load(qh); v != nil {
+	if v, _ := db.Load(qh); v != nil {
 		// Exact match.
 		r.matches = [][]ID{{qh}}
 		return &r
