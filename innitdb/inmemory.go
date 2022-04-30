@@ -27,6 +27,7 @@ func NewInMemory() *InMemory {
 		entries:     make(map[ID]*inMemoryEntry),
 		refs:        make(map[ID][]ID),
 		inverseRefs: make(map[ID][]ID),
+		hs:          maphash.MakeSeed(),
 	}
 }
 
