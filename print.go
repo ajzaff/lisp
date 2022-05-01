@@ -25,7 +25,7 @@ func StdPrinter(w io.Writer) *Printer {
 }
 
 // Print the Node n.
-func (p *Printer) Print(n Node) {
+func (p *Printer) Print(n Val) {
 	if n == nil {
 		p.Write([]byte(p.Nil))
 		return
@@ -37,7 +37,7 @@ func (p *Printer) Print(n Node) {
 		newLine    = fmt.Sprint(p.NewLine, p.Prefix)
 	)
 	var v Visitor
-	v.SetBeforeExprVisitor(func(e *Expr) {
+	v.SetBeforeExprVisitor(func(e Expr) {
 		if !firstWrite {
 			fmt.Fprint(p.Writer, p.Prefix)
 			firstWrite = true
@@ -46,7 +46,7 @@ func (p *Printer) Print(n Node) {
 		firstLit = false
 		exprDepth++
 	})
-	v.SetAfterExprVisitor(func(e *Expr) {
+	v.SetAfterExprVisitor(func(e Expr) {
 		exprDepth--
 		fmt.Fprint(p.Writer, ")")
 		if exprDepth == 0 {
@@ -54,21 +54,20 @@ func (p *Printer) Print(n Node) {
 		}
 		firstLit = false
 	})
-	v.SetLitVisitor(func(e *Lit) {
+	v.SetLitVisitor(func(e Lit) {
 		if !firstWrite {
 			fmt.Fprint(p.Writer, p.Prefix)
 			firstWrite = true
 		}
 		if exprDepth == 0 {
-			fmt.Fprint(p.Writer, e.Value, newLine)
+			fmt.Fprint(p.Writer, e.String(), newLine)
 			return
 		}
 		if firstLit {
 			fmt.Fprint(p.Writer, " ")
 		}
 		firstLit = true
-		fmt.Fprint(p.Writer, e.Value)
+		fmt.Fprint(p.Writer, e.String())
 	})
-
 	v.Visit(n)
 }

@@ -15,13 +15,13 @@ type InnitDB interface {
 
 type LoadInterface interface {
 	InnitDB
-	Load(ID) (innit.Node, float64)
+	Load(ID) (innit.Val, float64)
 }
 
-func Load(db LoadInterface, n innit.Node) float64 {
+func Load(db LoadInterface, v innit.Val) float64 {
 	var h maphash.Hash
 	h.SetSeed(db.Seed())
-	hash.Node(&h, n)
+	hash.Val(&h, v)
 	_, w := db.Load(h.Sum64())
 	return w
 }

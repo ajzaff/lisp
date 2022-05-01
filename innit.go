@@ -4,6 +4,8 @@
 // It supports basic identifiers, numbers, strings, and expressions.
 package innit
 
+import "strconv"
+
 // Pos defines a position in the slice of code runes.
 type Pos int
 
@@ -11,48 +13,77 @@ type Pos int
 const NoPos = -1
 
 // Node is an interface for AST nodes which have a start and end position.
+//
+// Only allowed types are *LitNode and *ExprNode.
 type Node interface {
 	Pos() Pos
+	Val() Val
 	End() Pos
 }
 
-// Lit is a basic literal node.
+// Val is an interface for Innit Values.
 //
-// Lit can hold any token value. See token.go for more details.
-type Lit struct {
-	Tok      Token
-	ValuePos Pos
-	Value    string
+// Only allowed types are Lit and Expr.
+type Val interface {
+	val()
 }
 
-// Expr defines a NodeList enclosed by parens.
-type Expr struct {
+// LitNode is a basic literal node.
+type LitNode struct {
+	LitPos Pos
+	Lit
+	EndPos Pos
+}
+
+// ExprNode is a Expr enclosed by parens.
+type ExprNode struct {
 	LParen Pos
-	X      NodeList
+	Expr
 	RParen Pos
 }
 
-func (x *Lit) Pos() Pos  { return x.ValuePos }
-func (x *Lit) End() Pos  { return x.ValuePos + Pos(len(x.Value)) }
-func (x *Expr) Pos() Pos { return x.LParen }
-func (x *Expr) End() Pos { return x.RParen + 1 }
+func (x *LitNode) Pos() Pos  { return x.LitPos }
+func (x *LitNode) Val() Val  { return x.Lit }
+func (x *LitNode) End() Pos  { return x.EndPos }
+func (x *ExprNode) Pos() Pos { return x.LParen }
+func (x *ExprNode) Val() Val { return x.Expr }
+func (x *ExprNode) End() Pos { return x.RParen + 1 }
 
-// NodeList defines a slice of nodes.
+// Lit is an interface for basic literals.
 //
-// The start and end positions correspond to the start and end positions
-// of the first and last nodes respectively, otherwise, NoPos is used.
-type NodeList []Node
-
-func (x NodeList) Pos() Pos {
-	if len(x) > 0 {
-		return x[0].Pos()
-	}
-	return NoPos
+// Only allowed values are IdLit, IntLit, FloatLit, StringLit.
+type Lit interface {
+	Val
+	lit()
+	String() string
 }
 
-func (x NodeList) End() Pos {
-	if n := len(x); n > 0 {
-		return x[n-1].End()
-	}
-	return NoPos
-}
+// Lit is a basic Id literal.
+type IdLit string
+
+// IntLit is a basic int literal.
+type IntLit int64
+
+// IntLit is a basic int literal.
+type FloatLit float64
+
+// SringLit is a basic string literal.
+type StringLit string
+
+func (IdLit) lit()                 {}
+func (IntLit) lit()                {}
+func (FloatLit) lit()              {}
+func (StringLit) lit()             {}
+func (IdLit) val()                 {}
+func (IntLit) val()                {}
+func (FloatLit) val()              {}
+func (StringLit) val()             {}
+func (x IdLit) String() string     { return string(x) }
+func (x IntLit) String() string    { return strconv.FormatInt(int64(x), 10) }
+func (x FloatLit) String() string  { return strconv.FormatFloat(float64(x), 'f', -1, 64) }
+func (x StringLit) String() string { return string(x) }
+
+// Expr is a slice of compound Nodes.
+type Expr []Node
+
+func (Expr) val() {}

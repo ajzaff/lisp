@@ -58,10 +58,10 @@ func TestDistictHash(t *testing.T) {
 			}
 
 			var h maphash.Hash
-			Node(&h, n1)
+			Val(&h, n1[0].Val())
 			h1 := h.Sum64()
 			h.Reset()
-			Node(&h, n2)
+			Val(&h, n2[0].Val())
 			h2 := h.Sum64()
 
 			if tc.wantDistinct && h1 == h2 {

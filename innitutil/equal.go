@@ -4,16 +4,17 @@ import (
 	"github.com/ajzaff/innit"
 )
 
-func Equal(a, b innit.Node) bool {
-	switch aa := a.(type) {
-	case *innit.Expr:
-		switch bb := b.(type) {
-		case *innit.Expr:
-			if len(aa.X) != len(bb.X) {
+// FIXME
+func Equal(a, b innit.Val) bool {
+	switch a := a.(type) {
+	case innit.Expr:
+		switch b := b.(type) {
+		case innit.Expr:
+			if len(a) != len(b) {
 				return false
 			}
-			for i := range aa.X {
-				if !Equal(aa.X[i], bb.X[i]) {
+			for i := range a {
+				if !Equal(a[i].Val(), b[i].Val()) {
 					return false
 				}
 			}
@@ -21,34 +22,14 @@ func Equal(a, b innit.Node) bool {
 		default:
 			return false
 		}
-	case *innit.Lit:
-		switch bb := b.(type) {
-		case *innit.Lit:
-			return aa.Tok == bb.Tok && aa.Value == bb.Value
-		default:
-			return false
-		}
-	case innit.NodeList:
-		switch bb := b.(type) {
-		case innit.NodeList:
-			if len(aa) != len(bb) {
-				return false
-			}
-			for i := range aa {
-				if !Equal(aa[i], bb[i]) {
-					return false
-				}
-			}
-			return true
+	case innit.Lit:
+		switch b := b.(type) {
+		case innit.Lit:
+			return a.String() == b.String()
 		default:
 			return false
 		}
 	default: // other
-		switch b.(type) {
-		case *innit.Lit, innit.NodeList, *innit.Expr:
-			return false
-		default: // other
-			return true
-		}
+		panic("equal not supported")
 	}
 }

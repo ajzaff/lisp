@@ -9,46 +9,46 @@ import (
 
 type StoreInterface interface {
 	InnitDB
-	Store([]*TNode, float64) error
+	Store([]*TVal, float64) error
 }
 
-type TNode struct {
+type TVal struct {
 	ID
-	innit.Node
+	innit.Val
 	Refs        []uint64
 	InverseRefs []uint64
 }
 
-func Store(s StoreInterface, n innit.Node, w float64) error {
+func Store(s StoreInterface, n innit.Val, w float64) error {
 	var (
-		stack []*TNode
-		t     []*TNode
+		stack []*TVal
+		t     []*TVal
 		h     maphash.Hash
 		v     innit.Visitor
 	)
 	h.SetSeed(s.Seed())
 
-	v.SetBeforeExprVisitor(func(e *innit.Expr) {
+	v.SetBeforeExprVisitor(func(e innit.Expr) {
 		h.Reset()
 		hash.Expr(&h, e)
 		id := h.Sum64()
-		entry := &TNode{ID: id, Node: e}
+		entry := &TVal{ID: id, Val: e}
 		for _, parent := range stack {
 			parent.Refs = append(parent.Refs, id)
 			entry.InverseRefs = append(entry.InverseRefs, parent.ID)
 		}
 		stack = append(stack, entry)
 	})
-	v.SetAfterExprVisitor(func(e *innit.Expr) {
+	v.SetAfterExprVisitor(func(e innit.Expr) {
 		entry := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		t = append(t, entry)
 	})
-	v.SetLitVisitor(func(e *innit.Lit) {
+	v.SetLitVisitor(func(e innit.Lit) {
 		h.Reset()
 		hash.Lit(&h, e)
 		id := h.Sum64()
-		entry := &TNode{ID: id, Node: e}
+		entry := &TVal{ID: id, Val: e}
 		for _, parent := range stack {
 			parent.Refs = append(parent.Refs, id)
 			entry.InverseRefs = append(entry.InverseRefs, parent.ID)

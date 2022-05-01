@@ -7,66 +7,47 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type unknownNode struct{}
+type unknownVal struct{}
 
-func (unknownNode) Pos() Pos { return NoPos }
-func (unknownNode) End() Pos { return NoPos }
+func (unknownVal) val() {}
 
 func TestStdPrint(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
-		input Node
+		input Val
 		want  string
 	}{{
 		name: "empty",
+		want: "<nil>",
 	}, {
 		name:  "unknown node",
-		input: unknownNode{},
+		input: unknownVal{},
 	}, {
 		name:  "lit",
-		input: &Lit{Tok: Id, Value: "hello"},
+		input: IdLit("hello"),
 		want:  "hello\n",
 	}, {
 		name:  "expr",
-		input: &Expr{X: NodeList{&Lit{Tok: Id, Value: "x"}}},
+		input: Expr{&LitNode{Lit: IdLit("x")}},
 		want:  "(x)\n",
 	}, {
-		name: "expr",
-		input: &Expr{X: NodeList{
-			&Lit{Tok: Id, Value: "x"},
-			&Lit{Tok: Id, Value: "y"},
-			&Lit{Tok: Id, Value: "z"},
-		}},
+		name: "expr3",
+		input: Expr{
+			&LitNode{Lit: IdLit("x")},
+			&LitNode{Lit: IdLit("y")},
+			&LitNode{Lit: IdLit("z")},
+		},
 		want: "(x y z)\n",
 	}, {
 		name: "nested expr",
-		input: &Expr{X: NodeList{
-			&Lit{Tok: Id, Value: "x"},
-			&Expr{X: NodeList{&Lit{Tok: Id, Value: "y"}}},
-			&Lit{Tok: Id, Value: "z"},
-		}},
-		want: "(x (y) z)\n",
-	}, {
-		name: "node list",
-		input: NodeList{
-			&Expr{X: NodeList{&Lit{Tok: Id, Value: "x"}}},
-			&Expr{X: NodeList{&Lit{Tok: Id, Value: "y"}}},
-			&Expr{X: NodeList{&Lit{Tok: Id, Value: "z"}}},
+		input: Expr{
+			&LitNode{Lit: IdLit("x")},
+			&ExprNode{Expr: Expr{&LitNode{Lit: IdLit("y")}}},
+			&LitNode{Lit: IdLit("z")},
 		},
-		want: "(x)\n(y)\n(z)\n",
-	}, {
-		name: "weird nested list",
-		input: NodeList{
-			NodeList{
-				&Lit{Tok: String, Value: `"str1"`},
-				&Lit{Tok: String, Value: `"str2"`},
-			},
-			&Lit{Tok: String, Value: `"str3"`},
-		},
-		want: "\"str1\"\n\"str2\"\n\"str3\"\n",
+		want: "(x(y)z)\n",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			var sb strings.Builder
 			StdPrinter(&sb).Print(tc.input)
 			got := sb.String()

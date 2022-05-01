@@ -22,35 +22,42 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w}
 }
 
-func (e *Encoder) Encode(n innit.Node) error {
-	b := make([]byte, EncodedLen(n))
-	encode(n, b)
+func (e *Encoder) Encode(v innit.Val) error {
+	b := make([]byte, EncodedLen(v))
+	encode(v, b)
 	_, err := e.Writer.Write(b)
 	return err
 }
 
-func encode(n innit.Node, b []byte) int {
-	switch x := n.(type) {
-	case *innit.Lit:
+func encode(v innit.Val, b []byte) int {
+	switch v := v.(type) {
+	case innit.Lit:
 		b[0] = lit
-		b[1] = byte(x.Tok)
-		if x.Tok == innit.String {
-			i := copy(b[2:], x.Value[1:len(x.Value)-1])
+		var i int
+		switch v := v.(type) {
+		case innit.IdLit:
+			b[1] = byte(innit.Id)
+		case innit.IntLit:
+			b[1] = byte(innit.Int)
+		case innit.FloatLit:
+			b[1] = byte(innit.Float)
+		case innit.StringLit:
+			b[1] = byte(innit.String)
+			s := v.String()
+			i = copy(b[2:], s[1:len(s)-1])
 			return 2 + i
 		}
-		i := copy(b[2:], x.Value)
+		i = copy(b[2:], []byte(v.String()))
 		return 2 + i
-	case *innit.Expr:
+	case innit.Expr:
 		b[0] = expr
-		return 1 + encode(x.X, b[1:])
-	case innit.NodeList:
 		size := 0
-		for _, e := range x {
-			size += EncodedLen(e)
+		for _, e := range v {
+			size += EncodedLen(e.Val())
 		}
 		i := binary.PutUvarint(b, uint64(size))
-		for _, e := range x {
-			i += encode(e, b[i:])
+		for _, e := range v {
+			i += encode(e.Val(), b[i:])
 		}
 		return i
 	default:
@@ -59,35 +66,33 @@ func encode(n innit.Node, b []byte) int {
 }
 
 // EncodedLen returns the encoded length of the node in bytes.
-func EncodedLen(n innit.Node) int {
+func EncodedLen(n innit.Val) int {
 	if n == nil {
 		return 0
 	}
 	switch x := n.(type) {
-	case *innit.Lit:
-		n := valLen(x.Tok, x.Value)
-		return 1 + tokLen(x.Tok) + varIntLen(uint64(n)) + n
-	case *innit.Expr:
-		return 1 + EncodedLen(x.X)
-	case innit.NodeList:
-		size := 0
+	case innit.Lit:
+		n := litLen(x)
+		return 1 + 1 + varIntLen(uint64(n)) + n
+	case innit.Expr:
+		size := 1
 		for _, e := range x {
-			size += EncodedLen(e)
+			size += EncodedLen(e.Val())
 		}
 		return varIntLen(uint64(size)) + size
 	default:
-		panic("Unexpected node type")
+		panic("Unexpected Val type")
 	}
 }
 
 func tokLen(innit.Token) int { return 1 }
 
-func valLen(t innit.Token, val string) int {
-	switch t {
-	case innit.Id, innit.Int, innit.Float:
-		return len(val)
-	case innit.String:
-		return len(val) - 2
+func litLen(v innit.Lit) int {
+	switch v.(type) {
+	case innit.IdLit, innit.IntLit, innit.FloatLit:
+		return len(v.String())
+	case innit.StringLit:
+		return len(v.String()) - 2
 	default:
 		panic("unexpected token")
 	}

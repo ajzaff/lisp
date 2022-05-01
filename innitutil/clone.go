@@ -8,44 +8,56 @@ func Clone(n innit.Node) innit.Node {
 	}
 	var out innit.Node
 	switch x := n.(type) {
-	case *innit.Lit:
-		out = CloneLit(x)
-	case *innit.Expr:
-		out = CloneExpr(x)
-	case innit.NodeList:
-		out = CloneNodeList(x)
+	case *innit.LitNode:
+		out = CloneLitNode(x)
+	case *innit.ExprNode:
+		out = CloneExprNode(x)
 	default:
 		panic("clone not supported")
 	}
 	return out
 }
 
-func CloneExpr(e *innit.Expr) *innit.Expr {
+func CloneExprNode(e *innit.ExprNode) *innit.ExprNode {
 	if e == nil {
 		return nil
 	}
-	out := new(innit.Expr)
+	out := new(innit.ExprNode)
 	*out = *e
-	out.X = CloneNodeList(e.X)
+	out.Expr = CloneExpr(e.Expr)
 	return out
 }
 
-func CloneNodeList(e innit.NodeList) innit.NodeList {
+func CloneExpr(e innit.Expr) innit.Expr {
 	if e == nil {
 		return nil
 	}
-	out := make(innit.NodeList, len(e))
+	out := make(innit.Expr, len(e))
 	for i := range out {
 		out[i] = Clone(e[i])
 	}
 	return out
 }
 
-func CloneLit(e *innit.Lit) *innit.Lit {
+func CloneLitNode(e *innit.LitNode) *innit.LitNode {
 	if e == nil {
 		return nil
 	}
-	out := new(innit.Lit)
+	out := new(innit.LitNode)
 	*out = *e
+	out.Lit = CloneLit(e.Lit)
 	return out
+}
+
+func CloneLit(e innit.Lit) innit.Lit {
+	switch e := e.(type) {
+	case innit.IdLit:
+		return e[:]
+	case innit.StringLit:
+		return e[:]
+	case innit.IntLit, innit.FloatLit:
+		return e
+	default:
+		panic("clone not supported")
+	}
 }

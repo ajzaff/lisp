@@ -2,10 +2,11 @@ package innit
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
-func Parse(src string) (Node, error) {
+func Parse(src string) ([]Node, error) {
 	tokens, err := Tokenize(src)
 	if err != nil {
 		return nil, err
@@ -13,15 +14,15 @@ func Parse(src string) (Node, error) {
 	return parseTokens(src, tokens)
 }
 
-func parseTokens(src string, tokens []Pos) (Node, error) {
-	var out NodeList
-	var stack []*Expr
+func parseTokens(src string, tokens []Pos) ([]Node, error) {
+	var out []Node
+	var stack []*ExprNode
 	for i := 0; i < len(tokens); i += 2 {
 		pos, end := tokens[i], tokens[i+1]
 		tok := string(src[pos:end])
 		switch {
 		case tok == "(":
-			stack = append(stack, &Expr{LParen: pos})
+			stack = append(stack, &ExprNode{LParen: pos})
 		case tok == ")":
 			if len(stack) == 0 {
 				return nil, fmt.Errorf("innit.Parse: internal error: unexpected ')' at pos %d", pos)
@@ -30,41 +31,50 @@ func parseTokens(src string, tokens []Pos) (Node, error) {
 			if len(stack) == 1 {
 				out = append(out, stack[0])
 			} else {
-				stack[len(stack)-2].X = append(stack[len(stack)-2].X, stack[len(stack)-1])
+				stack[len(stack)-2].Expr = append(stack[len(stack)-2].Expr, stack[len(stack)-1])
 			}
 			stack = stack[:len(stack)-1]
 		case strings.HasPrefix(tok, `"`):
-			lit := &Lit{
-				Tok:      String,
-				ValuePos: Pos(i),
-				Value:    tok,
+			lit := &LitNode{
+				LitPos: Pos(i),
+				Lit:    StringLit(tok),
 			}
 			if len(stack) == 0 {
 				out = append(out, lit)
 			} else {
-				stack[len(stack)-1].X = append(stack[len(stack)-1].X, lit)
+				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
 			}
 		case (tok[0] == '.' && len(tok) > 1) || tok[0] >= '0' && tok[0] <= '9':
-			lit := &Lit{
-				ValuePos: Pos(i),
-				Value:    tok,
+			lit := &LitNode{
+				LitPos: Pos(i),
 			}
 			if strings.ContainsRune(tok, '.') {
-				lit.Tok = Float
+				x, err := strconv.ParseFloat(tok, 64)
+				if err != nil {
+					return nil, err
+				}
+				lit.Lit = FloatLit(x)
 			} else {
-				lit.Tok = Int
+				x, err := strconv.ParseInt(tok, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				lit.Lit = IntLit(x)
 			}
 			if len(stack) == 0 {
 				out = append(out, lit)
 			} else {
-				stack[len(stack)-1].X = append(stack[len(stack)-1].X, lit)
+				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
 			}
 		default:
-			id := &Lit{Tok: Id, ValuePos: Pos(i), Value: tok}
+			id := &LitNode{
+				LitPos: Pos(i),
+				Lit:    IdLit(tok),
+			}
 			if len(stack) == 0 {
 				out = append(out, id)
 			} else {
-				stack[len(stack)-1].X = append(stack[len(stack)-1].X, id)
+				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, id)
 			}
 		}
 	}
@@ -75,9 +85,6 @@ func parseTokens(src string, tokens []Pos) (Node, error) {
 			err = fmt.Errorf("%v: at %q", err, string(src[pos:end]))
 		}
 		return nil, err
-	}
-	if len(out) == 1 {
-		return out[0], nil
 	}
 	return out, nil
 }

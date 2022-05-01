@@ -34,14 +34,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	n, err := innit.Parse(string(src))
+	ns, err := innit.Parse(string(src))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	switch *print {
 	case "": // std
-		innit.StdPrinter(os.Stdout).Print(n)
+		for _, n := range ns {
+			innit.StdPrinter(os.Stdout).Print(n.Val())
+		}
 	case "tok":
 		tokens, err := innit.Tokenize(string(src))
 		if err != nil {
@@ -53,7 +55,7 @@ func main() {
 		}
 	case "ast":
 		var v innit.Visitor
-		exprVisitor := func(e *innit.Expr) {
+		exprVisitor := func(e innit.Expr) {
 			var sb strings.Builder
 			innit.StdPrinter(&sb).Print(e)
 			fmt.Print("EXPR\t", sb.String())
@@ -66,44 +68,38 @@ func main() {
 		default:
 			log.Fatalf("unexpected -order mode: %v", *order)
 		}
-		v.SetLitVisitor(func(e *innit.Lit) {
-			fmt.Println("LIT\t", e.Tok.String(), "\t", e.Value)
+		v.SetLitVisitor(func(e innit.Lit) {
+			fmt.Println("LIT\t", e.String())
 		})
-		v.Visit(n)
+		for _, n := range ns {
+			v.Visit(n.Val())
+		}
 	case "db":
 		db := innitdb.NewInMemory()
-		innitdb.Store(db, n, 1)
+		for _, n := range ns {
+			innitdb.Store(db, n.Val(), 1)
+		}
 		refs := make(map[innitdb.ID]struct {
-			innit.Node
+			innit.Val
 			Fc float64
 		})
 		var h maphash.Hash
 		h.SetSeed(db.Seed())
-		if nl, ok := n.(innit.NodeList); ok {
-			for _, n := range nl {
-				h.Reset()
-				hash.Node(&h, n)
-				id := h.Sum64()
-				fc := innitdb.Load(db, n)
-				refs[id] = struct {
-					innit.Node
-					Fc float64
-				}{n, fc}
-			}
-		} else {
-			hash.Node(&h, n)
+		for _, n := range ns {
+			h.Reset()
+			hash.Val(&h, n.Val())
 			id := h.Sum64()
-			fc := innitdb.Load(db, n)
+			fc := innitdb.Load(db, n.Val())
 			refs[id] = struct {
-				innit.Node
+				innit.Val
 				Fc float64
-			}{n, fc}
+			}{n.Val(), fc}
 		}
 		for id := range refs {
 			db.EachRef(id, func(id innitdb.ID) bool {
 				n, fc := db.Load(id)
 				refs[id] = struct {
-					innit.Node
+					innit.Val
 					Fc float64
 				}{n, fc}
 				return true
@@ -117,10 +113,12 @@ func main() {
 			visited[id] = true
 			fmt.Printf("%d\t", id)
 			fmt.Printf("%f\t", e.Fc)
-			innit.StdPrinter(os.Stdout).Print(e.Node)
+			innit.StdPrinter(os.Stdout).Print(e.Val)
 		}
 	case "bin":
-		binnit.NewEncoder(os.Stdout).Encode(n)
+		for _, n := range ns {
+			binnit.NewEncoder(os.Stdout).Encode(n.Val())
+		}
 	default:
 		log.Fatalf("unexpected -print mode: %v", *print)
 	}

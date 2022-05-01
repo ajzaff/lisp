@@ -8,18 +8,18 @@ import (
 	"github.com/ajzaff/innit"
 )
 
-func mustParse(t *testing.T, src string) innit.Node {
+func mustParse(t *testing.T, src string) innit.Val {
 	n, err := innit.Parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return n
+	return n[0].Val()
 }
 
 func TestEncodedLen(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
-		input innit.Node
+		input innit.Val
 		want  int
 	}{{
 		name: "empty",
@@ -58,7 +58,7 @@ func TestEncode(t *testing.T) {
 	n, _ := innit.Parse("(1 (2 (3 4)))")
 	var buf bytes.Buffer
 	e := NewEncoder(&buf)
-	e.Encode(n)
-	fmt.Println(EncodedLen(n))
+	e.Encode(n[0].Val())
+	fmt.Println(EncodedLen(n[0].Val()))
 	fmt.Println(buf.Bytes())
 }

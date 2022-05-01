@@ -1,6 +1,7 @@
 package innitdb
 
 import (
+	"fmt"
 	"hash/maphash"
 	"strings"
 
@@ -54,24 +55,30 @@ func Query(db QueryInterface, q string) *QueryResult {
 		r.err = err
 		return &r
 	}
+	if len(qn) != 1 {
+		r.err = fmt.Errorf("expected exactly 1 Val in query expression, got %d", len(qn))
+		return &r
+	}
 	var h maphash.Hash
 	h.SetSeed(db.Seed())
 	qh := h.Sum64()
-	hash.Node(&h, qn)
+	hash.Val(&h, qn[0].Val())
 	if v, _ := db.Load(qh); v != nil {
 		// Exact match.
 		r.matches = [][]ID{{qh}}
 		return &r
 	}
-	r.elems = queryElements(qn)
+	r.elems = queryElements(qn[0].Val())
 	panic("not implemented")
 }
 
-func queryElements(q innit.Node) (elems []string) {
+func queryElements(q innit.Val) (elems []string) {
 	var v innit.Visitor
-	v.SetLitVisitor(func(e *innit.Lit) {
-		if e.Tok == innit.Id && strings.HasPrefix(e.Value, "?") {
-			elems = append(elems, e.Value)
+	v.SetLitVisitor(func(e innit.Lit) {
+		if id, ok := e.(innit.IdLit); ok {
+			if strings.HasPrefix(string(id), "?") {
+				elems = append(elems, string(id[1:]))
+			}
 		}
 	})
 	v.Visit(q)

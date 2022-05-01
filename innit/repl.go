@@ -42,7 +42,7 @@ loop:
 				continue
 			}
 			expr.Reset()
-			innit.StdPrinter(os.Stdout).Print(no)
+			innit.StdPrinter(os.Stdout).Print(no[0].Val())
 		case strings.TrimSpace(input) == "quit":
 			break loop
 		}
