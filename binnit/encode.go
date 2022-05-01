@@ -85,8 +85,6 @@ func EncodedLen(n innit.Val) int {
 	}
 }
 
-func tokLen(innit.Token) int { return 1 }
-
 func litLen(v innit.Lit) int {
 	switch v.(type) {
 	case innit.IdLit, innit.IntLit, innit.FloatLit:

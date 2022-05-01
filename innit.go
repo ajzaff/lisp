@@ -1,5 +1,9 @@
-// Package innit implements a simple LISP-like AST useful as a research
+// Package innit implements a minimal LISP-like expressions useful as a research
 // language or wherever a bare-minimum language is required.
+//
+// The code here is split up into xxxNode types which implement Node and
+// Value types which implement Val. Node types represent AST with source
+// position information while Value types only contain context-free values.
 //
 // It supports basic identifiers, numbers, strings, and expressions.
 package innit
@@ -12,9 +16,11 @@ type Pos int
 // NoPos is the flag value when no position is defined.
 const NoPos = -1
 
-// Node is an interface for AST nodes which have a start and end position.
+// Node is an interface for AST nodes which have a start and end source position.
 //
 // Only allowed types are *LitNode and *ExprNode.
+//
+// See Val for a context-free Value type.
 type Node interface {
 	Pos() Pos
 	Val() Val
