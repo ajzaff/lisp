@@ -76,5 +76,8 @@ func parseTokens(src string, tokens []Pos) (Node, error) {
 		}
 		return nil, err
 	}
+	if len(out) == 1 {
+		return out[0], nil
+	}
 	return out, nil
 }

@@ -10,13 +10,14 @@ import (
 	"strings"
 
 	"github.com/ajzaff/innit"
+	"github.com/ajzaff/innit/binnit"
 	"github.com/ajzaff/innit/hash"
 	"github.com/ajzaff/innit/innitdb"
 )
 
 var (
 	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
-	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db". Default uses StdPrinter)`)
+	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin". Default uses StdPrinter)`)
 	file  = flag.String("file", "", "File to read innit code from.")
 )
 
@@ -118,6 +119,8 @@ func main() {
 			fmt.Printf("%f\t", e.Fc)
 			innit.StdPrinter(os.Stdout).Print(e.Node)
 		}
+	case "bin":
+		binnit.NewEncoder(os.Stdout).Encode(n)
 	default:
 		log.Fatalf("unexpected -print mode: %v", *print)
 	}
