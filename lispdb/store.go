@@ -1,8 +1,6 @@
 package lispdb
 
 import (
-	"hash/maphash"
-
 	"github.com/ajzaff/lisp"
 	"github.com/ajzaff/lisp/hash"
 )
@@ -14,7 +12,7 @@ type StoreInterface interface {
 
 type TVal struct {
 	ID
-	lisp.Val
+	lisp.Lit
 	Refs        []uint64
 	InverseRefs []uint64
 }
@@ -23,19 +21,19 @@ func Store(s StoreInterface, n lisp.Val, w float64) error {
 	var (
 		stack []*TVal
 		t     []*TVal
-		h     maphash.Hash
+		h     hash.MapHash
 		v     lisp.Visitor
 	)
 	h.SetSeed(s.Seed())
 
 	v.SetBeforeExprVisitor(func(e lisp.Expr) {
 		h.Reset()
-		hash.Expr(&h, e)
+		h.WriteExpr(e)
 		id := h.Sum64()
-		entry := &TVal{ID: id, Val: e}
-		for _, parent := range stack {
-			parent.Refs = append(parent.Refs, id)
-			entry.InverseRefs = append(entry.InverseRefs, parent.ID)
+		entry := &TVal{ID: id}
+		if len(stack) > 0 {
+			stack[len(stack)-1].Refs = append(stack[len(stack)-1].Refs, id)
+			entry.InverseRefs = append(entry.InverseRefs, stack[len(stack)-1].ID)
 		}
 		stack = append(stack, entry)
 	})
@@ -46,12 +44,12 @@ func Store(s StoreInterface, n lisp.Val, w float64) error {
 	})
 	v.SetLitVisitor(func(e lisp.Lit) {
 		h.Reset()
-		hash.Lit(&h, e)
+		h.WriteLit(e)
 		id := h.Sum64()
-		entry := &TVal{ID: id, Val: e}
-		for _, parent := range stack {
-			parent.Refs = append(parent.Refs, id)
-			entry.InverseRefs = append(entry.InverseRefs, parent.ID)
+		entry := &TVal{ID: id, Lit: e}
+		if len(stack) > 0 {
+			stack[len(stack)-1].Refs = append(stack[len(stack)-1].Refs, id)
+			entry.InverseRefs = append(entry.InverseRefs, stack[len(stack)-1].ID)
 		}
 		t = append(t, entry)
 	})

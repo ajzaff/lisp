@@ -9,7 +9,7 @@ import (
 )
 
 func mustParse(t *testing.T, src string) lisp.Val {
-	n, err := lisp.Parse(src)
+	n, err := lisp.Parser{}.Parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestEncodedLen(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
-	n, _ := lisp.Parse("(1 (2 (3 4)))")
+	n, _ := lisp.Parser{}.Parse("(1 (2 (3 4)))")
 	var buf bytes.Buffer
 	e := NewEncoder(&buf)
 	e.Encode(n[0].Val())

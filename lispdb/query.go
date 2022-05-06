@@ -2,7 +2,6 @@ package lispdb
 
 import (
 	"fmt"
-	"hash/maphash"
 
 	"github.com/ajzaff/lisp"
 	"github.com/ajzaff/lisp/hash"
@@ -14,6 +13,59 @@ type QueryInterface interface {
 	LoadInterface
 	EachRef(ID, func(ID) bool)
 	EachInverseRef(ID, func(ID) bool)
+}
+
+func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
+	v, w := db.Load(id)
+	if v != nil {
+		return v, w
+	}
+	n, w := queryOneNode(db, id)
+	return n.Val(), w
+}
+
+func queryOneNode(db QueryInterface, id ID) (lisp.Node, float64) {
+	v, w := db.Load(id)
+	if v != nil {
+		return &lisp.LitNode{Lit: v}, w
+	}
+	var x lisp.Expr
+	db.EachRef(id, func(i ID) bool {
+		e, _ := queryOneNode(db, i)
+		x = append(x, e)
+		return true
+	})
+	return &lisp.ExprNode{Expr: x}, w
+}
+
+func EachTransRef(db QueryInterface, root ID, fn func(ID) bool) {
+	stack := []ID{root}
+	for len(stack) > 0 {
+		e := stack[0]
+		stack = stack[1:]
+		if !fn(e) {
+			return
+		}
+		db.EachRef(e, func(i ID) bool {
+			stack = append(stack, i)
+			return true
+		})
+	}
+}
+
+func EachTransInverseRef(db QueryInterface, root ID, fn func(ID) bool) {
+	stack := []ID{root}
+	for len(stack) > 0 {
+		e := stack[0]
+		stack = stack[1:]
+		if !fn(e) {
+			return
+		}
+		db.EachInverseRef(e, func(i ID) bool {
+			stack = append(stack, i)
+			return true
+		})
+	}
 }
 
 type QueryResult struct {
@@ -50,7 +102,7 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 //	// []ID{834583485} // "who"
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
-	qn, err := lisp.Parse(q)
+	qn, err := lisp.Parser{}.Parse(q)
 	if err != nil {
 		r.err = err
 		return &r
@@ -59,10 +111,10 @@ func Query(db QueryInterface, q string) *QueryResult {
 		r.err = fmt.Errorf("expected exactly 1 Val in query expression, got %d", len(qn))
 		return &r
 	}
-	var h maphash.Hash
+	var h hash.MapHash
 	h.SetSeed(db.Seed())
 	qh := h.Sum64()
-	hash.Val(&h, qn[0].Val())
+	h.WriteVal(qn[0].Val())
 	if _, w := db.Load(qh); w > 0 {
 		// Exact match.
 		r.matches = [][]ID{{qh}}

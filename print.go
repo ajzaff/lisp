@@ -3,6 +3,7 @@ package lisp
 import (
 	"fmt"
 	"io"
+	"unicode/utf8"
 )
 
 // Printer implements direct printing of AST nodes.
@@ -32,10 +33,10 @@ func (p *Printer) Print(n Val) {
 		return
 	}
 	var (
-		exprDepth  int
-		firstWrite = true
-		firstLit   = true
-		newLine    = fmt.Sprint(p.NewLine, p.Prefix)
+		exprDepth      int
+		firstWrite     = true
+		lastIsNormalID = true
+		newLine        = fmt.Sprint(p.NewLine, p.Prefix)
 	)
 	var v Visitor
 	v.SetBeforeExprVisitor(func(e Expr) {
@@ -44,7 +45,7 @@ func (p *Printer) Print(n Val) {
 			firstWrite = true
 		}
 		fmt.Fprint(p.Writer, "(")
-		firstLit = false
+		lastIsNormalID = false
 		exprDepth++
 	})
 	v.SetAfterExprVisitor(func(e Expr) {
@@ -53,7 +54,7 @@ func (p *Printer) Print(n Val) {
 		if exprDepth == 0 {
 			fmt.Fprint(p.Writer, newLine)
 		}
-		firstLit = false
+		lastIsNormalID = false
 	})
 	v.SetLitVisitor(func(e Lit) {
 		if !firstWrite {
@@ -64,11 +65,17 @@ func (p *Printer) Print(n Val) {
 			fmt.Fprint(p.Writer, e.String(), newLine)
 			return
 		}
-		if firstLit {
+		currNormalID := isNormalID(e.String())
+		if lastIsNormalID && currNormalID {
 			fmt.Fprint(p.Writer, " ")
 		}
-		firstLit = true
+		lastIsNormalID = currNormalID
 		fmt.Fprint(p.Writer, e.String())
 	})
 	v.Visit(n)
+}
+
+func isNormalID(s string) bool {
+	r, _ := utf8.DecodeRuneInString(s)
+	return isID(r)
 }

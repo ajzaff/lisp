@@ -6,7 +6,9 @@ import (
 	"strings"
 )
 
-func Parse(src string) ([]Node, error) {
+type Parser struct{}
+
+func (Parser) Parse(src string) ([]Node, error) {
 	tokens, err := Tokenizer{}.Tokenize(src)
 	if err != nil {
 		return nil, err

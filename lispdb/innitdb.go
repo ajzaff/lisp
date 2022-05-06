@@ -19,9 +19,9 @@ type LoadInterface interface {
 }
 
 func Load(db LoadInterface, v lisp.Val) float64 {
-	var h maphash.Hash
+	var h hash.MapHash
 	h.SetSeed(db.Seed())
-	hash.Val(&h, v)
+	h.WriteVal(v)
 	_, w := db.Load(h.Sum64())
 	return w
 }

@@ -1,5 +1,5 @@
 //go:build repl
-//+build repl
+// +build repl
 
 package main
 
@@ -38,7 +38,7 @@ loop:
 		input := sc.Text()
 		switch {
 		case expr.Len() > 0 && input == "":
-			no, err := lisp.Parse(expr.String())
+			no, err := lisp.Parser{}.Parse(expr.String())
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				expr.Reset()

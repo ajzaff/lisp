@@ -34,17 +34,22 @@ type Val interface {
 	val()
 }
 
+// Expr is a slice of compound Nodes.
+type Expr []Node
+
+func (Expr) val() {}
+
 // LitNode is a basic literal node.
 type LitNode struct {
 	LitPos Pos
-	Lit
+	Lit    Lit
 	EndPos Pos
 }
 
 // ExprNode is a Expr enclosed by parens.
 type ExprNode struct {
 	LParen Pos
-	Expr
+	Expr   Expr
 	RParen Pos
 }
 
@@ -88,8 +93,3 @@ func (x IdLit) String() string     { return string(x) }
 func (x IntLit) String() string    { return strconv.FormatInt(int64(x), 10) }
 func (x FloatLit) String() string  { return strconv.FormatFloat(float64(x), 'f', -1, 64) }
 func (x StringLit) String() string { return string(x) }
-
-// Expr is a slice of compound Nodes.
-type Expr []Node
-
-func (Expr) val() {}

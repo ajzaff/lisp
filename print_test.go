@@ -23,6 +23,10 @@ func TestStdPrint(t *testing.T) {
 		name:  "unknown node",
 		input: unknownVal{},
 	}, {
+		name:  "empty expr",
+		input: Expr{},
+		want:  "()\n",
+	}, {
 		name:  "lit",
 		input: IdLit("hello"),
 		want:  "hello\n",
@@ -46,6 +50,15 @@ func TestStdPrint(t *testing.T) {
 			&LitNode{Lit: IdLit("z")},
 		},
 		want: "(x(y)z)\n",
+	}, {
+		name: "squashed ids and symbols in expr",
+		input: Expr{
+			&LitNode{Lit: IdLit("?")},
+			&LitNode{Lit: IdLit("x")},
+			&LitNode{Lit: IdLit("/")},
+			&LitNode{Lit: IdLit("y")},
+		},
+		want: "(?x/y)\n",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			var sb strings.Builder

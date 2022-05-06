@@ -9,7 +9,7 @@ import (
 func TestInMemory(t *testing.T) {
 	m := NewInMemory()
 
-	n, _ := lisp.Parse("(x y (z (1 2 3)) a)")
+	n, _ := lisp.Parser{}.Parse("(x y (z (1 2 3)) a)")
 
 	Store(m, n[0].Val(), 1)
 

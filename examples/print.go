@@ -6,7 +6,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"hash/maphash"
 	"io/ioutil"
 	"log"
 	"os"
@@ -37,7 +36,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ns, err := lisp.Parse(string(src))
+	ns, err := lisp.Parser{}.Parse(string(src))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,29 +83,37 @@ func main() {
 		}
 		refs := make(map[lispdb.ID]struct {
 			lisp.Val
-			Fc float64
+			Fc          float64
+			Refs        []uint64
+			InverseRefs []uint64
 		})
-		var h maphash.Hash
+		var h hash.MapHash
 		h.SetSeed(db.Seed())
 		for _, n := range ns {
 			h.Reset()
-			hash.Val(&h, n.Val())
-			id := h.Sum64()
-			fc := lispdb.Load(db, n.Val())
-			refs[id] = struct {
-				lisp.Val
-				Fc float64
-			}{n.Val(), fc}
-		}
-		for id := range refs {
-			db.EachRef(id, func(id lispdb.ID) bool {
-				n, fc := db.Load(id)
-				refs[id] = struct {
+			h.WriteVal(n.Val())
+			root := h.Sum64()
+			lispdb.EachTransRef(db, root, func(i lispdb.ID) bool {
+				v, w := lispdb.QueryOneID(db, i)
+				var idRefs []lispdb.ID
+				db.EachRef(i, func(i lispdb.ID) bool {
+					idRefs = append(idRefs, i)
+					return true
+				})
+				var idInverseRefs []lispdb.ID
+				db.EachInverseRef(i, func(i lispdb.ID) bool {
+					idInverseRefs = append(idInverseRefs, i)
+					return true
+				})
+				refs[i] = struct {
 					lisp.Val
-					Fc float64
-				}{n, fc}
+					Fc          float64
+					Refs        []uint64
+					InverseRefs []uint64
+				}{v, w, idRefs, idInverseRefs}
 				return true
 			})
+
 		}
 		visited := make(map[lispdb.ID]bool)
 		for id, e := range refs {
@@ -117,6 +124,16 @@ func main() {
 			fmt.Printf("%d\t", id)
 			fmt.Printf("%f\t", e.Fc)
 			lisp.StdPrinter(os.Stdout).Print(e.Val)
+			fmt.Print("Refs: ")
+			for _, i := range e.Refs {
+				fmt.Printf("%d,", i)
+			}
+			fmt.Println()
+			fmt.Print("InverseRefs: ")
+			for _, i := range e.InverseRefs {
+				fmt.Printf("%d,", i)
+			}
+			fmt.Println()
 		}
 	case "bin":
 		for _, n := range ns {

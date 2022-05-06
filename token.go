@@ -104,11 +104,11 @@ func isIdSymbolic(r rune) bool {
 
 // isIdStart checks whether r can start an Id (not a number).
 func isIdStart(r rune) bool {
-	return isId(r) && !unicode.IsNumber(r)
+	return isID(r) && !unicode.IsNumber(r)
 }
 
-// isId checks whether r is a legal Id rune.
-func isId(r rune) bool {
+// isID checks whether r is a legal Id rune.
+func isID(r rune) bool {
 	return r != utf8.RuneError &&
 		!isIdSymbolic(r) &&
 		!isExprOrStr(r) &&
@@ -300,7 +300,7 @@ func tokenIdSymbolic(s *tokenState) tokenFunc {
 func tokenId(s *tokenState) tokenFunc {
 	return func() tokenFunc {
 		switch r, size := s.decode(); {
-		case isId(r):
+		case isID(r):
 			s.advance(r, size)
 			return tokenId(s)
 		default:

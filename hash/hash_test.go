@@ -1,7 +1,6 @@
 package hash
 
 import (
-	"hash/maphash"
 	"testing"
 
 	"github.com/ajzaff/lisp"
@@ -48,20 +47,20 @@ func TestDistictHash(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			n1, err := lisp.Parse(tc.input1)
+			n1, err := lisp.Parser{}.Parse(tc.input1)
 			if err != nil {
 				t.Fatalf("Parse(%q): fails: %v", tc.input1, err)
 			}
-			n2, err := lisp.Parse(tc.input2)
+			n2, err := lisp.Parser{}.Parse(tc.input2)
 			if err != nil {
 				t.Fatalf("Parse(%q): fails: %v", tc.input2, err)
 			}
 
-			var h maphash.Hash
-			Val(&h, n1[0].Val())
+			var h MapHash
+			h.WriteVal(n1[0].Val())
 			h1 := h.Sum64()
 			h.Reset()
-			Val(&h, n2[0].Val())
+			h.WriteVal(n2[0].Val())
 			h2 := h.Sum64()
 
 			if tc.wantDistinct && h1 == h2 {
