@@ -1,30 +1,26 @@
 # lisp
 
-Lisp is a bare-minimum Lisp-like research language.
+Lisp is a research language.
 
 It features:
 
-* Minimal language constructs.
-* UTF-8 support.
-* Built-in Tokenizer, Parser, Printer, and Visitor.
-* Some support for extensibility.
+* Minimal language constructs and Unicode support.
+* Simple API: Tokenizer, Parser, Printer, and Visitor.
+* Datastore Optimized for Expression Multimapping, Counting and Querying.
 
 ## Syntax
 
 ```
-space       => ' ' | '\n' | '\t' | '\r';
-val         => expr | id | int | float;
-expr        => '(' val ')';
-id **
-int         => dec_digit | dec_digit int;
-float       => '.' int | int '.' int | int '.';
-dec_digit   => [0-9];
-str         => '"' str_body '"';
-str_body    => '' | str_char str_body;
-str_char    => [^"];
-escape      => '\' escape_char;
-escape_char => '\' | 't' | 'n' | 'x' hex hex;
-hex_digit   => [0-9a-z];
+val         => expr | id | int | float
+expr        => '(' val ')'
+id          => id_norm | id_punct
+id_norm     => [^[:punct:]()"]+
+id_punct    => [[:punct:]]+
+int         => dec_digit+
+float       => int '.' int? | '.' int
+str         => '"' ([^"] | escape)* '"'
+escape      => '\' ('\' | 't' | 'n' | 'x' hex_digit{2})
+dec_digit   => [0-9]
+hex_digit   => [0-9A-Za-z]
+space       => ' ' | '\n' | '\t' | '\r'
 ```
-
-** see Id.md

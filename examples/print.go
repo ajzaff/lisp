@@ -1,3 +1,6 @@
+//go:build print
+// +build print
+
 package main
 
 import (
@@ -25,7 +28,7 @@ func main() {
 	flag.Parse()
 
 	if *file == "" {
-		doRepl()
+		log.Fatal("-file is required")
 		return
 	}
 
@@ -45,7 +48,7 @@ func main() {
 			lisp.StdPrinter(os.Stdout).Print(n.Val())
 		}
 	case "tok":
-		tokens, err := lisp.Tokenize(string(src))
+		tokens, err := lisp.Tokenizer{}.Tokenize(string(src))
 		if err != nil {
 			panic(err)
 		}

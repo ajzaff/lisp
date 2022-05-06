@@ -23,8 +23,11 @@ const (
 	RParen // )
 )
 
+// Tokenizer implements the Lisp tokenizer.
+type Tokenizer struct{}
+
 // Tokenize takes source code and returns a set of token positions.
-func Tokenize(src string) ([]Pos, error) {
+func (Tokenizer) Tokenize(src string) ([]Pos, error) {
 	s := &tokenState{src: []byte(src), line: 1, col: 1}
 	for fn := tokenStart(s); fn != nil; fn = fn() {
 	}
@@ -33,12 +36,13 @@ func Tokenize(src string) ([]Pos, error) {
 
 // TokenError implements an error at a specified line and column.
 type TokenError struct {
+	Cause     error
 	Line, Col int
 	Pos       Pos
 }
 
 func (t *TokenError) Error() string {
-	return fmt.Sprintf("at line %d: col %d", t.Line, t.Col)
+	return fmt.Sprintf("%v: at line %d: col %d", t.Cause, t.Line, t.Col)
 }
 
 type tokenState struct {
@@ -75,8 +79,14 @@ func (s *tokenState) advance(r rune, size int) (rune, int) {
 	return r, size
 }
 
-func (s *tokenState) skipSpace() {
+func (s *tokenState) advanceSpaces() {
 	for r, size := s.decode(); unicode.IsSpace(r); r, size = s.decode() {
+		s.advance(r, size)
+	}
+}
+
+func (s *tokenState) advanceDigits() {
+	for r, size := s.decode(); unicode.IsDigit(r); r, size = s.decode() {
 		s.advance(r, size)
 	}
 }
@@ -111,13 +121,13 @@ var (
 )
 
 func (s *tokenState) setErr(cause error) {
-	s.err = fmt.Errorf("%v: %w", cause, &TokenError{s.line, s.col, s.p})
+	s.err = &TokenError{cause, s.line, s.col, s.p}
 }
 
 type tokenFunc func() tokenFunc
 
 func tokenStart(s *tokenState) tokenFunc {
-	s.skipSpace()
+	s.advanceSpaces()
 	return func() tokenFunc {
 		r, size := s.decode()
 		if size == 0 {
@@ -236,11 +246,9 @@ func tokenByteLit2(s *tokenState) tokenFunc {
 }
 
 func tokenNumber(s *tokenState) tokenFunc {
+	s.advanceDigits()
 	return func() tokenFunc {
 		switch r, size := s.decode(); {
-		case unicode.IsNumber(r):
-			s.advance(r, size)
-			return tokenNumber(s)
 		case r == '.':
 			s.advance(r, size)
 			return tokenFloat(s)
@@ -270,14 +278,9 @@ func tokenIdPunctOrFloat(s *tokenState) tokenFunc {
 
 func tokenFloat(s *tokenState) tokenFunc {
 	return func() tokenFunc {
-		switch r, size := s.decode(); {
-		case unicode.IsNumber(r):
-			s.advance(r, size)
-			return tokenFloat(s)
-		default:
-			s.markEnd()
-			return tokenStart(s)
-		}
+		s.advanceDigits()
+		s.markEnd()
+		return tokenStart(s)
 	}
 }
 

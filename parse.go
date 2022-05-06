@@ -7,7 +7,7 @@ import (
 )
 
 func Parse(src string) ([]Node, error) {
-	tokens, err := Tokenize(src)
+	tokens, err := Tokenizer{}.Tokenize(src)
 	if err != nil {
 		return nil, err
 	}

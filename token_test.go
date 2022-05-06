@@ -119,7 +119,7 @@ func TestTokenizeLit(t *testing.T) {
 			if !tc.wantErr && len(tc.want)%2 != 0 {
 				t.Fatalf("Tokenize(%q) wants invalid result (cannot have odd length when wantErr=true): %v", tc.name, tc.want)
 			}
-			got, gotErr := Tokenize(tc.input)
+			got, gotErr := Tokenizer{}.Tokenize(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Tokenize(%q) got diff (-want, +got):\n%s", tc.name, diff)
 			}
@@ -170,7 +170,7 @@ func TestTokenizeExpr(t *testing.T) {
 			if !tc.wantErr && len(tc.want)%2 != 0 {
 				t.Fatalf("Tokenize(%q) wants invalid result (cannot have odd length when wantErr=true): %v", tc.name, tc.want)
 			}
-			got, gotErr := Tokenize(tc.input)
+			got, gotErr := Tokenizer{}.Tokenize(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Tokenize(%q) got diff (-want, +got):\n%s", tc.input, diff)
 			}

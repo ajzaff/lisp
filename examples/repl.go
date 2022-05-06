@@ -1,3 +1,6 @@
+//go:build repl
+//+build repl
+
 package main
 
 import (
@@ -48,7 +51,8 @@ loop:
 		}
 
 		if strings.TrimSpace(input) != "" {
-			if _, err := lisp.Tokenize(input); err != nil {
+			t := lisp.Tokenizer{}
+			if _, err := t.Tokenize(input); err != nil {
 				expr.Reset()
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
