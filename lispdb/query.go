@@ -10,7 +10,7 @@ import (
 )
 
 type QueryInterface interface {
-	InnitDB
+	LispDB
 	LoadInterface
 	EachRef(ID, func(ID) bool)
 	EachInverseRef(ID, func(ID) bool)

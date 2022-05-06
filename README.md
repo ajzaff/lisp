@@ -1,6 +1,6 @@
 # lisp
 
-Innit is a bare-minimum Lisp-like research language.
+Lisp is a bare-minimum Lisp-like research language.
 
 It features:
 

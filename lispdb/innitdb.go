@@ -9,12 +9,12 @@ import (
 
 type ID = uint64
 
-type InnitDB interface {
+type LispDB interface {
 	Seed() maphash.Seed
 }
 
 type LoadInterface interface {
-	InnitDB
+	LispDB
 	Load(ID) (lisp.Lit, float64)
 }
 

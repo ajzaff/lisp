@@ -27,7 +27,7 @@ type Node interface {
 	End() Pos
 }
 
-// Val is an interface for Innit Values.
+// Val is an interface for Lisp Values.
 //
 // Only allowed types are Lit and Expr.
 type Val interface {

@@ -8,7 +8,7 @@ import (
 )
 
 type StoreInterface interface {
-	InnitDB
+	LispDB
 	Store([]*TVal, float64) error
 }
 
