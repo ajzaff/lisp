@@ -1,15 +1,15 @@
-package binnit
+package blisp
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
-func mustParse(t *testing.T, src string) innit.Val {
-	n, err := innit.Parse(src)
+func mustParse(t *testing.T, src string) lisp.Val {
+	n, err := lisp.Parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,7 +19,7 @@ func mustParse(t *testing.T, src string) innit.Val {
 func TestEncodedLen(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
-		input innit.Val
+		input lisp.Val
 		want  int
 	}{{
 		name: "empty",
@@ -47,7 +47,7 @@ func TestEncodedLen(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := EncodedLen(tc.input); got != tc.want {
 				var buf bytes.Buffer
-				innit.StdPrinter(&buf).Print(tc.input)
+				lisp.StdPrinter(&buf).Print(tc.input)
 				t.Errorf("EncodedLen(%v): got %d, want %d", buf.String(), got, tc.want)
 			}
 		})
@@ -55,7 +55,7 @@ func TestEncodedLen(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
-	n, _ := innit.Parse("(1 (2 (3 4)))")
+	n, _ := lisp.Parse("(1 (2 (3 4)))")
 	var buf bytes.Buffer
 	e := NewEncoder(&buf)
 	e.Encode(n[0].Val())

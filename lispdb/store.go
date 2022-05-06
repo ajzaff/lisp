@@ -1,10 +1,10 @@
-package innitdb
+package lispdb
 
 import (
 	"hash/maphash"
 
-	"github.com/ajzaff/innit"
-	"github.com/ajzaff/innit/hash"
+	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/hash"
 )
 
 type StoreInterface interface {
@@ -14,21 +14,21 @@ type StoreInterface interface {
 
 type TVal struct {
 	ID
-	innit.Val
+	lisp.Val
 	Refs        []uint64
 	InverseRefs []uint64
 }
 
-func Store(s StoreInterface, n innit.Val, w float64) error {
+func Store(s StoreInterface, n lisp.Val, w float64) error {
 	var (
 		stack []*TVal
 		t     []*TVal
 		h     maphash.Hash
-		v     innit.Visitor
+		v     lisp.Visitor
 	)
 	h.SetSeed(s.Seed())
 
-	v.SetBeforeExprVisitor(func(e innit.Expr) {
+	v.SetBeforeExprVisitor(func(e lisp.Expr) {
 		h.Reset()
 		hash.Expr(&h, e)
 		id := h.Sum64()
@@ -39,12 +39,12 @@ func Store(s StoreInterface, n innit.Val, w float64) error {
 		}
 		stack = append(stack, entry)
 	})
-	v.SetAfterExprVisitor(func(e innit.Expr) {
+	v.SetAfterExprVisitor(func(e lisp.Expr) {
 		entry := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		t = append(t, entry)
 	})
-	v.SetLitVisitor(func(e innit.Lit) {
+	v.SetLitVisitor(func(e lisp.Lit) {
 		h.Reset()
 		hash.Lit(&h, e)
 		id := h.Sum64()

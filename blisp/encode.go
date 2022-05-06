@@ -1,13 +1,13 @@
-package binnit
+package blisp
 
 import (
 	"encoding/binary"
 	"io"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
-const magic = "innit\n"
+const magic = "lisp\n"
 
 const (
 	lit  = 0
@@ -22,34 +22,34 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w}
 }
 
-func (e *Encoder) Encode(v innit.Val) error {
+func (e *Encoder) Encode(v lisp.Val) error {
 	b := make([]byte, EncodedLen(v))
 	encode(v, b)
 	_, err := e.Writer.Write(b)
 	return err
 }
 
-func encode(v innit.Val, b []byte) int {
+func encode(v lisp.Val, b []byte) int {
 	switch v := v.(type) {
-	case innit.Lit:
+	case lisp.Lit:
 		b[0] = lit
 		var i int
 		switch v := v.(type) {
-		case innit.IdLit:
-			b[1] = byte(innit.Id)
-		case innit.IntLit:
-			b[1] = byte(innit.Int)
-		case innit.FloatLit:
-			b[1] = byte(innit.Float)
-		case innit.StringLit:
-			b[1] = byte(innit.String)
+		case lisp.IdLit:
+			b[1] = byte(lisp.Id)
+		case lisp.IntLit:
+			b[1] = byte(lisp.Int)
+		case lisp.FloatLit:
+			b[1] = byte(lisp.Float)
+		case lisp.StringLit:
+			b[1] = byte(lisp.String)
 			s := v.String()
 			i = copy(b[2:], s[1:len(s)-1])
 			return 2 + i
 		}
 		i = copy(b[2:], []byte(v.String()))
 		return 2 + i
-	case innit.Expr:
+	case lisp.Expr:
 		b[0] = expr
 		size := 0
 		for _, e := range v {
@@ -66,15 +66,15 @@ func encode(v innit.Val, b []byte) int {
 }
 
 // EncodedLen returns the encoded length of the node in bytes.
-func EncodedLen(n innit.Val) int {
+func EncodedLen(n lisp.Val) int {
 	if n == nil {
 		return 0
 	}
 	switch x := n.(type) {
-	case innit.Lit:
+	case lisp.Lit:
 		n := litLen(x)
 		return 1 + 1 + varIntLen(uint64(n)) + n
-	case innit.Expr:
+	case lisp.Expr:
 		size := 1
 		for _, e := range x {
 			size += EncodedLen(e.Val())
@@ -85,11 +85,11 @@ func EncodedLen(n innit.Val) int {
 	}
 }
 
-func litLen(v innit.Lit) int {
+func litLen(v lisp.Lit) int {
 	switch v.(type) {
-	case innit.IdLit, innit.IntLit, innit.FloatLit:
+	case lisp.IdLit, lisp.IntLit, lisp.FloatLit:
 		return len(v.String())
-	case innit.StringLit:
+	case lisp.StringLit:
 		return len(v.String()) - 2
 	default:
 		panic("unexpected token")

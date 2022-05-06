@@ -9,16 +9,16 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ajzaff/innit"
-	"github.com/ajzaff/innit/binnit"
-	"github.com/ajzaff/innit/hash"
-	"github.com/ajzaff/innit/innitdb"
+	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/blisp"
+	"github.com/ajzaff/lisp/hash"
+	"github.com/ajzaff/lisp/lispdb"
 )
 
 var (
 	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
 	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "none". Default uses StdPrinter)`)
-	file  = flag.String("file", "", "File to read innit code from.")
+	file  = flag.String("file", "", "File to read lisp code from.")
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ns, err := innit.Parse(string(src))
+	ns, err := lisp.Parse(string(src))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,10 +42,10 @@ func main() {
 	switch *print {
 	case "": // std
 		for _, n := range ns {
-			innit.StdPrinter(os.Stdout).Print(n.Val())
+			lisp.StdPrinter(os.Stdout).Print(n.Val())
 		}
 	case "tok":
-		tokens, err := innit.Tokenize(string(src))
+		tokens, err := lisp.Tokenize(string(src))
 		if err != nil {
 			panic(err)
 		}
@@ -54,10 +54,10 @@ func main() {
 			println(token)
 		}
 	case "ast":
-		var v innit.Visitor
-		exprVisitor := func(e innit.Expr) {
+		var v lisp.Visitor
+		exprVisitor := func(e lisp.Expr) {
 			var sb strings.Builder
-			innit.StdPrinter(&sb).Print(e)
+			lisp.StdPrinter(&sb).Print(e)
 			fmt.Print("EXPR\t", sb.String())
 		}
 		switch *order {
@@ -68,19 +68,19 @@ func main() {
 		default:
 			log.Fatalf("unexpected -order mode: %v", *order)
 		}
-		v.SetLitVisitor(func(e innit.Lit) {
+		v.SetLitVisitor(func(e lisp.Lit) {
 			fmt.Println("LIT\t", e.String())
 		})
 		for _, n := range ns {
 			v.Visit(n.Val())
 		}
 	case "db":
-		db := innitdb.NewInMemory()
+		db := lispdb.NewInMemory()
 		for _, n := range ns {
-			innitdb.Store(db, n.Val(), 1)
+			lispdb.Store(db, n.Val(), 1)
 		}
-		refs := make(map[innitdb.ID]struct {
-			innit.Val
+		refs := make(map[lispdb.ID]struct {
+			lisp.Val
 			Fc float64
 		})
 		var h maphash.Hash
@@ -89,23 +89,23 @@ func main() {
 			h.Reset()
 			hash.Val(&h, n.Val())
 			id := h.Sum64()
-			fc := innitdb.Load(db, n.Val())
+			fc := lispdb.Load(db, n.Val())
 			refs[id] = struct {
-				innit.Val
+				lisp.Val
 				Fc float64
 			}{n.Val(), fc}
 		}
 		for id := range refs {
-			db.EachRef(id, func(id innitdb.ID) bool {
+			db.EachRef(id, func(id lispdb.ID) bool {
 				n, fc := db.Load(id)
 				refs[id] = struct {
-					innit.Val
+					lisp.Val
 					Fc float64
 				}{n, fc}
 				return true
 			})
 		}
-		visited := make(map[innitdb.ID]bool)
+		visited := make(map[lispdb.ID]bool)
 		for id, e := range refs {
 			if visited[id] {
 				continue
@@ -113,11 +113,11 @@ func main() {
 			visited[id] = true
 			fmt.Printf("%d\t", id)
 			fmt.Printf("%f\t", e.Fc)
-			innit.StdPrinter(os.Stdout).Print(e.Val)
+			lisp.StdPrinter(os.Stdout).Print(e.Val)
 		}
 	case "bin":
 		for _, n := range ns {
-			binnit.NewEncoder(os.Stdout).Encode(n.Val())
+			blisp.NewEncoder(os.Stdout).Encode(n.Val())
 		}
 	case "none":
 	default:

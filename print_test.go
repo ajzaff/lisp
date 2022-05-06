@@ -1,4 +1,4 @@
-package innit
+package lisp
 
 import (
 	"strings"

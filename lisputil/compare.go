@@ -1,17 +1,17 @@
-package innitutil
+package lisputil
 
 import (
 	"strings"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 // FIXME
-func Compare(a, b innit.Val) int {
+func Compare(a, b lisp.Val) int {
 	switch a := a.(type) {
-	case innit.Expr:
+	case lisp.Expr:
 		switch b := b.(type) {
-		case innit.Expr:
+		case lisp.Expr:
 			if len(a) != len(b) {
 				if len(a) < len(b) {
 					return -1
@@ -27,9 +27,9 @@ func Compare(a, b innit.Val) int {
 		default: // Lit, Expr.
 			return 1
 		}
-	case innit.Lit:
+	case lisp.Lit:
 		switch b := b.(type) {
-		case innit.Lit:
+		case lisp.Lit:
 			return strings.Compare(a.String(), b.String())
 		default: // Expr
 			return -1

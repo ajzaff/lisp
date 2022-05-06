@@ -1,16 +1,16 @@
-package innitutil
+package lisputil
 
-import "github.com/ajzaff/innit"
+import "github.com/ajzaff/lisp"
 
-func Clone(n innit.Node) innit.Node {
+func Clone(n lisp.Node) lisp.Node {
 	if n == nil {
 		return nil
 	}
-	var out innit.Node
+	var out lisp.Node
 	switch x := n.(type) {
-	case *innit.LitNode:
+	case *lisp.LitNode:
 		out = CloneLitNode(x)
-	case *innit.ExprNode:
+	case *lisp.ExprNode:
 		out = CloneExprNode(x)
 	default:
 		panic("clone not supported")
@@ -18,44 +18,44 @@ func Clone(n innit.Node) innit.Node {
 	return out
 }
 
-func CloneExprNode(e *innit.ExprNode) *innit.ExprNode {
+func CloneExprNode(e *lisp.ExprNode) *lisp.ExprNode {
 	if e == nil {
 		return nil
 	}
-	out := new(innit.ExprNode)
+	out := new(lisp.ExprNode)
 	*out = *e
 	out.Expr = CloneExpr(e.Expr)
 	return out
 }
 
-func CloneExpr(e innit.Expr) innit.Expr {
+func CloneExpr(e lisp.Expr) lisp.Expr {
 	if e == nil {
 		return nil
 	}
-	out := make(innit.Expr, len(e))
+	out := make(lisp.Expr, len(e))
 	for i := range out {
 		out[i] = Clone(e[i])
 	}
 	return out
 }
 
-func CloneLitNode(e *innit.LitNode) *innit.LitNode {
+func CloneLitNode(e *lisp.LitNode) *lisp.LitNode {
 	if e == nil {
 		return nil
 	}
-	out := new(innit.LitNode)
+	out := new(lisp.LitNode)
 	*out = *e
 	out.Lit = CloneLit(e.Lit)
 	return out
 }
 
-func CloneLit(e innit.Lit) innit.Lit {
+func CloneLit(e lisp.Lit) lisp.Lit {
 	switch e := e.(type) {
-	case innit.IdLit:
+	case lisp.IdLit:
 		return e[:]
-	case innit.StringLit:
+	case lisp.StringLit:
 		return e[:]
-	case innit.IntLit, innit.FloatLit:
+	case lisp.IntLit, lisp.FloatLit:
 		return e
 	default:
 		panic("clone not supported")

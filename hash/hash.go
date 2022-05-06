@@ -3,25 +3,25 @@ package hash
 import (
 	"hash/maphash"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 // Val hashes the Val using the given maphash.
-func Val(h *maphash.Hash, v innit.Val) {
+func Val(h *maphash.Hash, v lisp.Val) {
 	switch v := v.(type) {
-	case innit.Expr:
+	case lisp.Expr:
 		Expr(h, v)
-	case innit.Lit:
+	case lisp.Lit:
 		Lit(h, v)
 	}
 }
 
 // Expr hashes e with the given maphash.
-func Expr(h *maphash.Hash, es innit.Expr) {
+func Expr(h *maphash.Hash, es lisp.Expr) {
 	h.WriteByte('(')
 	var lastLit bool
 	for _, e := range es {
-		if lit, ok := e.(innit.Lit); ok {
+		if lit, ok := e.(lisp.Lit); ok {
 			if lastLit {
 				h.WriteByte(' ')
 			}
@@ -36,4 +36,4 @@ func Expr(h *maphash.Hash, es innit.Expr) {
 }
 
 // Lit hashes e with the given maphash.
-func Lit(h *maphash.Hash, e innit.Lit) { h.WriteString(e.String()) }
+func Lit(h *maphash.Hash, e lisp.Lit) { h.WriteString(e.String()) }

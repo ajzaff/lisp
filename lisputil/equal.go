@@ -1,15 +1,15 @@
-package innitutil
+package lisputil
 
 import (
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 // FIXME
-func Equal(a, b innit.Val) bool {
+func Equal(a, b lisp.Val) bool {
 	switch a := a.(type) {
-	case innit.Expr:
+	case lisp.Expr:
 		switch b := b.(type) {
-		case innit.Expr:
+		case lisp.Expr:
 			if len(a) != len(b) {
 				return false
 			}
@@ -22,9 +22,9 @@ func Equal(a, b innit.Val) bool {
 		default:
 			return false
 		}
-	case innit.Lit:
+	case lisp.Lit:
 		switch b := b.(type) {
-		case innit.Lit:
+		case lisp.Lit:
 			return a.String() == b.String()
 		default:
 			return false

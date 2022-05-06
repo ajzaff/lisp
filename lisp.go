@@ -1,4 +1,4 @@
-// Package innit implements a minimal LISP-like expressions useful as a research
+// Package lisp implements a minimal LISP-like expressions useful as a research
 // language or wherever a bare-minimum language is required.
 //
 // The code here is split up into xxxNode types which implement Node and
@@ -6,7 +6,7 @@
 // position information while Value types only contain context-free values.
 //
 // It supports basic identifiers, numbers, strings, and expressions.
-package innit
+package lisp
 
 import "strconv"
 

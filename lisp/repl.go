@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 const (
@@ -35,20 +35,20 @@ loop:
 		input := sc.Text()
 		switch {
 		case expr.Len() > 0 && input == "":
-			no, err := innit.Parse(expr.String())
+			no, err := lisp.Parse(expr.String())
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				expr.Reset()
 				continue
 			}
 			expr.Reset()
-			innit.StdPrinter(os.Stdout).Print(no[0].Val())
+			lisp.StdPrinter(os.Stdout).Print(no[0].Val())
 		case strings.TrimSpace(input) == "quit":
 			break loop
 		}
 
 		if strings.TrimSpace(input) != "" {
-			if _, err := innit.Tokenize(input); err != nil {
+			if _, err := lisp.Tokenize(input); err != nil {
 				expr.Reset()
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue

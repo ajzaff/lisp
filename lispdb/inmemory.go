@@ -1,10 +1,10 @@
-package innitdb
+package lispdb
 
 import (
 	"hash/maphash"
 	"sync"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 type entryInMemory interface {
@@ -14,7 +14,7 @@ type entryInMemory interface {
 }
 
 type litEntryInMemory struct {
-	innit.Lit
+	lisp.Lit
 	weight float64
 }
 
@@ -48,7 +48,7 @@ func NewInMemory() *InMemory {
 
 func (m *InMemory) Seed() maphash.Seed { return m.hs }
 
-func (m *InMemory) Load(id ID) (lit innit.Lit, w float64) {
+func (m *InMemory) Load(id ID) (lit lisp.Lit, w float64) {
 	m.rw.RLock()
 	defer m.rw.RUnlock()
 
@@ -71,9 +71,9 @@ func (m *InMemory) Store(t []*TVal, w float64) error {
 			e.AddWeight(w)
 		} else {
 			switch v := te.Val.(type) {
-			case innit.Lit:
+			case lisp.Lit:
 				m.entries[te.ID] = &litEntryInMemory{Lit: v, weight: w}
-			case innit.Expr:
+			case lisp.Expr:
 				m.entries[te.ID] = &exprEntryInMemory{refs: te.Refs, inverseRefs: te.InverseRefs, weight: w}
 			default:
 				panic("unreachable")

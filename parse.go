@@ -1,4 +1,4 @@
-package innit
+package lisp
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func parseTokens(src string, tokens []Pos) ([]Node, error) {
 			stack = append(stack, &ExprNode{LParen: pos})
 		case tok == ")":
 			if len(stack) == 0 {
-				return nil, fmt.Errorf("innit.Parse: internal error: unexpected ')' at pos %d", pos)
+				return nil, fmt.Errorf("lisp.Parse: internal error: unexpected ')' at pos %d", pos)
 			}
 			stack[len(stack)-1].RParen = pos
 			if len(stack) == 1 {
@@ -62,7 +62,7 @@ func parseTokens(src string, tokens []Pos) ([]Node, error) {
 		}
 	}
 	if len(stack) > 0 {
-		err := fmt.Errorf("innit.Parse: unexpected EOF")
+		err := fmt.Errorf("lisp.Parse: unexpected EOF")
 		if len(tokens) >= 2 {
 			pos, end := tokens[len(tokens)-2], tokens[len(tokens)-1]
 			err = fmt.Errorf("%v: at %q", err, string(src[pos:end]))

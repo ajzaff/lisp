@@ -1,15 +1,15 @@
-package innitdb
+package lispdb
 
 import (
 	"testing"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 func TestInMemory(t *testing.T) {
 	m := NewInMemory()
 
-	n, _ := innit.Parse("(x y (z (1 2 3)) a)")
+	n, _ := lisp.Parse("(x y (z (1 2 3)) a)")
 
 	Store(m, n[0].Val(), 1)
 

@@ -4,7 +4,7 @@ import (
 	"hash/maphash"
 	"testing"
 
-	"github.com/ajzaff/innit"
+	"github.com/ajzaff/lisp"
 )
 
 func TestDistictHash(t *testing.T) {
@@ -48,11 +48,11 @@ func TestDistictHash(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			n1, err := innit.Parse(tc.input1)
+			n1, err := lisp.Parse(tc.input1)
 			if err != nil {
 				t.Fatalf("Parse(%q): fails: %v", tc.input1, err)
 			}
-			n2, err := innit.Parse(tc.input2)
+			n2, err := lisp.Parse(tc.input2)
 			if err != nil {
 				t.Fatalf("Parse(%q): fails: %v", tc.input2, err)
 			}

@@ -1,4 +1,4 @@
-# innit
+# lisp
 
 Innit is a bare-minimum Lisp-like research language.
 
@@ -15,7 +15,7 @@ It features:
 space       => ' ' | '\n' | '\t' | '\r';
 val         => expr | id | int | float;
 expr        => '(' val ')';
-id          => [[:punct:]]+ | [^[[:punct:]]\s()"]
+id **
 int         => dec_digit | dec_digit int;
 float       => '.' int | int '.' int | int '.';
 dec_digit   => [0-9];
@@ -26,3 +26,5 @@ escape      => '\' escape_char;
 escape_char => '\' | 't' | 'n' | 'x' hex hex;
 hex_digit   => [0-9a-z];
 ```
+
+** see Id.md

@@ -1,12 +1,12 @@
-package innitdb
+package lispdb
 
 import (
 	"fmt"
 	"hash/maphash"
-	"strings"
 
-	"github.com/ajzaff/innit"
-	"github.com/ajzaff/innit/hash"
+	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/hash"
+	"github.com/ajzaff/lisp/lisputil"
 )
 
 type QueryInterface interface {
@@ -50,7 +50,7 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 //	// []ID{834583485} // "who"
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
-	qn, err := innit.Parse(q)
+	qn, err := lisp.Parse(q)
 	if err != nil {
 		r.err = err
 		return &r
@@ -72,12 +72,17 @@ func Query(db QueryInterface, q string) *QueryResult {
 	panic("not implemented")
 }
 
-func queryElements(q innit.Val) (elems []string) {
-	var v innit.Visitor
-	v.SetLitVisitor(func(e innit.Lit) {
-		if id, ok := e.(innit.IdLit); ok {
-			if strings.HasPrefix(string(id), "?") {
-				elems = append(elems, string(id[1:]))
+func queryElements(q lisp.Val) (elems []string) {
+	var v lisp.Visitor
+	v.SetBeforeExprVisitor(func(e lisp.Expr) {
+		if x := lisputil.Head(e); x != nil {
+			if lisputil.Equal(x, lisp.IdLit("?")) {
+				name := lisputil.Head(e[1:])
+				if name != nil {
+					if x, ok := name.(lisp.IdLit); ok {
+						elems = append(elems, x.String())
+					}
+				}
 			}
 		}
 	})

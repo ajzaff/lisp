@@ -1,4 +1,4 @@
-module github.com/ajzaff/innit
+module github.com/ajzaff/lisp
 
 go 1.18
 
