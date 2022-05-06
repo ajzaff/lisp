@@ -63,7 +63,7 @@ func Query(db QueryInterface, q string) *QueryResult {
 	h.SetSeed(db.Seed())
 	qh := h.Sum64()
 	hash.Val(&h, qn[0].Val())
-	if v, _ := db.Load(qh); v != nil {
+	if _, w := db.Load(qh); w > 0 {
 		// Exact match.
 		r.matches = [][]ID{{qh}}
 		return &r

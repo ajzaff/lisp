@@ -18,7 +18,7 @@ func TestStdPrint(t *testing.T) {
 		want  string
 	}{{
 		name: "empty",
-		want: "<nil>",
+		want: "<nil>\n",
 	}, {
 		name:  "unknown node",
 		input: unknownVal{},

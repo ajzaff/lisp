@@ -17,7 +17,7 @@ import (
 
 var (
 	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
-	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin". Default uses StdPrinter)`)
+	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "none". Default uses StdPrinter)`)
 	file  = flag.String("file", "", "File to read innit code from.")
 )
 
@@ -119,6 +119,7 @@ func main() {
 		for _, n := range ns {
 			binnit.NewEncoder(os.Stdout).Encode(n.Val())
 		}
+	case "none":
 	default:
 		log.Fatalf("unexpected -print mode: %v", *print)
 	}

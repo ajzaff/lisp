@@ -28,6 +28,7 @@ func StdPrinter(w io.Writer) *Printer {
 func (p *Printer) Print(n Val) {
 	if n == nil {
 		p.Write([]byte(p.Nil))
+		p.Write([]byte(p.NewLine))
 		return
 	}
 	var (

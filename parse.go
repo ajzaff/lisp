@@ -44,37 +44,20 @@ func parseTokens(src string, tokens []Pos) ([]Node, error) {
 			} else {
 				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
 			}
-		case (tok[0] == '.' && len(tok) > 1) || tok[0] >= '0' && tok[0] <= '9':
-			lit := &LitNode{
-				LitPos: Pos(i),
-			}
-			if strings.ContainsRune(tok, '.') {
-				x, err := strconv.ParseFloat(tok, 64)
-				if err != nil {
-					return nil, err
-				}
+		default:
+			lit := &LitNode{LitPos: Pos(i)}
+
+			if x, err := strconv.ParseInt(tok, 10, 64); err == nil {
+				lit.Lit = IntLit(x)
+			} else if x, err := strconv.ParseFloat(tok, 64); err == nil {
 				lit.Lit = FloatLit(x)
 			} else {
-				x, err := strconv.ParseInt(tok, 10, 64)
-				if err != nil {
-					return nil, err
-				}
-				lit.Lit = IntLit(x)
+				lit.Lit = IdLit(tok)
 			}
 			if len(stack) == 0 {
 				out = append(out, lit)
 			} else {
 				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
-			}
-		default:
-			id := &LitNode{
-				LitPos: Pos(i),
-				Lit:    IdLit(tok),
-			}
-			if len(stack) == 0 {
-				out = append(out, id)
-			} else {
-				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, id)
 			}
 		}
 	}

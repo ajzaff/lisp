@@ -17,39 +17,43 @@ func TestTokenizeLit(t *testing.T) {
 		input: "foo",
 		want:  []Pos{0, 3},
 	}, {
-		name:  "id 2",
-		input: "foo-bar",
-		want:  []Pos{0, 7},
+		name:  "symbol",
+		input: `.+`,
+		want:  []Pos{0, 2},
 	}, {
-		name:  "id 3",
+		name:  "id symbol id",
+		input: "foo-bar",
+		want:  []Pos{0, 3, 3, 4, 4, 7},
+	}, {
+		name:  "space id",
 		input: "  \t\n x",
 		want:  []Pos{5, 6},
 	}, {
-		name:  "id 4",
+		name:  "id id id",
 		input: "a b c",
 		want:  []Pos{0, 1, 2, 3, 4, 5},
 	}, {
-		name:  "id 5",
+		name:  "symbol 2",
+		input: ".",
+		want:  []Pos{0, 1},
+	}, {
+		name:  "id float",
 		input: `a.0`,
-		want:  []Pos{0, 3},
+		want:  []Pos{0, 1, 1, 3},
 	}, {
-		name:  "id 6",
+		name:  "id symbol",
 		input: "a...",
-		want:  []Pos{0, 4},
+		want:  []Pos{0, 1, 1, 4},
 	}, {
-		name:  "id 6_2",
+		name:  "symbol id",
 		input: "...a",
-		want:  []Pos{0, 4},
+		want:  []Pos{0, 3, 3, 4},
 	}, {
 		name:  "id string",
 		input: `a"abc"`,
 		want:  []Pos{0, 1, 1, 6},
 	}, {
-		name:  "id 7",
-		input: `.+`,
-		want:  []Pos{0, 2},
-	}, {
-		name:  "id 8",
+		name:  "id id id 2",
 		input: "ab cd ef",
 		want:  []Pos{0, 2, 3, 5, 6, 8},
 	}, {
@@ -141,6 +145,10 @@ func TestTokenizeExpr(t *testing.T) {
 		name:  "expr",
 		input: "(abc)",
 		want:  []Pos{0, 1, 1, 4, 4, 5},
+	}, {
+		name:  "expr symbol",
+		input: "(.)",
+		want:  []Pos{0, 1, 1, 2, 2, 3},
 	}, {
 		name:  "expr 2",
 		input: "(add 1 2)",

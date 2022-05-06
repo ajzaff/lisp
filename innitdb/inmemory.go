@@ -7,32 +7,48 @@ import (
 	"github.com/ajzaff/innit"
 )
 
-type inMemoryEntry struct {
-	innit.Val
-	Weight float64
+type entryInMemory interface {
+	entry()
+	Weight() float64
+	AddWeight(float64)
 }
 
+type litEntryInMemory struct {
+	innit.Lit
+	weight float64
+}
+
+func (e *litEntryInMemory) entry()              {}
+func (e *litEntryInMemory) Weight() float64     { return e.weight }
+func (e *litEntryInMemory) AddWeight(w float64) { e.weight += w }
+
+type exprEntryInMemory struct {
+	refs        []ID
+	inverseRefs []ID
+	weight      float64
+}
+
+func (e *exprEntryInMemory) entry()              {}
+func (e *exprEntryInMemory) Weight() float64     { return e.weight }
+func (e *exprEntryInMemory) AddWeight(w float64) { e.weight += w }
+
 type InMemory struct {
-	entries     map[ID]inMemoryEntry // Val hash       => Val entry
-	refs        map[ID][]ID          // expr hash       => child Vals
-	inverseRefs map[ID][]ID          // child Val hash => parent expr hash
+	entries map[ID]entryInMemory // hash ID => entry
 
 	hs maphash.Seed
-	rw sync.RWMutex // guards struct
+	rw sync.RWMutex // guards InMemory
 }
 
 func NewInMemory() *InMemory {
 	return &InMemory{
-		entries:     make(map[ID]inMemoryEntry),
-		refs:        make(map[ID][]ID),
-		inverseRefs: make(map[ID][]ID),
-		hs:          maphash.MakeSeed(),
+		entries: make(map[ID]entryInMemory),
+		hs:      maphash.MakeSeed(),
 	}
 }
 
 func (m *InMemory) Seed() maphash.Seed { return m.hs }
 
-func (m *InMemory) Load(id ID) (innit.Val, float64) {
+func (m *InMemory) Load(id ID) (lit innit.Lit, w float64) {
 	m.rw.RLock()
 	defer m.rw.RUnlock()
 
@@ -40,7 +56,11 @@ func (m *InMemory) Load(id ID) (innit.Val, float64) {
 	if !ok {
 		return nil, 0
 	}
-	return e.Val, e.Weight
+	w = e.Weight()
+	if e, ok := e.(*litEntryInMemory); ok {
+		lit = e.Lit
+	}
+	return
 }
 
 func (m *InMemory) Store(t []*TVal, w float64) error {
@@ -48,13 +68,17 @@ func (m *InMemory) Store(t []*TVal, w float64) error {
 	defer m.rw.Unlock()
 	for _, te := range t {
 		if e, ok := m.entries[te.ID]; ok {
-			e.Weight += w
-			m.entries[te.ID] = e
+			e.AddWeight(w)
 		} else {
-			m.entries[te.ID] = inMemoryEntry{Val: te.Val, Weight: w}
+			switch v := te.Val.(type) {
+			case innit.Lit:
+				m.entries[te.ID] = &litEntryInMemory{Lit: v, weight: w}
+			case innit.Expr:
+				m.entries[te.ID] = &exprEntryInMemory{refs: te.Refs, inverseRefs: te.InverseRefs, weight: w}
+			default:
+				panic("unreachable")
+			}
 		}
-		m.refs[te.ID] = append(m.refs[te.ID], te.Refs...)
-		m.inverseRefs[te.ID] = append(m.inverseRefs[te.ID], te.InverseRefs...)
 	}
 	return nil
 }
@@ -62,9 +86,16 @@ func (m *InMemory) Store(t []*TVal, w float64) error {
 func (m *InMemory) EachRef(root ID, fn func(ID) bool) {
 	m.rw.RLock()
 	defer m.rw.RUnlock()
-	for _, r := range m.refs[root] {
-		if !fn(r) {
-			return
+
+	e, ok := m.entries[root]
+	if !ok {
+		return
+	}
+	if e, ok := e.(*exprEntryInMemory); ok {
+		for _, r := range e.refs {
+			if !fn(r) {
+				return
+			}
 		}
 	}
 }
@@ -72,9 +103,16 @@ func (m *InMemory) EachRef(root ID, fn func(ID) bool) {
 func (m *InMemory) EachInverseRef(root ID, fn func(ID) bool) {
 	m.rw.RLock()
 	defer m.rw.RUnlock()
-	for _, r := range m.inverseRefs[root] {
-		if !fn(r) {
-			return
+
+	e, ok := m.entries[root]
+	if !ok {
+		return
+	}
+	if e, ok := e.(*exprEntryInMemory); ok {
+		for _, r := range e.inverseRefs {
+			if !fn(r) {
+				return
+			}
 		}
 	}
 }

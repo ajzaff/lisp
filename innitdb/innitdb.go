@@ -15,7 +15,7 @@ type InnitDB interface {
 
 type LoadInterface interface {
 	InnitDB
-	Load(ID) (innit.Val, float64)
+	Load(ID) (innit.Lit, float64)
 }
 
 func Load(db LoadInterface, v innit.Val) float64 {

@@ -81,25 +81,28 @@ func (s *tokenState) skipSpace() {
 	}
 }
 
-func isExprStr(r rune) bool {
+func isExprOrStr(r rune) bool {
 	return r == '(' || r == ')' || r == '"'
 }
 
-func isIdStart(r rune) bool {
-	return r != utf8.RuneError && !isExprStr(r) && unicode.In(r,
-		unicode.L,
-		unicode.M,
-		unicode.P,
-		unicode.S)
+// idIdSymbolic checks whether r is a legal symbolic Id rune.
+func isIdSymbolic(r rune) bool {
+	return r != utf8.RuneError &&
+		!isExprOrStr(r) &&
+		(unicode.IsPunct(r) || unicode.IsSymbol(r))
 }
 
+// isIdStart checks whether r can start an Id (not a number).
+func isIdStart(r rune) bool {
+	return isId(r) && !unicode.IsNumber(r)
+}
+
+// isId checks whether r is a legal Id rune.
 func isId(r rune) bool {
-	return r != utf8.RuneError && !isExprStr(r) && unicode.In(r,
-		unicode.L,
-		unicode.N,
-		unicode.M,
-		unicode.P,
-		unicode.S)
+	return r != utf8.RuneError &&
+		!isIdSymbolic(r) &&
+		!isExprOrStr(r) &&
+		!unicode.IsSpace(r)
 }
 
 var (
@@ -137,11 +140,15 @@ func tokenStart(s *tokenState) tokenFunc {
 		case r == '.': // Id | Float
 			s.mark()
 			s.advance(r, size)
-			return tokenIdOrFloat(s)
+			return tokenIdPunctOrFloat(s)
 		case unicode.IsNumber(r): // Int | Float
 			s.mark()
 			s.advance(r, size)
 			return tokenNumber(s)
+		case isIdSymbolic(r): // symbolic Id
+			s.mark()
+			s.advance(r, size)
+			return tokenIdSymbolic(s)
 		case isIdStart(r): // Id
 			s.mark()
 			s.advance(r, size)
@@ -195,7 +202,7 @@ func tokenEscape(s *tokenState) tokenFunc {
 }
 
 // Byte literals are supported from \x00 to \xff.
-// tokenByteLit{,2} ensure the right format.
+// tokenByteLit2 ensures the right length.
 func tokenByteLit(s *tokenState) tokenFunc {
 	return func() tokenFunc {
 		switch r, size := s.decode(); {
@@ -245,15 +252,15 @@ func tokenNumber(s *tokenState) tokenFunc {
 }
 
 // tokenIdOrFloat is invoked on "."
-func tokenIdOrFloat(s *tokenState) tokenFunc {
+func tokenIdPunctOrFloat(s *tokenState) tokenFunc {
 	return func() tokenFunc {
 		switch r, size := s.decode(); {
 		case unicode.IsNumber(r):
 			s.advance(r, size)
 			return tokenFloat(s)
-		case isId(r):
+		case isIdSymbolic(r):
 			s.advance(r, size)
-			return tokenId(s)
+			return tokenIdSymbolic(s)
 		default:
 			s.markEnd()
 			return tokenStart(s)
@@ -267,6 +274,19 @@ func tokenFloat(s *tokenState) tokenFunc {
 		case unicode.IsNumber(r):
 			s.advance(r, size)
 			return tokenFloat(s)
+		default:
+			s.markEnd()
+			return tokenStart(s)
+		}
+	}
+}
+
+func tokenIdSymbolic(s *tokenState) tokenFunc {
+	return func() tokenFunc {
+		switch r, size := s.decode(); {
+		case isIdSymbolic(r):
+			s.advance(r, size)
+			return tokenIdSymbolic(s)
 		default:
 			s.markEnd()
 			return tokenStart(s)
