@@ -70,19 +70,24 @@ func (m *InMemory) Load(id ID) (lit lisp.Lit, w float64) {
 	return
 }
 
+func (m *InMemory) Len() int { return len(m.entries) }
+
 func (m *InMemory) Store(t []*TVal, w float64) error {
 	m.rw.Lock()
 	defer m.rw.Unlock()
+
 	for _, te := range t {
-		if e, ok := m.entries[te.ID]; ok {
-			e.AddWeight(w, te.InverseRefs)
-		} else {
-			if te.Lit == nil {
-				m.entries[te.ID] = &exprEntryInMemory{refs: te.Refs, inverseRefs: te.InverseRefs, weight: w}
-				continue
+		e, ok := m.entries[te.ID]
+		if !ok {
+			switch {
+			case te.Lit == nil:
+				e = &exprEntryInMemory{refs: te.Refs}
+			default:
+				e = &litEntryInMemory{Lit: te.Lit}
 			}
-			m.entries[te.ID] = &litEntryInMemory{Lit: te.Lit, inverseRefs: te.InverseRefs, weight: w}
+			m.entries[te.ID] = e
 		}
+		e.AddWeight(w, te.InverseRefs)
 	}
 	return nil
 }

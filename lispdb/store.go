@@ -17,7 +17,10 @@ type TVal struct {
 	InverseRefs []uint64
 }
 
-func Store(s StoreInterface, n lisp.Val, w float64) error {
+// Store each value in s each with weight w.
+//
+// Store writes to s in a single transaction built in memory.
+func Store(s StoreInterface, vals []lisp.Val, w float64) error {
 	var (
 		stack []*TVal
 		t     []*TVal
@@ -53,6 +56,11 @@ func Store(s StoreInterface, n lisp.Val, w float64) error {
 		}
 		t = append(t, entry)
 	})
-	v.Visit(n)
+	for _, val := range vals {
+		v.Visit(val)
+		if len(stack) > 0 {
+			panic("internal error: stack not empty after Visit")
+		}
+	}
 	return s.Store(t, w)
 }
