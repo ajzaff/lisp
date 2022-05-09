@@ -66,7 +66,7 @@ func (p *Printer) Print(n Val) {
 			return
 		}
 		r, _ := utf8.DecodeRuneInString(e.String())
-		currIdent := IsIdent(r)
+		currIdent := IsLetter(r)
 		if lastIdent && currIdent {
 			fmt.Fprint(p.Writer, " ")
 		}

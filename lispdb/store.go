@@ -31,7 +31,7 @@ func Store(s StoreInterface, vals []lisp.Val, w float64) error {
 
 	v.SetBeforeExprVisitor(func(e lisp.Expr) {
 		h.Reset()
-		h.WriteExpr(e)
+		h.WriteVal(e)
 		id := h.Sum64()
 		entry := &TVal{ID: id}
 		if len(stack) > 0 {
@@ -47,7 +47,7 @@ func Store(s StoreInterface, vals []lisp.Val, w float64) error {
 	})
 	v.SetLitVisitor(func(e lisp.Lit) {
 		h.Reset()
-		h.WriteLit(e)
+		h.WriteVal(e)
 		id := h.Sum64()
 		entry := &TVal{ID: id, Lit: e}
 		if len(stack) > 0 {

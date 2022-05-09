@@ -37,11 +37,21 @@ func isExprOrStr(r rune) bool {
 }
 
 func IsSymbol(r rune) bool {
-	return isExprOrStr(r) &&
-		(unicode.IsPunct(r) || unicode.IsSymbol(r))
+	return !isExprOrStr(r) && isSymbol(r)
+}
+
+func isSymbol(r rune) bool {
+	return unicode.IsPunct(r) || unicode.IsSymbol(r)
+}
+
+func IsLetter(r rune) bool {
+	return !isExprOrStr(r) && isIdent(r)
 }
 
 func IsIdent(r rune) bool {
-	return isExprOrStr(r) &&
-		(unicode.IsLetter(r) || unicode.IsMark(r))
+	return !isExprOrStr(r) && (isSymbol(r) || isIdent(r))
+}
+
+func isIdent(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsMark(r)
 }

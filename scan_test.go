@@ -43,7 +43,7 @@ func scanTest(t *testing.T, tc scanTestCase) {
 		t.Errorf("Tokenize(%q) got text diff (-want, +got):\n%s", tc.name, diff)
 	}
 	if (gotErr != nil) != tc.wantErr {
-		t.Errorf("Tokenize(%q) got err: %q, want err? %v", tc.name, gotErr, tc.wantErr)
+		t.Errorf("Tokenize(%q) got err: %v, want err? %v", tc.name, gotErr, tc.wantErr)
 	}
 }
 
@@ -87,7 +87,7 @@ func TestTokenizeLit(t *testing.T) {
 	}, {
 		name:     "id id int",
 		input:    `a.0`,
-		wantPos:  []Pos{0, 1, 1, 3},
+		wantPos:  []Pos{0, 1, 1, 2, 2, 3},
 		wantTok:  []Token{Id, Id, Int},
 		wantText: []string{"a", ".", "0"},
 	}, {
@@ -141,7 +141,7 @@ func TestTokenizeLit(t *testing.T) {
 	}, {
 		name:     "float 3",
 		input:    "0.",
-		wantPos:  []Pos{0, 1},
+		wantPos:  []Pos{0, 2},
 		wantTok:  []Token{Float},
 		wantText: []string{"0."},
 	}, {
@@ -153,7 +153,7 @@ func TestTokenizeLit(t *testing.T) {
 	}, {
 		name:     "float 4_2",
 		input:    "0.1 0.2 0.3",
-		wantPos:  []Pos{0, 3, 4, 7, 8, 10},
+		wantPos:  []Pos{0, 3, 4, 7, 8, 11},
 		wantTok:  []Token{Float, Float, Float},
 		wantText: []string{"0.1", "0.2", "0.3"},
 	}, {
@@ -205,8 +205,6 @@ func TestTokenizeLitErrors(t *testing.T) {
 	for _, tc := range []scanTestCase{{
 		name:    "byte lit EOF",
 		input:   `"abc\x00\x1"`,
-		wantPos: []Pos{0},
-		wantTok: []Token{String},
 		wantErr: true,
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -241,21 +239,35 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, RParen},
 		wantText: []string{"(", ".", ")"},
 	}, {
-		name:    "expr 2",
-		input:   "(add 1 2)",
-		wantPos: []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
+		name:     "expr 2",
+		input:    "(add 1 2)",
+		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
+		wantTok:  []Token{LParen, Id, Int, Int, RParen},
+		wantText: []string{"(", "add", "1", "2", ")"},
 	}, {
-		name:    "expr 3",
-		input:   "(add (sub 3 2) 2)",
-		wantPos: []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
+		name:     "expr 3",
+		input:    "(add (sub 3 2) 2)",
+		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
+		wantTok:  []Token{LParen, Id, LParen, Id, Int, Int, RParen, Int, RParen},
+		wantText: []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
 	}, {
-		name:    "expr 4",
-		input:   "((a))",
-		wantPos: []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
+		name:     "expr 4",
+		input:    "((a))",
+		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
+		wantTok:  []Token{LParen, LParen, Id, RParen, RParen},
+		wantText: []string{"(", "(", "a", ")", ")"},
 	}, {
-		name:    "expr 5",
-		input:   "(a)(b) (c)",
-		wantPos: []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10},
+		name:     "expr 5",
+		input:    "(a)(b) (c)",
+		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10},
+		wantTok:  []Token{LParen, Id, RParen, LParen, Id, RParen, LParen, Id, RParen},
+		wantText: []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
+	}, {
+		name:     "expr 6",
+		input:    "(?x/y)\n",
+		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6},
+		wantTok:  []Token{LParen, Id, Id, Id, Id, RParen},
+		wantText: []string{"(", "?", "x", "/", "y", ")"},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			scanTest(t, tc)
