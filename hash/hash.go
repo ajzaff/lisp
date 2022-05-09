@@ -14,5 +14,4 @@ type MapHash struct {
 // WriteValue hashes the Val into the MapHash.
 func (h *MapHash) WriteVal(v lisp.Val) {
 	lisp.StdPrinter(&h.Hash).Print(v)
-	h.WriteByte(' ') // Delim avoids distinct-value hash collisions.
 }

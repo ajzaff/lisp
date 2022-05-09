@@ -29,7 +29,7 @@ type Node interface {
 
 // Val is an interface for Lisp Values.
 //
-// Only allowed types are Lit and Expr.
+// Only allowed types are IdLit, IntLit, FloatLit, StringLit and Expr.
 type Val interface {
 	val()
 }

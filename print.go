@@ -12,7 +12,7 @@ type Printer struct {
 
 	Nil string
 
-	Prefix, Indent, NewLine string
+	Prefix, NewLine string
 }
 
 // StdPrinter returns a printer which uses spaces and new lines.
@@ -20,7 +20,6 @@ func StdPrinter(w io.Writer) *Printer {
 	return &Printer{
 		Writer:  w,
 		Nil:     "<nil>",
-		Indent:  "  ",
 		NewLine: "\n",
 	}
 }
@@ -35,7 +34,7 @@ func (p *Printer) Print(n Val) {
 	var (
 		exprDepth  int
 		firstWrite = true
-		lastIdent  = true
+		lastLetter = true
 		newLine    = fmt.Sprint(p.NewLine, p.Prefix)
 	)
 	var v Visitor
@@ -45,7 +44,7 @@ func (p *Printer) Print(n Val) {
 			firstWrite = true
 		}
 		fmt.Fprint(p.Writer, "(")
-		lastIdent = false
+		lastLetter = false
 		exprDepth++
 	})
 	v.SetAfterExprVisitor(func(e Expr) {
@@ -54,7 +53,7 @@ func (p *Printer) Print(n Val) {
 		if exprDepth == 0 {
 			fmt.Fprint(p.Writer, newLine)
 		}
-		lastIdent = false
+		lastLetter = false
 	})
 	v.SetLitVisitor(func(e Lit) {
 		if !firstWrite {
@@ -66,11 +65,11 @@ func (p *Printer) Print(n Val) {
 			return
 		}
 		r, _ := utf8.DecodeRuneInString(e.String())
-		currIdent := IsLetter(r)
-		if lastIdent && currIdent {
+		currLetter := IsLetter(r)
+		if lastLetter && currLetter {
 			fmt.Fprint(p.Writer, " ")
 		}
-		lastIdent = currIdent
+		lastLetter = currLetter
 		fmt.Fprint(p.Writer, e.String())
 	})
 	v.Visit(n)

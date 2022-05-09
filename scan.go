@@ -5,16 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sync"
 	"unicode"
 	"unicode/utf8"
 )
 
 // Scanner scans the Lisp source for Tokens.
 type TokenScanner struct {
-	sc   *bufio.Scanner
-	tsc  tokenScanner
-	once sync.Once
+	sc  *bufio.Scanner
+	tsc tokenScanner
 }
 
 func NewTokenScanner(src io.Reader) *TokenScanner {
@@ -108,7 +106,6 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 				case 'x':
 					for j := 0; j < 2; j++ {
 						r, size := utf8.DecodeRune(src[i+Pos(j):])
-						i += Pos(size)
 						switch {
 						case r >= '0' && r <= '9' || r >= 'A' && r <= 'F' || r >= 'a' && r <= 'f':
 						case size == 0:
@@ -118,6 +115,7 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 							err = errRune
 							break string_loop
 						}
+						i += Pos(size)
 					}
 				default:
 					switch {
