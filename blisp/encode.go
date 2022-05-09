@@ -3,16 +3,12 @@ package blisp
 import (
 	"encoding/binary"
 	"io"
+	"math"
 
 	"github.com/ajzaff/lisp"
 )
 
-const magic = "lisp\n"
-
-const (
-	lit  = 0
-	expr = 1
-)
+const magic = "\x41blisp\n"
 
 type Encoder struct {
 	io.Writer
@@ -32,17 +28,16 @@ func (e *Encoder) Encode(v lisp.Val) error {
 func encode(v lisp.Val, b []byte) int {
 	switch v := v.(type) {
 	case lisp.Lit:
-		b[0] = lit
 		var i int
 		switch v := v.(type) {
 		case lisp.IdLit:
-			b[1] = byte(lisp.Id)
+			b[0] = byte(lisp.Id)
 		case lisp.IntLit:
-			b[1] = byte(lisp.Int)
+			b[0] = byte(lisp.Int)
 		case lisp.FloatLit:
-			b[1] = byte(lisp.Float)
+			b[0] = byte(lisp.Float)
 		case lisp.StringLit:
-			b[1] = byte(lisp.String)
+			b[0] = byte(lisp.String)
 			s := v.String()
 			i = copy(b[2:], s[1:len(s)-1])
 			return 2 + i
@@ -50,18 +45,18 @@ func encode(v lisp.Val, b []byte) int {
 		i = copy(b[2:], []byte(v.String()))
 		return 2 + i
 	case lisp.Expr:
-		b[0] = expr
+		b[0] = byte(lisp.LParen)
 		size := 0
 		for _, e := range v {
 			size += EncodedLen(e.Val())
 		}
-		i := binary.PutUvarint(b, uint64(size))
+		i := binary.PutUvarint(b[1:], uint64(size))
 		for _, e := range v {
 			i += encode(e.Val(), b[i:])
 		}
 		return i
 	default:
-		panic("Unexpected node type")
+		panic("Unexpected Val type")
 	}
 }
 
@@ -71,28 +66,22 @@ func EncodedLen(n lisp.Val) int {
 		return 0
 	}
 	switch x := n.(type) {
-	case lisp.Lit:
-		n := litLen(x)
-		return 1 + 1 + varIntLen(uint64(n)) + n
+	case lisp.IdLit:
+		return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
+	case lisp.IntLit:
+		return 1 + varIntLen(uint64(x))
+	case lisp.FloatLit:
+		return 1 + varIntLen(math.Float64bits(float64(x)))
+	case lisp.StringLit:
+		return 1 + varIntLen(uint64(len(x.String())-2)) + len(x.String()) - 2
 	case lisp.Expr:
-		size := 1
+		size := 0
 		for _, e := range x {
 			size += EncodedLen(e.Val())
 		}
-		return varIntLen(uint64(size)) + size
+		return 1 + varIntLen(uint64(size)) + size
 	default:
 		panic("Unexpected Val type")
-	}
-}
-
-func litLen(v lisp.Lit) int {
-	switch v.(type) {
-	case lisp.IdLit, lisp.IntLit, lisp.FloatLit:
-		return len(v.String())
-	case lisp.StringLit:
-		return len(v.String()) - 2
-	default:
-		panic("unexpected token")
 	}
 }
 

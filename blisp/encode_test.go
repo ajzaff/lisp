@@ -2,10 +2,10 @@ package blisp
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/ajzaff/lisp"
+	"github.com/google/go-cmp/cmp"
 )
 
 func mustParse(t *testing.T, src string) lisp.Val {
@@ -26,23 +26,23 @@ func TestEncodedLen(t *testing.T) {
 	}, {
 		name:  "id",
 		input: mustParse(t, "main"),
-		want:  7,
+		want:  6,
 	}, {
 		name:  "int",
 		input: mustParse(t, "1"),
-		want:  4,
+		want:  2,
 	}, {
 		name:  "float",
 		input: mustParse(t, "1.125"),
-		want:  8,
+		want:  10,
 	}, {
 		name:  "string",
 		input: mustParse(t, `"abc"`),
-		want:  6,
+		want:  5,
 	}, {
 		name:  "expr",
 		input: mustParse(t, "(a)"),
-		want:  6,
+		want:  5,
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := EncodedLen(tc.input); got != tc.want {
@@ -55,10 +55,34 @@ func TestEncodedLen(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
-	n, _ := lisp.Parser{}.Parse("(1 (2 (3 4)))")
-	var buf bytes.Buffer
-	e := NewEncoder(&buf)
-	e.Encode(n[0].Val())
-	fmt.Println(EncodedLen(n[0].Val()))
-	fmt.Println(buf.Bytes())
+	for _, tc := range []struct {
+		name    string
+		input   string
+		want    []byte
+		wantErr bool
+	}{{
+		name: "empty",
+		want: []byte{0x05, 0x02, 0x00, 0x31, 0x05, 0x02, 0x00, 0x32, 0x05, 0x02, 0x00, 0x33, 0x02, 0x00},
+	}, {
+		name:  "complex nested expr",
+		input: "(1 (2 (3 4)))",
+		want:  []byte{0x05, 0x02, 0x00, 0x31, 0x05, 0x02, 0x00, 0x32, 0x05, 0x02, 0x00, 0x33, 0x02, 0x00},
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			ns, _ := lisp.Parser{}.Parse("(1 (2 (3 4)))")
+			if len(ns) > 1 {
+				t.Fatalf("Parse(%q): test expects single Val", tc.name)
+			}
+			v := ns[0].Val()
+			var buf bytes.Buffer
+			e := NewEncoder(&buf)
+			if gotErr := e.Encode(v); (gotErr != nil) != tc.wantErr {
+				t.Fatalf("Encode(%q): got err = %v, want err = %v", tc.name, gotErr, tc.wantErr)
+			}
+			got := buf.Bytes()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("Encode(%q): got diff (-want, +got):\n%v", tc.name, diff)
+			}
+		})
+	}
 }
