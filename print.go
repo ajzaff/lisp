@@ -33,10 +33,10 @@ func (p *Printer) Print(n Val) {
 		return
 	}
 	var (
-		exprDepth      int
-		firstWrite     = true
-		lastIsNormalID = true
-		newLine        = fmt.Sprint(p.NewLine, p.Prefix)
+		exprDepth  int
+		firstWrite = true
+		lastIdent  = true
+		newLine    = fmt.Sprint(p.NewLine, p.Prefix)
 	)
 	var v Visitor
 	v.SetBeforeExprVisitor(func(e Expr) {
@@ -45,7 +45,7 @@ func (p *Printer) Print(n Val) {
 			firstWrite = true
 		}
 		fmt.Fprint(p.Writer, "(")
-		lastIsNormalID = false
+		lastIdent = false
 		exprDepth++
 	})
 	v.SetAfterExprVisitor(func(e Expr) {
@@ -54,7 +54,7 @@ func (p *Printer) Print(n Val) {
 		if exprDepth == 0 {
 			fmt.Fprint(p.Writer, newLine)
 		}
-		lastIsNormalID = false
+		lastIdent = false
 	})
 	v.SetLitVisitor(func(e Lit) {
 		if !firstWrite {
@@ -65,17 +65,13 @@ func (p *Printer) Print(n Val) {
 			fmt.Fprint(p.Writer, e.String(), newLine)
 			return
 		}
-		currNormalID := isNormalID(e.String())
-		if lastIsNormalID && currNormalID {
+		r, _ := utf8.DecodeRuneInString(e.String())
+		currIdent := IsIdent(r)
+		if lastIdent && currIdent {
 			fmt.Fprint(p.Writer, " ")
 		}
-		lastIsNormalID = currNormalID
+		lastIdent = currIdent
 		fmt.Fprint(p.Writer, e.String())
 	})
 	v.Visit(n)
-}
-
-func isNormalID(s string) bool {
-	r, _ := utf8.DecodeRuneInString(s)
-	return isID(r)
 }

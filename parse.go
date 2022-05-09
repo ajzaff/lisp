@@ -9,23 +9,18 @@ import (
 type Parser struct{}
 
 func (Parser) Parse(src string) ([]Node, error) {
-	tokens, err := Tokenizer{}.Tokenize(src)
-	if err != nil {
-		return nil, err
-	}
-	return parseTokens(src, tokens)
+	return parseTokens(NewTokenScanner(strings.NewReader(src)))
 }
 
-func parseTokens(src string, tokens []Pos) ([]Node, error) {
+func parseTokens(sc *TokenScanner) ([]Node, error) {
 	var out []Node
 	var stack []*ExprNode
-	for i := 0; i < len(tokens); i += 2 {
-		pos, end := tokens[i], tokens[i+1]
-		tok := string(src[pos:end])
-		switch {
-		case tok == "(":
+	for sc.Scan() {
+		pos, tok, text := sc.Token()
+		switch tok {
+		case LParen:
 			stack = append(stack, &ExprNode{LParen: pos})
-		case tok == ")":
+		case RParen:
 			if len(stack) == 0 {
 				return nil, fmt.Errorf("lisp.Parse: internal error: unexpected ')' at pos %d", pos)
 			}
@@ -36,10 +31,48 @@ func parseTokens(src string, tokens []Pos) ([]Node, error) {
 				stack[len(stack)-2].Expr = append(stack[len(stack)-2].Expr, stack[len(stack)-1])
 			}
 			stack = stack[:len(stack)-1]
-		case strings.HasPrefix(tok, `"`):
+		case Int:
+			x, err := strconv.ParseInt(text, 10, 64)
+			if err != nil {
+				panic("parseInt")
+			}
 			lit := &LitNode{
-				LitPos: Pos(i),
-				Lit:    StringLit(tok),
+				LitPos: pos,
+				Lit:    IntLit(x),
+			}
+			if len(stack) == 0 {
+				out = append(out, lit)
+			} else {
+				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
+			}
+		case Float:
+			x, err := strconv.ParseFloat(text, 64)
+			if err != nil {
+				panic("parseFloat")
+			}
+			lit := &LitNode{
+				LitPos: pos,
+				Lit:    FloatLit(x),
+			}
+			if len(stack) == 0 {
+				out = append(out, lit)
+			} else {
+				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
+			}
+		case String:
+			lit := &LitNode{
+				LitPos: pos,
+				Lit:    StringLit(text),
+			}
+			if len(stack) == 0 {
+				out = append(out, lit)
+			} else {
+				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
+			}
+		case Id:
+			lit := &LitNode{
+				LitPos: pos,
+				Lit:    IdLit(text),
 			}
 			if len(stack) == 0 {
 				out = append(out, lit)
@@ -47,28 +80,11 @@ func parseTokens(src string, tokens []Pos) ([]Node, error) {
 				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
 			}
 		default:
-			lit := &LitNode{LitPos: Pos(i)}
-
-			if x, err := strconv.ParseInt(tok, 10, 64); err == nil {
-				lit.Lit = IntLit(x)
-			} else if x, err := strconv.ParseFloat(tok, 64); err == nil {
-				lit.Lit = FloatLit(x)
-			} else {
-				lit.Lit = IdLit(tok)
-			}
-			if len(stack) == 0 {
-				out = append(out, lit)
-			} else {
-				stack[len(stack)-1].Expr = append(stack[len(stack)-1].Expr, lit)
-			}
+			panic("unreachable")
 		}
 	}
 	if len(stack) > 0 {
 		err := fmt.Errorf("lisp.Parse: unexpected EOF")
-		if len(tokens) >= 2 {
-			pos, end := tokens[len(tokens)-2], tokens[len(tokens)-1]
-			err = fmt.Errorf("%v: at %q", err, string(src[pos:end]))
-		}
 		return nil, err
 	}
 	return out, nil
