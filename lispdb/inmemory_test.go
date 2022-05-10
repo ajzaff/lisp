@@ -1,21 +1,24 @@
 package lispdb
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/ajzaff/lisp"
 )
 
-func mustParse(t *testing.T, src string) []lisp.Val {
-	nodes, err := lisp.Parser{}.Parse(src)
-	if err != nil {
-		t.Fatalf("mustParse(%q) failed: %v", src, err)
+func mustParseMultiple(t *testing.T, src string) []lisp.Val {
+	var ns []lisp.Val
+	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(src)))
+	for sc.Scan() {
+		ns = append(ns, sc.Node().Val())
+		break
 	}
-	vals := make([]lisp.Val, 0, len(nodes))
-	for _, n := range nodes {
-		vals = append(vals, n.Val())
+	if err := sc.Err(); err != nil {
+		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))
 	}
-	return vals
+	return ns
 }
 
 func TestGenericStoreMultipleInMemory(t *testing.T) {
@@ -28,18 +31,18 @@ func TestGenericStoreMultipleInMemory(t *testing.T) {
 		name: "empty",
 	}, {
 		name:  "empty parse",
-		input: mustParse(t, ""),
+		input: mustParseMultiple(t, ""),
 	}, {
 		name:    "int",
-		input:   mustParse(t, "1"),
+		input:   mustParseMultiple(t, "1"),
 		wantLen: 1,
 	}, {
 		name:    "int{3}",
-		input:   mustParse(t, "1 2 3"),
+		input:   mustParseMultiple(t, "1 2 3"),
 		wantLen: 3,
 	}, {
 		name:    "1{3}",
-		input:   mustParse(t, "1 1 1"),
+		input:   mustParseMultiple(t, "1 1 1"),
 		wantLen: 1,
 	}} {
 		t.Run(tc.name, func(t *testing.T) {

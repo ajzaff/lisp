@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"unicode"
 	"unicode/utf8"
 )
@@ -24,6 +25,7 @@ func NewTokenScanner(src io.Reader) *TokenScanner {
 func (sc *TokenScanner) Init(src io.Reader) {
 	sc.sc = bufio.NewScanner(src)
 	sc.sc.Split(sc.tsc.scanTokens)
+	sc.tsc = tokenScanner{}
 }
 
 func (sc *TokenScanner) Buffer(buf []byte, max int) {
@@ -58,8 +60,6 @@ var (
 )
 
 func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
-	t.start = t.end
-
 	var tok Token
 
 	// Skip spaces.
@@ -72,10 +72,10 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		i += Pos(size)
 	}
 	start := i
-	t.start += i           // Update abs start position.
 	if len(src[i:]) == 0 { // No token.
 		return 0, nil, io.EOF
 	}
+	t.start = t.end + i // Update token start.
 
 	// Get the first rune.
 	r, size := utf8.DecodeRune(src[i:])
@@ -191,4 +191,110 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 	t.end += i // Update abs end position.
 	t.tok = tok
 	return advance, token, err
+}
+
+type NodeScanner struct {
+	sc   *TokenScanner
+	err  error
+	node Node
+}
+
+func NewNodeScanner(sc *TokenScanner) *NodeScanner {
+	var s NodeScanner
+	s.sc = sc
+	return &s
+}
+
+func (s *NodeScanner) Init(src io.Reader) {
+	s.sc.Init(src)
+	s.err = nil
+	s.node = nil
+}
+
+func (s *NodeScanner) Scan() bool {
+	if !s.sc.Scan() {
+		return false
+	}
+	node, err := s.scan(s.sc.Token())
+	if err != nil {
+		s.err = err
+		return false
+	}
+	s.node = node
+	return true
+}
+
+func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
+	switch tok {
+	case Id:
+		return &LitNode{
+			LitPos: pos,
+			Lit:    IdLit(text),
+			EndPos: pos + Pos(len(text)),
+		}, nil
+	case Int:
+		x, err := strconv.ParseInt(text, 10, 64)
+		if err != nil {
+			panic("parseInt")
+		}
+		return &LitNode{
+			LitPos: pos,
+			Lit:    IntLit(x),
+			EndPos: pos + Pos(len(text)),
+		}, nil
+	case Float:
+		x, err := strconv.ParseFloat(text, 64)
+		if err != nil {
+			panic("parseFloat")
+		}
+		return &LitNode{
+			LitPos: pos,
+			Lit:    FloatLit(x),
+			EndPos: pos + Pos(len(text)),
+		}, nil
+	case String:
+		return &LitNode{
+			LitPos: pos,
+			Lit:    StringLit(text),
+			EndPos: pos + Pos(len(text)),
+		}, nil
+	case LParen, RParen:
+		return s.scanExpr(pos)
+	default:
+		panic("unreachable")
+	}
+}
+
+func (s *NodeScanner) scanExpr(lParen Pos) (Node, error) {
+	var expr Expr
+	for {
+		if !s.sc.Scan() {
+			return nil, errEOF
+		}
+		pos, tok, text := s.sc.Token()
+		switch tok {
+		case RParen:
+			return &ExprNode{
+				LParen: lParen,
+				Expr:   expr,
+				RParen: pos,
+			}, nil
+		}
+		e, err := s.scan(pos, tok, text)
+		if err != nil {
+			return nil, err
+		}
+		expr = append(expr, e)
+	}
+}
+
+func (s *NodeScanner) Node() Node {
+	return s.node
+}
+
+func (s *NodeScanner) Err() error {
+	if s.err != nil {
+		return s.err
+	}
+	return s.sc.Err()
 }

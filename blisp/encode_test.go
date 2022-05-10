@@ -2,6 +2,8 @@ package blisp
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/ajzaff/lisp"
@@ -9,11 +11,19 @@ import (
 )
 
 func mustParse(t *testing.T, src string) lisp.Val {
-	n, err := lisp.Parser{}.Parse(src)
-	if err != nil {
-		t.Fatal(err)
+	var n lisp.Node
+	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(src)))
+	for sc.Scan() {
+		n = sc.Node()
+		break
 	}
-	return n[0].Val()
+	if err := sc.Err(); err != nil {
+		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))
+	}
+	if n == nil {
+		return nil
+	}
+	return n.Val()
 }
 
 func TestEncodedLen(t *testing.T) {
@@ -62,18 +72,13 @@ func TestEncode(t *testing.T) {
 		wantErr bool
 	}{{
 		name: "empty",
-		want: []byte{0x05, 0x02, 0x00, 0x31, 0x05, 0x02, 0x00, 0x32, 0x05, 0x02, 0x00, 0x33, 0x02, 0x00},
 	}, {
 		name:  "complex nested expr",
 		input: "(1 (2 (3 4)))",
 		want:  []byte{0x05, 0x02, 0x00, 0x31, 0x05, 0x02, 0x00, 0x32, 0x05, 0x02, 0x00, 0x33, 0x02, 0x00},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			ns, _ := lisp.Parser{}.Parse("(1 (2 (3 4)))")
-			if len(ns) > 1 {
-				t.Fatalf("Parse(%q): test expects single Val", tc.name)
-			}
-			v := ns[0].Val()
+			v := mustParse(t, tc.input)
 			var buf bytes.Buffer
 			e := NewEncoder(&buf)
 			if gotErr := e.Encode(v); (gotErr != nil) != tc.wantErr {

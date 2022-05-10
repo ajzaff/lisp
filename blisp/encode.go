@@ -26,6 +26,9 @@ func (e *Encoder) Encode(v lisp.Val) error {
 }
 
 func encode(v lisp.Val, b []byte) int {
+	if v == nil {
+		return 0
+	}
 	switch v := v.(type) {
 	case lisp.Lit:
 		var i int

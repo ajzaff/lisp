@@ -1,7 +1,7 @@
 package lispdb
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/ajzaff/lisp"
 	"github.com/ajzaff/lisp/hash"
@@ -102,25 +102,28 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 //	// []ID{834583485} // "who"
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
-	qn, err := lisp.Parser{}.Parse(q)
-	if err != nil {
+	var qn []lisp.Val
+	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(q)))
+	for sc.Scan() {
+		qn = append(qn, sc.Node().Val())
+	}
+	if err := sc.Err(); err != nil {
 		r.err = err
 		return &r
 	}
 	if len(qn) != 1 {
-		r.err = fmt.Errorf("expected exactly 1 Val in query expression, got %d", len(qn))
-		return &r
+		panic("union of multiple query expressions is not yet supported")
 	}
 	var h hash.MapHash
 	h.SetSeed(db.Seed())
 	qh := h.Sum64()
-	h.WriteVal(qn[0].Val())
+	h.WriteVal(qn[0])
 	if _, w := db.Load(qh); w > 0 {
 		// Exact match.
 		r.matches = [][]ID{{qh}}
 		return &r
 	}
-	r.elems = queryElements(qn[0].Val())
+	r.elems = queryElements(qn[0])
 	panic("not implemented")
 }
 
