@@ -13,7 +13,6 @@ func mustParseMultiple(t *testing.T, src string) []lisp.Val {
 	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(src)))
 	for sc.Scan() {
 		ns = append(ns, sc.Node().Val())
-		break
 	}
 	if err := sc.Err(); err != nil {
 		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))

@@ -78,16 +78,17 @@ func (m *InMemory) Store(t []*TVal, w float64) error {
 
 	for _, te := range t {
 		e, ok := m.entries[te.ID]
-		if !ok {
-			switch {
-			case te.Lit == nil:
-				e = &exprEntryInMemory{refs: te.Refs}
-			default:
-				e = &litEntryInMemory{Lit: te.Lit}
-			}
-			m.entries[te.ID] = e
+		if ok {
+			e.AddWeight(w, te.InverseRefs)
+			continue
 		}
-		e.AddWeight(w, te.InverseRefs)
+		switch {
+		case te.Lit == nil:
+			e = &exprEntryInMemory{refs: te.Refs}
+		default:
+			e = &litEntryInMemory{Lit: te.Lit}
+		}
+		m.entries[te.ID] = e
 	}
 	return nil
 }
