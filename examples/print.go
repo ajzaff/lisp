@@ -4,11 +4,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ajzaff/lisp"
@@ -36,8 +38,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ns, err := lisp.Parser{}.Parse(string(src))
-	if err != nil {
+	var ns []lisp.Node
+	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(bytes.NewReader(src)))
+	for sc.Scan() {
+		ns = append(ns, sc.Node())
+	}
+	if err := sc.Err(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -47,13 +53,10 @@ func main() {
 			lisp.StdPrinter(os.Stdout).Print(n.Val())
 		}
 	case "tok":
-		tokens, err := lisp.Tokenizer{}.Tokenize(string(src))
-		if err != nil {
-			panic(err)
-		}
-		for i := 0; i < len(tokens); i += 2 {
-			token := string(src[tokens[i]:tokens[i+1]])
-			println(token)
+		sc := lisp.NewTokenScanner(bytes.NewReader(src))
+		for sc.Scan() {
+			pos, tok, text := sc.Token()
+			println(strconv.Itoa(int(pos)), "\t", tok.String(), "\t", text)
 		}
 	case "ast":
 		var v lisp.Visitor
@@ -78,9 +81,11 @@ func main() {
 		}
 	case "db":
 		db := lispdb.NewInMemory()
+		var vs []lisp.Val
 		for _, n := range ns {
-			lispdb.Store(db, n.Val(), 1)
+			vs = append(vs, n.Val())
 		}
+		lispdb.Store(db, vs, 1)
 		refs := make(map[lispdb.ID]struct {
 			lisp.Val
 			Fc          float64

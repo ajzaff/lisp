@@ -59,13 +59,45 @@ func TestStdPrint(t *testing.T) {
 			&LitNode{Lit: IdLit("y")},
 		},
 		want: "(?x/y)\n",
+	}, {
+		name: "numbers and ids are delimitable",
+		input: Expr{
+			&LitNode{Lit: IdLit("add")},
+			&LitNode{Lit: IntLit(1)},
+			&LitNode{Lit: IntLit(2)},
+		},
+		want: "(add 1 2)\n",
+	}, {
+		name: "numbers and symbols are not delimitable",
+		input: Expr{
+			&LitNode{Lit: IntLit(1)},
+			&LitNode{Lit: IdLit("+")},
+			&LitNode{Lit: IntLit(2)},
+		},
+		want: "(1+2)\n",
+	}, {
+		name: "ids and symbols are not delimitable",
+		input: Expr{
+			&LitNode{Lit: IdLit("a")},
+			&LitNode{Lit: IdLit("+")},
+			&LitNode{Lit: IdLit("b")},
+		},
+		want: "(a+b)\n",
+	}, {
+		name: "repeated distinct symbols are delimitable",
+		input: Expr{
+			&LitNode{Lit: IdLit("+")},
+			&LitNode{Lit: IdLit("-")},
+			&LitNode{Lit: IdLit("/")},
+		},
+		want: "(+ - /)\n",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			var sb strings.Builder
 			StdPrinter(&sb).Print(tc.input)
 			got := sb.String()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Print(%q): got diff:\n%v", tc.name, diff)
+				t.Errorf("Print(%q): got diff (-want, +got):\n%v", tc.name, diff)
 			}
 		})
 	}

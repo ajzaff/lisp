@@ -32,10 +32,10 @@ func (p *Printer) Print(n Val) {
 		return
 	}
 	var (
-		exprDepth  int
-		firstWrite = true
-		lastLetter = true
-		newLine    = fmt.Sprint(p.NewLine, p.Prefix)
+		exprDepth       int
+		firstWrite      = true
+		lastDelimitable delimitable
+		newLine         = fmt.Sprint(p.NewLine, p.Prefix)
 	)
 	var v Visitor
 	v.SetBeforeExprVisitor(func(e Expr) {
@@ -44,7 +44,7 @@ func (p *Printer) Print(n Val) {
 			firstWrite = true
 		}
 		fmt.Fprint(p.Writer, "(")
-		lastLetter = false
+		lastDelimitable = delimitableNone
 		exprDepth++
 	})
 	v.SetAfterExprVisitor(func(e Expr) {
@@ -53,7 +53,7 @@ func (p *Printer) Print(n Val) {
 		if exprDepth == 0 {
 			fmt.Fprint(p.Writer, newLine)
 		}
-		lastLetter = false
+		lastDelimitable = delimitableNone
 	})
 	v.SetLitVisitor(func(e Lit) {
 		if !firstWrite {
@@ -64,13 +64,36 @@ func (p *Printer) Print(n Val) {
 			fmt.Fprint(p.Writer, e.String(), newLine)
 			return
 		}
-		r, _ := utf8.DecodeRuneInString(e.String())
-		currLetter := IsLetter(r)
-		if lastLetter && currLetter {
+		delim := delimitableLitType(e)
+		if lastDelimitable != delimitableNone && lastDelimitable == delim {
 			fmt.Fprint(p.Writer, " ")
 		}
-		lastLetter = currLetter
+		lastDelimitable = delim
 		fmt.Fprint(p.Writer, e.String())
 	})
 	v.Visit(n)
+}
+
+// Lits in the same delimitable class must be spaced out.
+type delimitable int
+
+const (
+	delimitableNone   delimitable = iota
+	delimitableClass1             // Id | Number
+	delimitableClass2             // Symbol
+)
+
+func delimitableLitType(e Lit) delimitable {
+	switch e := e.(type) {
+	case IdLit:
+		r, _ := utf8.DecodeRuneInString(e.String())
+		if IsLetter(r) {
+			return delimitableClass1
+		}
+		return delimitableClass2
+	case IntLit, FloatLit:
+		return delimitableClass1
+	default:
+		return delimitableNone
+	}
 }

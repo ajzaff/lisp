@@ -154,6 +154,9 @@ func (v *Visitor) callStringFn(e StringLit) bool {
 //
 // Visit continues until all nodes are visited or Stop is called.
 func (v *Visitor) Visit(x Val) {
+	if x == nil {
+		return
+	}
 	if v.hasErr() {
 		v.clearSkipErr()
 		return
@@ -162,6 +165,11 @@ func (v *Visitor) Visit(x Val) {
 		v.clearSkipErr()
 		return
 	}
+	defer func() {
+		if v.callAfterValFn(x) && v.hasErr() {
+			v.clearSkipErr()
+		}
+	}()
 	switch x := x.(type) {
 	case Lit:
 		if v.callLitFn(x) && v.hasErr() {
@@ -194,6 +202,11 @@ func (v *Visitor) Visit(x Val) {
 			v.clearSkipErr()
 			return
 		}
+		defer func() {
+			if v.callAfterExprFn(x) && v.hasErr() {
+				v.clearSkipErr()
+			}
+		}()
 		for _, e := range x {
 			v.Visit(e.Val())
 			if v.hasErr() {
@@ -203,16 +216,8 @@ func (v *Visitor) Visit(x Val) {
 				return
 			}
 		}
-		if v.callAfterExprFn(x) && v.hasErr() {
-			v.clearSkipErr()
-			return
-		}
 	default: // unknown
-		v.err = fmt.Errorf("unknown val")
-		return
-	}
-	if v.callAfterValFn(x) && v.hasErr() {
-		v.clearSkipErr()
+		v.err = fmt.Errorf("unknown Val")
 		return
 	}
 }
