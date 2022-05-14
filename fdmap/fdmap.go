@@ -2,6 +2,7 @@
 package fdmap
 
 import (
+	"io"
 	"strconv"
 
 	"github.com/ajzaff/lisp"
@@ -17,8 +18,12 @@ type FreqMap[T Key] struct {
 	data map[T]int
 }
 
-func NewFreqMap[T Key](sc *lisp.TokenScanner) *FreqMap[T] {
-	return &FreqMap[T]{sc: sc, data: make(map[T]int)}
+func NewFreqMap[T Key]() *FreqMap[T] {
+	return &FreqMap[T]{sc: lisp.NewTokenScanner(nil), data: make(map[T]int)}
+}
+
+func (m *FreqMap[T]) Init(r io.Reader) {
+	m.sc.Init(r)
 }
 
 func (m *FreqMap[T]) Scan() bool {
@@ -46,6 +51,10 @@ func (m *FreqMap[T]) Err() error {
 		return err
 	}
 	return m.err
+}
+
+func (m *FreqMap[T]) Put(key T, v int) {
+	m.data[key] += v
 }
 
 func (m *FreqMap[T]) Get(key T) int {
