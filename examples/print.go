@@ -17,11 +17,12 @@ import (
 	"github.com/ajzaff/lisp/blisp"
 	"github.com/ajzaff/lisp/hash"
 	"github.com/ajzaff/lisp/lispdb"
+	"github.com/ajzaff/lisp/lispjson"
 )
 
 var (
 	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
-	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "none". Default uses StdPrinter)`)
+	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "json", "none". Default uses StdPrinter)`)
 	file  = flag.String("file", "", "File to read lisp code from.")
 )
 
@@ -143,6 +144,11 @@ func main() {
 	case "bin":
 		for _, n := range ns {
 			blisp.NewEncoder(os.Stdout).Encode(n.Val())
+		}
+	case "json":
+		for _, n := range ns {
+			lispjson.NewEncoder(os.Stdout).Encode(n.Val())
+			println()
 		}
 	case "none":
 	default:
