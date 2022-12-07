@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"unicode"
 	"unicode/utf8"
 )
@@ -142,7 +141,7 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 			}
 		}
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': // Int | Float
-		tok = Int
+		tok = Number
 		var dec bool
 	num_loop:
 		for i < Pos(len(src)) {
@@ -154,7 +153,6 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 					err = errRune
 					break num_loop
 				}
-				tok = Float
 				dec = true
 			default:
 				break num_loop
@@ -232,24 +230,10 @@ func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 			Lit:    IdLit(text),
 			EndPos: pos + Pos(len(text)),
 		}, nil
-	case Int:
-		x, err := strconv.ParseInt(text, 10, 64)
-		if err != nil {
-			panic("parseInt")
-		}
+	case Number:
 		return &LitNode{
 			LitPos: pos,
-			Lit:    IntLit(x),
-			EndPos: pos + Pos(len(text)),
-		}, nil
-	case Float:
-		x, err := strconv.ParseFloat(text, 64)
-		if err != nil {
-			panic("parseFloat")
-		}
-		return &LitNode{
-			LitPos: pos,
-			Lit:    FloatLit(x),
+			Lit:    NumberLit(text),
 			EndPos: pos + Pos(len(text)),
 		}, nil
 	case String:

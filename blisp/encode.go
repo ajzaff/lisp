@@ -3,7 +3,6 @@ package blisp
 import (
 	"encoding/binary"
 	"io"
-	"math"
 
 	"github.com/ajzaff/lisp"
 )
@@ -35,10 +34,8 @@ func encode(v lisp.Val, b []byte) int {
 		switch v := v.(type) {
 		case lisp.IdLit:
 			b[0] = byte(lisp.Id)
-		case lisp.IntLit:
-			b[0] = byte(lisp.Int)
-		case lisp.FloatLit:
-			b[0] = byte(lisp.Float)
+		case lisp.NumberLit:
+			b[0] = byte(lisp.Number)
 		case lisp.StringLit:
 			b[0] = byte(lisp.String)
 			s := v.String()
@@ -71,10 +68,8 @@ func EncodedLen(n lisp.Val) int {
 	switch x := n.(type) {
 	case lisp.IdLit:
 		return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-	case lisp.IntLit:
-		return 1 + varIntLen(uint64(x))
-	case lisp.FloatLit:
-		return 1 + varIntLen(math.Float64bits(float64(x)))
+	case lisp.NumberLit:
+		return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
 	case lisp.StringLit:
 		return 1 + varIntLen(uint64(len(x.String())-2)) + len(x.String()) - 2
 	case lisp.Expr:

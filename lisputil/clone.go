@@ -55,8 +55,8 @@ func CloneLit(e lisp.Lit) lisp.Lit {
 		return e[:]
 	case lisp.StringLit:
 		return e[:]
-	case lisp.IntLit, lisp.FloatLit:
-		return e
+	case lisp.NumberLit:
+		return e[:]
 	default:
 		panic("clone not supported")
 	}

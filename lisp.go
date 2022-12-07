@@ -8,8 +8,6 @@
 // It supports basic identifiers, numbers, strings, and expressions.
 package lisp
 
-import "strconv"
-
 // Pos defines a position in the slice of code runes.
 type Pos int
 
@@ -72,24 +70,18 @@ type Lit interface {
 // Lit is a basic Id literal.
 type IdLit string
 
-// IntLit is a basic int literal.
-type IntLit int64
-
-// IntLit is a basic int literal.
-type FloatLit float64
+// NumberLit is a basic numeric literal.
+type NumberLit string
 
 // SringLit is a basic string literal.
 type StringLit string
 
 func (IdLit) lit()                 {}
-func (IntLit) lit()                {}
-func (FloatLit) lit()              {}
+func (NumberLit) lit()             {}
 func (StringLit) lit()             {}
 func (IdLit) val()                 {}
-func (IntLit) val()                {}
-func (FloatLit) val()              {}
+func (NumberLit) val()             {}
 func (StringLit) val()             {}
 func (x IdLit) String() string     { return string(x) }
-func (x IntLit) String() string    { return strconv.FormatInt(int64(x), 10) }
-func (x FloatLit) String() string  { return strconv.FormatFloat(float64(x), 'f', -1, 64) }
+func (x NumberLit) String() string { return string(x) }
 func (x StringLit) String() string { return string(x) }

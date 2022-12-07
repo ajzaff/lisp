@@ -63,16 +63,16 @@ func TestStdPrint(t *testing.T) {
 		name: "numbers and ids are delimitable",
 		input: Expr{
 			&LitNode{Lit: IdLit("add")},
-			&LitNode{Lit: IntLit(1)},
-			&LitNode{Lit: IntLit(2)},
+			&LitNode{Lit: NumberLit("1")},
+			&LitNode{Lit: NumberLit("2")},
 		},
 		want: "(add 1 2)\n",
 	}, {
 		name: "numbers and symbols are not delimitable",
 		input: Expr{
-			&LitNode{Lit: IntLit(1)},
+			&LitNode{Lit: NumberLit("1")},
 			&LitNode{Lit: IdLit("+")},
-			&LitNode{Lit: IntLit(2)},
+			&LitNode{Lit: NumberLit("2")},
 		},
 		want: "(1+2)\n",
 	}, {

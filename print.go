@@ -79,7 +79,7 @@ type delimitable int
 
 const (
 	delimitableNone   delimitable = iota
-	delimitableClass1             // Id | Number
+	delimitableClass1             // Number
 	delimitableClass2             // Symbol
 )
 
@@ -91,7 +91,7 @@ func delimitableLitType(e Lit) delimitable {
 			return delimitableClass1
 		}
 		return delimitableClass2
-	case IntLit, FloatLit:
+	case NumberLit:
 		return delimitableClass1
 	default:
 		return delimitableNone

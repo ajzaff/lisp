@@ -14,8 +14,7 @@ type Visitor struct {
 	// Lit token type handlers.
 	enableLitFn bool
 	idFn        func(IdLit)
-	intFn       func(IntLit)
-	floatFn     func(FloatLit)
+	numberFn    func(NumberLit)
 	strFn       func(StringLit)
 
 	beforeExprFn func(Expr)
@@ -42,11 +41,8 @@ func (v *Visitor) SetAfterExprVisitor(fn func(Expr)) { v.afterExprFn = fn }
 // SetIdVisitor sets the visitor called on every Id Lit.
 func (v *Visitor) SetIdVisitor(fn func(IdLit)) { v.idFn = fn; v.enableLitFn = true }
 
-// SetIntVisitor sets the visitor called on every Int Lit.
-func (v *Visitor) SetIntVisitor(fn func(IntLit)) { v.intFn = fn; v.enableLitFn = true }
-
-// SetIntVisitor sets the visitor called on every Float Lit.
-func (v *Visitor) SetFloatVisitor(fn func(FloatLit)) { v.floatFn = fn; v.enableLitFn = true }
+// SetIntVisitor sets the visitor called on every Number Lit.
+func (v *Visitor) SetNumberVisitor(fn func(NumberLit)) { v.numberFn = fn; v.enableLitFn = true }
 
 // SetIntVisitor sets the visitor called on every String Lit.
 func (v *Visitor) SetStringVisitor(fn func(StringLit)) { v.strFn = fn; v.enableLitFn = true }
@@ -126,17 +122,9 @@ func (v *Visitor) callIdFn(id IdLit) bool {
 	return false
 }
 
-func (v *Visitor) callIntFn(e IntLit) bool {
-	if v.intFn != nil {
-		v.intFn(e)
-		return true
-	}
-	return false
-}
-
-func (v *Visitor) callFloatFn(e FloatLit) bool {
-	if v.floatFn != nil {
-		v.floatFn(e)
+func (v *Visitor) callNumberFn(e NumberLit) bool {
+	if v.numberFn != nil {
+		v.numberFn(e)
 		return true
 	}
 	return false
@@ -184,12 +172,8 @@ func (v *Visitor) Visit(x Val) {
 			if v.callIdFn(x) && v.hasErr() {
 				v.clearSkipErr()
 			}
-		case IntLit:
-			if v.callIntFn(x) && v.hasErr() {
-				v.clearSkipErr()
-			}
-		case FloatLit:
-			if v.callFloatFn(x) && v.hasErr() {
+		case NumberLit:
+			if v.callNumberFn(x) && v.hasErr() {
 				v.clearSkipErr()
 			}
 		case StringLit:

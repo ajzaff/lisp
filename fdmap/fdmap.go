@@ -3,13 +3,12 @@ package fdmap
 
 import (
 	"io"
-	"strconv"
 
 	"github.com/ajzaff/lisp"
 )
 
 type Key interface {
-	lisp.IdLit | lisp.IntLit | lisp.StringLit
+	lisp.IdLit | lisp.NumberLit | lisp.StringLit
 }
 
 type FreqMap[T Key] struct {
@@ -33,9 +32,8 @@ func (m *FreqMap[T]) Scan() bool {
 		switch t {
 		case lisp.Id:
 			lit = lisp.IdLit(text)
-		case lisp.Int:
-			x, _ := strconv.ParseInt(text, 10, 64)
-			lit = lisp.IntLit(x)
+		case lisp.Number:
+			lit = lisp.NumberLit(text)
 		case lisp.String:
 			lit = lisp.StringLit(text)
 		}

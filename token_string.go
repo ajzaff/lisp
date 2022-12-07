@@ -10,16 +10,15 @@ func _() {
 	var x [1]struct{}
 	_ = x[Invalid-0]
 	_ = x[Id-1]
-	_ = x[Int-2]
-	_ = x[Float-3]
-	_ = x[String-4]
-	_ = x[LParen-5]
-	_ = x[RParen-6]
+	_ = x[Number-2]
+	_ = x[String-3]
+	_ = x[LParen-4]
+	_ = x[RParen-5]
 }
 
-const _Token_name = "InvalidIdIntFloatStringLParenRParen"
+const _Token_name = "InvalidIdNumberStringLParenRParen"
 
-var _Token_index = [...]uint8{0, 7, 9, 12, 17, 23, 29, 35}
+var _Token_index = [...]uint8{0, 7, 9, 15, 21, 27, 33}
 
 func (i Token) String() string {
 	if i < 0 || i >= Token(len(_Token_index)-1) {

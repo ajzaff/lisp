@@ -6,6 +6,7 @@ import (
 )
 
 // Token is an enumeration which specifies a kind of AST token.
+//
 //go:generate stringer -type Token
 type Token int
 
@@ -13,8 +14,7 @@ const (
 	Invalid Token = iota
 
 	Id     // x y z + - / ++
-	Int    // 12345
-	Float  // 123.45
+	Number // 12345 -123.45 1.1e2
 	String // "abc"
 
 	LParen // (

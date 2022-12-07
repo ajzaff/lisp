@@ -3,6 +3,7 @@ package lisputil
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"sync"
 
 	"github.com/ajzaff/lisp"
@@ -33,21 +34,19 @@ func (g *NodeGenerator) NextNode() lisp.Node {
 }
 
 func (g *NodeGenerator) nextNode(noExpr bool) lisp.Node {
-	n := 5
+	n := 4
 	if noExpr {
-		n = 4
+		n = 3
 	}
 	var l lisp.Lit
 	switch g.r.Intn(n) {
 	case 0: // Id
 		l = g.nextId()
-	case 1: // Int
-		l = g.nextInt()
-	case 2: // Float
-		l = g.nextFloat()
-	case 3: // String
+	case 1: // Number
+		l = g.nextNumber()
+	case 2: // String
 		l = g.nextString()
-	case 4: // Expr
+	case 3: // Expr
 		return &lisp.ExprNode{Expr: g.nextExpr()}
 	default:
 		panic("unreachable")
@@ -73,13 +72,26 @@ func (g *NodeGenerator) nextString() lisp.Lit {
 	return lisp.StringLit(fmt.Sprintf("a%d", g.r.Int63()))
 }
 
+func (g *NodeGenerator) NextNumber() lisp.Lit {
+	g.once.Do(g.init)
+	return g.nextNumber()
+}
+
+func (g *NodeGenerator) nextNumber() lisp.Lit {
+	if g.r.Intn(2) == 0 {
+		return g.nextInt()
+	} else { // 1
+		return g.nextFloat()
+	}
+}
+
 func (g *NodeGenerator) NextInt() lisp.Lit {
 	g.once.Do(g.init)
 	return g.nextInt()
 }
 
 func (g *NodeGenerator) nextInt() lisp.Lit {
-	return lisp.IntLit(uint64(g.r.Int63()))
+	return lisp.NumberLit(strconv.FormatInt(g.r.Int63(), 10))
 }
 
 func (g *NodeGenerator) NextFloat() lisp.Lit {
@@ -88,7 +100,7 @@ func (g *NodeGenerator) NextFloat() lisp.Lit {
 }
 
 func (g *NodeGenerator) nextFloat() lisp.Lit {
-	return lisp.FloatLit(g.r.Float64())
+	return lisp.NumberLit(strconv.FormatFloat(g.r.Float64(), 'f', -1, 64))
 }
 
 func (g *NodeGenerator) NextExpr() lisp.Expr {
