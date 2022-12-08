@@ -2,10 +2,11 @@ package hash
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/lisputil"
+	"github.com/ajzaff/lisp/fuzzutil"
 )
 
 var (
@@ -15,12 +16,13 @@ var (
 )
 
 func BenchmarkMapHashMap(b *testing.B) {
-	var g lisputil.NodeGenerator
+	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
+	g.ExprWeight = 0
 	var h MapHash
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
-			v := g.NextValNoExpr()
+			v := g.Next().Val()
 			h.Reset()
 			h.WriteVal(v)
 			maphashDB[h.Sum64()] = struct{}{}
@@ -28,22 +30,24 @@ func BenchmarkMapHashMap(b *testing.B) {
 	}
 }
 func BenchmarkValMap(b *testing.B) {
-	var g lisputil.NodeGenerator
+	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
+	g.ExprWeight = 0
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
-			v := g.NextValNoExpr()
+			v := g.Next().Val()
 			valDB[v] = struct{}{}
 		}
 	}
 }
 
 func BenchmarkBaselineStringHash(b *testing.B) {
-	var g lisputil.NodeGenerator
+	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
+	g.ExprWeight = 0
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
-			v := g.NextValNoExpr()
+			v := g.Next().Val()
 
 			var buf bytes.Buffer
 			lisp.StdPrinter(&buf).Print(v)
