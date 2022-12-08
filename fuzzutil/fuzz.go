@@ -65,7 +65,7 @@ func (g *Generator) Token() lisp.Token {
 	}
 	v -= g.StringWeight
 	if g.ExprWeight != 0 {
-		return lisp.LParen
+		return lisp.LParen // Expr
 	}
 	panic("Generator.Token: invalid weights resulted in no Token being emitted")
 }
@@ -78,7 +78,7 @@ func (g *Generator) Next() lisp.Node {
 		return g.NextNumber()
 	case lisp.String:
 		return g.NextString()
-	case lisp.LParen:
+	case lisp.LParen: // Expr
 		return g.NextExpr()
 	default:
 		panic("Generator.Val: unreachable")
