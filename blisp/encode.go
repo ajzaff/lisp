@@ -31,12 +31,12 @@ func encode(v lisp.Val, b []byte) int {
 	switch v := v.(type) {
 	case lisp.Lit:
 		var i int
-		switch v := v.(type) {
-		case lisp.IdLit:
+		switch v.Token {
+		case lisp.Id:
 			b[0] = byte(lisp.Id)
-		case lisp.NumberLit:
+		case lisp.Number:
 			b[0] = byte(lisp.Number)
-		case lisp.StringLit:
+		case lisp.String:
 			b[0] = byte(lisp.String)
 			s := v.String()
 			i = copy(b[2:], s[1:len(s)-1])
@@ -66,12 +66,17 @@ func EncodedLen(n lisp.Val) int {
 		return 0
 	}
 	switch x := n.(type) {
-	case lisp.IdLit:
-		return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-	case lisp.NumberLit:
-		return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-	case lisp.StringLit:
-		return 1 + varIntLen(uint64(len(x.String())-2)) + len(x.String()) - 2
+	case lisp.Lit:
+		switch x.Token {
+		case lisp.Id:
+			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
+		case lisp.Number:
+			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
+		case lisp.String:
+			return 1 + varIntLen(uint64(len(x.String())-2)) + len(x.String()) - 2
+		default:
+			panic("unknown Lit token")
+		}
 	case lisp.Expr:
 		size := 0
 		for _, e := range x {

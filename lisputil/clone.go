@@ -45,19 +45,6 @@ func CloneLitNode(e *lisp.LitNode) *lisp.LitNode {
 	}
 	out := new(lisp.LitNode)
 	*out = *e
-	out.Lit = CloneLit(e.Lit)
+	out.Lit = e.Lit
 	return out
-}
-
-func CloneLit(e lisp.Lit) lisp.Lit {
-	switch e := e.(type) {
-	case lisp.IdLit:
-		return e[:]
-	case lisp.StringLit:
-		return e[:]
-	case lisp.NumberLit:
-		return e[:]
-	default:
-		panic("clone not supported")
-	}
 }

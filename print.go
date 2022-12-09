@@ -84,14 +84,14 @@ const (
 )
 
 func delimitableLitType(e Lit) delimitable {
-	switch e := e.(type) {
-	case IdLit:
+	switch e.Token {
+	case Id:
 		r, _ := utf8.DecodeRuneInString(e.String())
 		if IsLetter(r) {
 			return delimitableClass1
 		}
 		return delimitableClass2
-	case NumberLit:
+	case Number:
 		return delimitableClass1
 	default:
 		return delimitableNone

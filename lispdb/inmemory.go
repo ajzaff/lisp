@@ -61,7 +61,7 @@ func (m *InMemory) Load(id ID) (lit lisp.Lit, w float64) {
 
 	e, ok := m.entries[id]
 	if !ok {
-		return nil, 0
+		return lisp.Lit{}, 0
 	}
 	w = e.Weight()
 	if e, ok := e.(*litEntryInMemory); ok {
@@ -83,7 +83,7 @@ func (m *InMemory) Store(t []*TVal, w float64) error {
 			continue
 		}
 		switch {
-		case te.Lit == nil:
+		case te.Lit.Token == lisp.Invalid:
 			e = &exprEntryInMemory{refs: te.Refs}
 		default:
 			e = &litEntryInMemory{Lit: te.Lit}

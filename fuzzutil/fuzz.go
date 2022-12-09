@@ -86,11 +86,11 @@ func (g *Generator) Next() lisp.Node {
 }
 
 func (g *Generator) NextId() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.IdLit(fmt.Sprintf("a%d", g.r.Uint64()))}
+	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}}
 }
 
 func (g *Generator) NextString() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.StringLit(fmt.Sprintf(`"a%d"`, g.r.Uint64()))}
+	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.String, Text: fmt.Sprintf(`"a%d"`, g.r.Uint64())}}
 }
 
 func (g *Generator) NextNumber() *lisp.LitNode {
@@ -102,11 +102,11 @@ func (g *Generator) NextNumber() *lisp.LitNode {
 }
 
 func (g *Generator) NextInt() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.NumberLit(strconv.FormatInt(int64(g.r.Uint64()), 10))}
+	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.Number, Text: strconv.FormatInt(int64(g.r.Uint64()), 10)}}
 }
 
 func (g *Generator) NextFloat() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.NumberLit(strconv.FormatFloat(g.r.Float64(), 'f', -1, 64))}
+	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.Number, Text: strconv.FormatFloat(g.r.Float64(), 'f', -1, 64)}}
 }
 
 func (g *Generator) NextExpr() *lisp.ExprNode {

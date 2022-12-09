@@ -17,7 +17,7 @@ type QueryInterface interface {
 
 func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
 	v, w := db.Load(id)
-	if v != nil {
+	if v.Token != lisp.Invalid {
 		return v, w
 	}
 	n, w := queryOneNode(db, id)
@@ -26,7 +26,7 @@ func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
 
 func queryOneNode(db QueryInterface, id ID) (lisp.Node, float64) {
 	v, w := db.Load(id)
-	if v != nil {
+	if v.Token != lisp.Invalid {
 		return &lisp.LitNode{Lit: v}, w
 	}
 	var x lisp.Expr
@@ -97,6 +97,7 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 // Matching elements are prefixed with "?".
 //
 // Example:
+//
 //	r := Query(db, "(?who is-on first)")
 //	r.EachMatch(...)
 //	// []ID{834583485} // "who"
@@ -131,10 +132,10 @@ func queryElements(q lisp.Val) (elems []string) {
 	var v lisp.Visitor
 	v.SetBeforeExprVisitor(func(e lisp.Expr) {
 		if x := lisputil.Head(e); x != nil {
-			if lisputil.Equal(x, lisp.IdLit("?")) {
+			if lisputil.Equal(x, lisp.Lit{Token: lisp.Id, Text: "?"}) {
 				name := lisputil.Head(e[1:])
 				if name != nil {
-					if x, ok := name.(lisp.IdLit); ok {
+					if x, ok := name.(lisp.Lit); ok {
 						elems = append(elems, x.String())
 					}
 				}

@@ -15,10 +15,12 @@ func NewEncoder(w io.Writer) *Encoder {
 
 func (e *Encoder) Encode(v lisp.Val) {
 	switch v := v.(type) {
-	case lisp.IdLit:
+	case lisp.Lit:
+		if v.Token == lisp.Id {
+			e.w.Write([]byte(strconv.Quote(v.String())))
+		}
+		// IntLit, FloatLit, StringLit
 		e.w.Write([]byte(strconv.Quote(v.String())))
-	case lisp.Lit: // IntLit, FloatLit, StringLit
-		e.w.Write([]byte(v.String()))
 	case lisp.Expr:
 		e.w.Write([]byte{'['})
 		for i, elem := range v {

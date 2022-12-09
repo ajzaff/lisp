@@ -11,12 +11,6 @@ type Visitor struct {
 	afterValFn  func(Val)
 	litFn       func(Lit)
 
-	// Lit token type handlers.
-	enableLitFn bool
-	idFn        func(IdLit)
-	numberFn    func(NumberLit)
-	strFn       func(StringLit)
-
 	beforeExprFn func(Expr)
 	afterExprFn  func(Expr)
 
@@ -37,15 +31,6 @@ func (v *Visitor) SetBeforeExprVisitor(fn func(Expr)) { v.beforeExprFn = fn }
 
 // SetNodeListVisitFunc sets the visitor called on every *Expr.
 func (v *Visitor) SetAfterExprVisitor(fn func(Expr)) { v.afterExprFn = fn }
-
-// SetIdVisitor sets the visitor called on every Id Lit.
-func (v *Visitor) SetIdVisitor(fn func(IdLit)) { v.idFn = fn; v.enableLitFn = true }
-
-// SetIntVisitor sets the visitor called on every Number Lit.
-func (v *Visitor) SetNumberVisitor(fn func(NumberLit)) { v.numberFn = fn; v.enableLitFn = true }
-
-// SetIntVisitor sets the visitor called on every String Lit.
-func (v *Visitor) SetStringVisitor(fn func(StringLit)) { v.strFn = fn; v.enableLitFn = true }
 
 var (
 	errStop = errors.New("stop")
@@ -114,30 +99,6 @@ func (v *Visitor) callAfterExprFn(e Expr) bool {
 	return false
 }
 
-func (v *Visitor) callIdFn(id IdLit) bool {
-	if v.idFn != nil {
-		v.idFn(id)
-		return true
-	}
-	return false
-}
-
-func (v *Visitor) callNumberFn(e NumberLit) bool {
-	if v.numberFn != nil {
-		v.numberFn(e)
-		return true
-	}
-	return false
-}
-
-func (v *Visitor) callStringFn(e StringLit) bool {
-	if v.strFn != nil {
-		v.strFn(e)
-		return true
-	}
-	return false
-}
-
 // Visit the node recursively while calling visitor functions.
 //
 // Visit continues until all nodes are visited or Stop is called.
@@ -163,23 +124,6 @@ func (v *Visitor) Visit(x Val) {
 		if v.callLitFn(x) && v.hasErr() {
 			v.clearSkipErr()
 			return
-		}
-		if !v.enableLitFn {
-			return
-		}
-		switch x := x.(type) {
-		case IdLit:
-			if v.callIdFn(x) && v.hasErr() {
-				v.clearSkipErr()
-			}
-		case NumberLit:
-			if v.callNumberFn(x) && v.hasErr() {
-				v.clearSkipErr()
-			}
-		case StringLit:
-			if v.callStringFn(x) && v.hasErr() {
-				v.clearSkipErr()
-			}
 		}
 	case Expr:
 		if v.callBeforeExprFn(x) && v.hasErr() {

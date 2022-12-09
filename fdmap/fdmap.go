@@ -7,54 +7,48 @@ import (
 	"github.com/ajzaff/lisp"
 )
 
-type Key interface {
-	lisp.IdLit | lisp.NumberLit | lisp.StringLit
-}
-
-type FreqMap[T Key] struct {
+type FreqMap struct {
 	sc   *lisp.TokenScanner
 	err  error
-	data map[T]int
+	data map[lisp.Lit]int
 }
 
-func NewFreqMap[T Key]() *FreqMap[T] {
-	return &FreqMap[T]{sc: lisp.NewTokenScanner(nil), data: make(map[T]int)}
+func NewFreqMap() *FreqMap {
+	return &FreqMap{sc: lisp.NewTokenScanner(nil), data: make(map[lisp.Lit]int)}
 }
 
-func (m *FreqMap[T]) Init(r io.Reader) {
+func (m *FreqMap) Init(r io.Reader) {
 	m.sc.Init(r)
 }
 
-func (m *FreqMap[T]) Scan() bool {
+func (m *FreqMap) Scan() bool {
 	res := m.sc.Scan()
 	if _, t, text := m.sc.Token(); t != lisp.Invalid {
 		var lit lisp.Lit
 		switch t {
 		case lisp.Id:
-			lit = lisp.IdLit(text)
+			lit = lisp.Lit{Token: lisp.Id, Text: text}
 		case lisp.Number:
-			lit = lisp.NumberLit(text)
+			lit = lisp.Lit{Token: lisp.Number, Text: text}
 		case lisp.String:
-			lit = lisp.StringLit(text)
+			lit = lisp.Lit{Token: lisp.String, Text: text}
 		}
-		if t, ok := lit.(T); ok {
-			m.data[t]++
-		}
+		m.data[lit]++
 	}
 	return res
 }
 
-func (m *FreqMap[T]) Err() error {
+func (m *FreqMap) Err() error {
 	if err := m.sc.Err(); err != nil {
 		return err
 	}
 	return m.err
 }
 
-func (m *FreqMap[T]) Put(key T, v int) {
+func (m *FreqMap) Put(key lisp.Lit, v int) {
 	m.data[key] += v
 }
 
-func (m *FreqMap[T]) Get(key T) int {
+func (m *FreqMap) Get(key lisp.Lit) int {
 	return m.data[key]
 }

@@ -21,19 +21,16 @@ func TestVisitor(t *testing.T) {
 		name: "empty",
 	}, {
 		name:  "int",
-		input: NumberLit("1"),
+		input: Lit{Token: Number, Text: "1"},
 		wantVisits: []testVisits{{
 			Visitor: "BeforeVal",
-			Val:     NumberLit("1"),
+			Val:     Lit{Token: Number, Text: "1"},
 		}, {
 			Visitor: "Lit",
-			Val:     NumberLit("1"),
-		}, {
-			Visitor: "Number",
-			Val:     NumberLit("1"),
+			Val:     Lit{Token: Number, Text: "1"},
 		}, {
 			Visitor: "AfterVal",
-			Val:     NumberLit("1"),
+			Val:     Lit{Token: Number, Text: "1"},
 		}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -66,24 +63,6 @@ func TestVisitor(t *testing.T) {
 			v.SetAfterExprVisitor(func(e Expr) {
 				gotVisits = append(gotVisits, testVisits{
 					Visitor: "AfterExpr",
-					Val:     e,
-				})
-			})
-			v.SetIdVisitor(func(e IdLit) {
-				gotVisits = append(gotVisits, testVisits{
-					Visitor: "Id",
-					Val:     e,
-				})
-			})
-			v.SetNumberVisitor(func(e NumberLit) {
-				gotVisits = append(gotVisits, testVisits{
-					Visitor: "Number",
-					Val:     e,
-				})
-			})
-			v.SetStringVisitor(func(e StringLit) {
-				gotVisits = append(gotVisits, testVisits{
-					Visitor: "String",
 					Val:     e,
 				})
 			})

@@ -28,67 +28,67 @@ func TestStdPrint(t *testing.T) {
 		want:  "()\n",
 	}, {
 		name:  "lit",
-		input: IdLit("hello"),
+		input: Lit{Token: Id, Text: "hello"},
 		want:  "hello\n",
 	}, {
 		name:  "expr",
-		input: Expr{&LitNode{Lit: IdLit("x")}},
+		input: Expr{&LitNode{Lit: Lit{Token: Id, Text: "x"}}},
 		want:  "(x)\n",
 	}, {
 		name: "expr3",
 		input: Expr{
-			&LitNode{Lit: IdLit("x")},
-			&LitNode{Lit: IdLit("y")},
-			&LitNode{Lit: IdLit("z")},
+			&LitNode{Lit: Lit{Token: Id, Text: "x"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "y"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "z"}},
 		},
 		want: "(x y z)\n",
 	}, {
 		name: "nested expr",
 		input: Expr{
-			&LitNode{Lit: IdLit("x")},
-			&ExprNode{Expr: Expr{&LitNode{Lit: IdLit("y")}}},
-			&LitNode{Lit: IdLit("z")},
+			&LitNode{Lit: Lit{Token: Id, Text: "x"}},
+			&ExprNode{Expr: Expr{&LitNode{Lit: Lit{Token: Id, Text: "y"}}}},
+			&LitNode{Lit: Lit{Token: Id, Text: "z"}},
 		},
 		want: "(x(y)z)\n",
 	}, {
 		name: "squashed ids and symbols in expr",
 		input: Expr{
-			&LitNode{Lit: IdLit("?")},
-			&LitNode{Lit: IdLit("x")},
-			&LitNode{Lit: IdLit("/")},
-			&LitNode{Lit: IdLit("y")},
+			&LitNode{Lit: Lit{Token: Id, Text: "?"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "x"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "/"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "y"}},
 		},
 		want: "(?x/y)\n",
 	}, {
 		name: "numbers and ids are delimitable",
 		input: Expr{
-			&LitNode{Lit: IdLit("add")},
-			&LitNode{Lit: NumberLit("1")},
-			&LitNode{Lit: NumberLit("2")},
+			&LitNode{Lit: Lit{Token: Id, Text: "add"}},
+			&LitNode{Lit: Lit{Token: Number, Text: "1"}},
+			&LitNode{Lit: Lit{Token: Number, Text: "2"}},
 		},
 		want: "(add 1 2)\n",
 	}, {
 		name: "numbers and symbols are not delimitable",
 		input: Expr{
-			&LitNode{Lit: NumberLit("1")},
-			&LitNode{Lit: IdLit("+")},
-			&LitNode{Lit: NumberLit("2")},
+			&LitNode{Lit: Lit{Token: Number, Text: "1"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "+"}},
+			&LitNode{Lit: Lit{Token: Number, Text: "2"}},
 		},
 		want: "(1+2)\n",
 	}, {
 		name: "ids and symbols are not delimitable",
 		input: Expr{
-			&LitNode{Lit: IdLit("a")},
-			&LitNode{Lit: IdLit("+")},
-			&LitNode{Lit: IdLit("b")},
+			&LitNode{Lit: Lit{Token: Id, Text: "a"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "+"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "b"}},
 		},
 		want: "(a+b)\n",
 	}, {
 		name: "repeated distinct symbols are delimitable",
 		input: Expr{
-			&LitNode{Lit: IdLit("+")},
-			&LitNode{Lit: IdLit("-")},
-			&LitNode{Lit: IdLit("/")},
+			&LitNode{Lit: Lit{Token: Id, Text: "+"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "-"}},
+			&LitNode{Lit: Lit{Token: Id, Text: "/"}},
 		},
 		want: "(+ - /)\n",
 	}} {

@@ -69,14 +69,14 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{0, 3},
 		wantTok:   []Token{Id},
 		wantText:  []string{"foo"},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: IdLit("foo"), EndPos: 3}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "foo"}, EndPos: 3}},
 	}, {
 		name:      "symbol",
 		input:     `.+`,
 		wantPos:   []Pos{0, 2},
 		wantTok:   []Token{Id},
 		wantText:  []string{".+"},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: IdLit(".+"), EndPos: 2}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: ".+"}, EndPos: 2}},
 	}, {
 		name:     "id symbol id",
 		input:    "foo-bar",
@@ -84,9 +84,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, Id, Id},
 		wantText: []string{"foo", "-", "bar"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("foo"), EndPos: 3},
-			&LitNode{LitPos: 3, Lit: IdLit("-"), EndPos: 4},
-			&LitNode{LitPos: 4, Lit: IdLit("bar"), EndPos: 7},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "foo"}, EndPos: 3},
+			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "-"}, EndPos: 4},
+			&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "bar"}, EndPos: 7},
 		},
 	}, {
 		name:      "space id",
@@ -94,7 +94,7 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{5, 6},
 		wantTok:   []Token{Id},
 		wantText:  []string{"x"},
-		wantNodes: []Node{&LitNode{LitPos: 5, Lit: IdLit("x"), EndPos: 6}},
+		wantNodes: []Node{&LitNode{LitPos: 5, Lit: Lit{Token: Id, Text: "x"}, EndPos: 6}},
 	}, {
 		name:     "id id id",
 		input:    "a b c",
@@ -102,9 +102,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, Id, Id},
 		wantText: []string{"a", "b", "c"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("a"), EndPos: 1},
-			&LitNode{LitPos: 2, Lit: IdLit("b"), EndPos: 3},
-			&LitNode{LitPos: 4, Lit: IdLit("c"), EndPos: 5},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
+			&LitNode{LitPos: 2, Lit: Lit{Token: Id, Text: "b"}, EndPos: 3},
+			&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "c"}, EndPos: 5},
 		},
 	}, {
 		name:      "symbol 2",
@@ -112,7 +112,7 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{0, 1},
 		wantTok:   []Token{Id},
 		wantText:  []string{"."},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: IdLit("."), EndPos: 1}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "."}, EndPos: 1}},
 	}, {
 		name:     "id id int",
 		input:    `a.0`,
@@ -120,9 +120,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, Id, Number},
 		wantText: []string{"a", ".", "0"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("a"), EndPos: 1},
-			&LitNode{LitPos: 1, Lit: IdLit("."), EndPos: 2},
-			&LitNode{LitPos: 2, Lit: NumberLit("0"), EndPos: 3},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "."}, EndPos: 2},
+			&LitNode{LitPos: 2, Lit: Lit{Token: Number, Text: "0"}, EndPos: 3},
 		},
 	}, {
 		name:     "id symbol",
@@ -131,8 +131,8 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, Id},
 		wantText: []string{"a", "..."},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("a"), EndPos: 1},
-			&LitNode{LitPos: 1, Lit: IdLit("..."), EndPos: 4},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "..."}, EndPos: 4},
 		},
 	}, {
 		name:     "symbol id",
@@ -141,8 +141,8 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, Id},
 		wantText: []string{"...", "a"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("..."), EndPos: 3},
-			&LitNode{LitPos: 3, Lit: IdLit("a"), EndPos: 4},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "..."}, EndPos: 3},
+			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "a"}, EndPos: 4},
 		},
 	}, {
 		name:     "id string",
@@ -151,8 +151,8 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, String},
 		wantText: []string{"a", `"abc"`},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("a"), EndPos: 1},
-			&LitNode{LitPos: 1, Lit: StringLit(`"abc"`), EndPos: 6},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
+			&LitNode{LitPos: 1, Lit: Lit{Token: String, Text: `"abc"`}, EndPos: 6},
 		},
 	}, {
 		name:     "id id id 2",
@@ -161,9 +161,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Id, Id, Id},
 		wantText: []string{"ab", "cd", "ef"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: IdLit("ab"), EndPos: 2},
-			&LitNode{LitPos: 3, Lit: IdLit("cd"), EndPos: 5},
-			&LitNode{LitPos: 6, Lit: IdLit("ef"), EndPos: 8},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "ab"}, EndPos: 2},
+			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "cd"}, EndPos: 5},
+			&LitNode{LitPos: 6, Lit: Lit{Token: Id, Text: "ef"}, EndPos: 8},
 		},
 	}, {
 		name:      "int",
@@ -171,7 +171,7 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{0, 1},
 		wantTok:   []Token{Number},
 		wantText:  []string{"0"},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: NumberLit("0"), EndPos: 1}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0"}, EndPos: 1}},
 	}, {
 		name:     "int 2",
 		input:    "0 1 2",
@@ -179,9 +179,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Number, Number, Number},
 		wantText: []string{"0", "1", "2"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: NumberLit("0"), EndPos: 1},
-			&LitNode{LitPos: 2, Lit: NumberLit("1"), EndPos: 3},
-			&LitNode{LitPos: 4, Lit: NumberLit("2"), EndPos: 5},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0"}, EndPos: 1},
+			&LitNode{LitPos: 2, Lit: Lit{Token: Number, Text: "1"}, EndPos: 3},
+			&LitNode{LitPos: 4, Lit: Lit{Token: Number, Text: "2"}, EndPos: 5},
 		},
 	}, {
 		name:      "float",
@@ -189,21 +189,21 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{0, 3},
 		wantTok:   []Token{Number},
 		wantText:  []string{"1.0"},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: NumberLit("1.0"), EndPos: 3}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "1.0"}, EndPos: 3}},
 	}, {
 		name:      "float 2",
 		input:     "1.",
 		wantPos:   []Pos{0, 2},
 		wantTok:   []Token{Number},
 		wantText:  []string{"1."},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: NumberLit("1."), EndPos: 2}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "1."}, EndPos: 2}},
 	}, {
 		name:      "float 3",
 		input:     "0.",
 		wantPos:   []Pos{0, 2},
 		wantTok:   []Token{Number},
 		wantText:  []string{"0."},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: NumberLit("0."), EndPos: 2}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0."}, EndPos: 2}},
 	}, {
 		name:     "float 4",
 		input:    "1. 2. 3.",
@@ -211,9 +211,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Number, Number, Number},
 		wantText: []string{"1.", "2.", "3."},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: NumberLit("1."), EndPos: 2},
-			&LitNode{LitPos: 3, Lit: NumberLit("2."), EndPos: 5},
-			&LitNode{LitPos: 6, Lit: NumberLit("3."), EndPos: 8},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "1."}, EndPos: 2},
+			&LitNode{LitPos: 3, Lit: Lit{Token: Number, Text: "2."}, EndPos: 5},
+			&LitNode{LitPos: 6, Lit: Lit{Token: Number, Text: "3."}, EndPos: 8},
 		},
 	}, {
 		name:     "float 4_2",
@@ -222,9 +222,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{Number, Number, Number},
 		wantText: []string{"0.1", "0.2", "0.3"},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: NumberLit("0.1"), EndPos: 3},
-			&LitNode{LitPos: 4, Lit: NumberLit("0.2"), EndPos: 7},
-			&LitNode{LitPos: 8, Lit: NumberLit("0.3"), EndPos: 11},
+			&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0.1"}, EndPos: 3},
+			&LitNode{LitPos: 4, Lit: Lit{Token: Number, Text: "0.2"}, EndPos: 7},
+			&LitNode{LitPos: 8, Lit: Lit{Token: Number, Text: "0.3"}, EndPos: 11},
 		},
 	}, {
 		name:      "string",
@@ -232,14 +232,14 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{0, 3},
 		wantTok:   []Token{String},
 		wantText:  []string{`"a"`},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: StringLit(`"a"`), EndPos: 3}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"a"`}, EndPos: 3}},
 	}, {
 		name:      "string 2",
 		input:     `"a b c"`,
 		wantPos:   []Pos{0, 7},
 		wantTok:   []Token{String},
 		wantText:  []string{`"a b c"`},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: StringLit(`"a b c"`), EndPos: 7}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"a b c"`}, EndPos: 7}},
 	}, {
 		name:     "string 3",
 		input:    `"a" "b" "c"`,
@@ -247,9 +247,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:  []Token{String, String, String},
 		wantText: []string{`"a"`, `"b"`, `"c"`},
 		wantNodes: []Node{
-			&LitNode{LitPos: 0, Lit: StringLit(`"a"`), EndPos: 3},
-			&LitNode{LitPos: 4, Lit: StringLit(`"b"`), EndPos: 7},
-			&LitNode{LitPos: 8, Lit: StringLit(`"c"`), EndPos: 11},
+			&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"a"`}, EndPos: 3},
+			&LitNode{LitPos: 4, Lit: Lit{Token: String, Text: `"b"`}, EndPos: 7},
+			&LitNode{LitPos: 8, Lit: Lit{Token: String, Text: `"c"`}, EndPos: 11},
 		},
 	}, {
 		name: "string (multiline)",
@@ -259,22 +259,22 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok: []Token{String},
 		wantText: []string{`"
 "`},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: StringLit(`"
-"`), EndPos: 3}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"
+"`}, EndPos: 3}},
 	}, {
 		name:      "string (double escape)",
 		input:     `"\\"`,
 		wantPos:   []Pos{0, 4},
 		wantTok:   []Token{String},
 		wantText:  []string{`"\\"`},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: StringLit(`"\\"`), EndPos: 4}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"\\"`}, EndPos: 4}},
 	}, {
 		name:      "byte lit",
 		input:     `"abc\x00\x11\xff"`,
 		wantPos:   []Pos{0, 17},
 		wantTok:   []Token{String},
 		wantText:  []string{`"abc\x00\x11\xff"`},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: StringLit(`"abc\x00\x11\xff"`), EndPos: 17}},
+		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"abc\x00\x11\xff"`}, EndPos: 17}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
@@ -308,7 +308,7 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, RParen},
 		wantText: []string{"(", "abc", ")"},
 		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: IdLit("abc"), EndPos: 4},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "abc"}, EndPos: 4},
 		}, RParen: 4}},
 	}, {
 		name:     "expr symbol",
@@ -317,7 +317,7 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, RParen},
 		wantText: []string{"(", ".", ")"},
 		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: IdLit("."), EndPos: 2},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "."}, EndPos: 2},
 		}, RParen: 2}},
 	}, {
 		name:     "expr 2",
@@ -326,9 +326,9 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, Number, Number, RParen},
 		wantText: []string{"(", "add", "1", "2", ")"},
 		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: IdLit("add"), EndPos: 4},
-			&LitNode{LitPos: 5, Lit: NumberLit("1"), EndPos: 6},
-			&LitNode{LitPos: 7, Lit: NumberLit("2"), EndPos: 8},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "add"}, EndPos: 4},
+			&LitNode{LitPos: 5, Lit: Lit{Token: Number, Text: "1"}, EndPos: 6},
+			&LitNode{LitPos: 7, Lit: Lit{Token: Number, Text: "2"}, EndPos: 8},
 		}, RParen: 8}},
 	}, {
 		name:     "expr 3",
@@ -337,13 +337,13 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, LParen, Id, Number, Number, RParen, Number, RParen},
 		wantText: []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
 		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: IdLit("add"), EndPos: 4},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "add"}, EndPos: 4},
 			&ExprNode{LParen: 5, Expr: Expr{
-				&LitNode{LitPos: 6, Lit: IdLit("sub"), EndPos: 9},
-				&LitNode{LitPos: 10, Lit: NumberLit("3"), EndPos: 11},
-				&LitNode{LitPos: 12, Lit: NumberLit("2"), EndPos: 13},
+				&LitNode{LitPos: 6, Lit: Lit{Token: Id, Text: "sub"}, EndPos: 9},
+				&LitNode{LitPos: 10, Lit: Lit{Token: Number, Text: "3"}, EndPos: 11},
+				&LitNode{LitPos: 12, Lit: Lit{Token: Number, Text: "2"}, EndPos: 13},
 			}, RParen: 13},
-			&LitNode{LitPos: 15, Lit: NumberLit("2"), EndPos: 16},
+			&LitNode{LitPos: 15, Lit: Lit{Token: Number, Text: "2"}, EndPos: 16},
 		}, RParen: 16}},
 	}, {
 		name:     "expr 4",
@@ -353,7 +353,7 @@ func TestTokenizeExpr(t *testing.T) {
 		wantText: []string{"(", "(", "a", ")", ")"},
 		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
 			&ExprNode{LParen: 1, Expr: Expr{
-				&LitNode{LitPos: 2, Lit: IdLit("a"), EndPos: 3},
+				&LitNode{LitPos: 2, Lit: Lit{Token: Id, Text: "a"}, EndPos: 3},
 			}, RParen: 3},
 		}, RParen: 4}},
 	}, {
@@ -363,9 +363,9 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, RParen, LParen, Id, RParen, LParen, Id, RParen},
 		wantText: []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
 		wantNodes: []Node{
-			&ExprNode{LParen: 0, Expr: Expr{&LitNode{LitPos: 1, Lit: IdLit("a"), EndPos: 2}}, RParen: 2},
-			&ExprNode{LParen: 3, Expr: Expr{&LitNode{LitPos: 4, Lit: IdLit("b"), EndPos: 5}}, RParen: 5},
-			&ExprNode{LParen: 7, Expr: Expr{&LitNode{LitPos: 8, Lit: IdLit("c"), EndPos: 9}}, RParen: 9},
+			&ExprNode{LParen: 0, Expr: Expr{&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "a"}, EndPos: 2}}, RParen: 2},
+			&ExprNode{LParen: 3, Expr: Expr{&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "b"}, EndPos: 5}}, RParen: 5},
+			&ExprNode{LParen: 7, Expr: Expr{&LitNode{LitPos: 8, Lit: Lit{Token: Id, Text: "c"}, EndPos: 9}}, RParen: 9},
 		},
 	}, {
 		name:     "expr 6",
@@ -374,10 +374,10 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, Id, Id, Id, RParen},
 		wantText: []string{"(", "?", "x", "/", "y", ")"},
 		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: IdLit("?"), EndPos: 2},
-			&LitNode{LitPos: 2, Lit: IdLit("x"), EndPos: 3},
-			&LitNode{LitPos: 3, Lit: IdLit("/"), EndPos: 4},
-			&LitNode{LitPos: 4, Lit: IdLit("y"), EndPos: 5},
+			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "?"}, EndPos: 2},
+			&LitNode{LitPos: 2, Lit: Lit{Token: Id, Text: "x"}, EndPos: 3},
+			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "/"}, EndPos: 4},
+			&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "y"}, EndPos: 5},
 		}, RParen: 5}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {

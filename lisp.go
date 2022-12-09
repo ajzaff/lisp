@@ -58,30 +58,13 @@ func (x *ExprNode) Pos() Pos { return x.LParen }
 func (x *ExprNode) Val() Val { return x.Expr }
 func (x *ExprNode) End() Pos { return x.RParen + 1 }
 
-// Lit is an interface for basic literals.
+// Lit is a basic literal type.
 //
-// Only allowed values are IdLit, IntLit, FloatLit, StringLit.
-type Lit interface {
-	Val
-	lit()
-	String() string
+// Allowed type could be Id, Number, or String.
+type Lit struct {
+	Token
+	Text string
 }
 
-// Lit is a basic Id literal.
-type IdLit string
-
-// NumberLit is a basic numeric literal.
-type NumberLit string
-
-// SringLit is a basic string literal.
-type StringLit string
-
-func (IdLit) lit()                 {}
-func (NumberLit) lit()             {}
-func (StringLit) lit()             {}
-func (IdLit) val()                 {}
-func (NumberLit) val()             {}
-func (StringLit) val()             {}
-func (x IdLit) String() string     { return string(x) }
-func (x NumberLit) String() string { return string(x) }
-func (x StringLit) String() string { return string(x) }
+func (Lit) val()             {}
+func (x Lit) String() string { return string(x.Text) }

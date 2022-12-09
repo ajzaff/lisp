@@ -224,28 +224,16 @@ func (s *NodeScanner) Scan() bool {
 
 func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 	switch tok {
-	case Id:
+	case Id, Number, String:
 		return &LitNode{
 			LitPos: pos,
-			Lit:    IdLit(text),
-			EndPos: pos + Pos(len(text)),
-		}, nil
-	case Number:
-		return &LitNode{
-			LitPos: pos,
-			Lit:    NumberLit(text),
-			EndPos: pos + Pos(len(text)),
-		}, nil
-	case String:
-		return &LitNode{
-			LitPos: pos,
-			Lit:    StringLit(text),
+			Lit:    Lit{Token: tok, Text: text},
 			EndPos: pos + Pos(len(text)),
 		}, nil
 	case LParen, RParen:
 		return s.scanExpr(pos)
 	default:
-		panic("unreachable")
+		return nil, fmt.Errorf("unexpected token")
 	}
 }
 
