@@ -19,17 +19,45 @@ const (
 
 	LParen // (
 	RParen // )
+
+	Pre  // Pre content, see pre.go.
+	Code // Code chunk is untokenized content, see code.go.
 )
 
 // TokenError implements an error at a specified line and column.
 type TokenError struct {
-	Cause     error
-	Line, Col int
-	Pos       Pos
+	Cause error
+	Pos   Pos
+	Src   []byte
+}
+
+func (t *TokenError) LineCol() (line, col int) {
+	// src := t.src
+	line, col = 1, 1
+	// for pos := int(t.Pos); ; {
+	// 	n := bytes.IndexByte(src, '\n')
+	// 	if n < 0 {
+	// 		n = len(t.src)
+	// 	} else {
+	// 		n++
+	// 	}
+	// 	if pos < n {
+	// 		return line, pos
+	// 	}
+	// 	line++
+	// 	pos -= n
+	// 	src = src[n:]
+	// }
+	return
 }
 
 func (t *TokenError) Error() string {
-	return fmt.Sprintf("%v: at line %d: col %d", t.Cause, t.Line, t.Col)
+	line, col := t.LineCol()
+	return fmt.Sprintf("%v: at line %d: col %d", t.Cause, line, col)
+}
+
+func (t *TokenError) Unwrap() error {
+	return t.Cause
 }
 
 func isExprOrStr(r rune) bool {

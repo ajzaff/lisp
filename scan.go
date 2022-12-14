@@ -17,11 +17,11 @@ type TokenScanner struct {
 
 func NewTokenScanner(src io.Reader) *TokenScanner {
 	var sc TokenScanner
-	sc.Init(src)
+	sc.Reset(src)
 	return &sc
 }
 
-func (sc *TokenScanner) Init(src io.Reader) {
+func (sc *TokenScanner) Reset(src io.Reader) {
 	sc.sc = bufio.NewScanner(src)
 	sc.sc.Split(sc.tsc.scanTokens)
 	sc.tsc = tokenScanner{}
@@ -54,7 +54,6 @@ type tokenScanner struct {
 }
 
 var (
-	errEOF  = errors.New("unexpected EOF")
 	errRune = errors.New("unexpected rune")
 )
 
@@ -86,60 +85,12 @@ func (t *tokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		tok = RParen
 	case '"': // String
 		tok = String
-	string_loop:
-		for i < Pos(len(src)) {
-			r, size := utf8.DecodeRune(src[i:])
-			i += Pos(size)
-			switch r {
-			case '"':
-				break string_loop
-			case '\\':
-				if Pos(len(src)) < i {
-					err = errEOF
-					break string_loop
-				}
-				r, size := utf8.DecodeRune(src[i:])
-				i += Pos(size)
-				switch r {
-				case 'n', 't', '\\':
-				case 'x':
-					for j := 0; j < 2; j++ {
-						r, size := utf8.DecodeRune(src[i+Pos(j):])
-						switch {
-						case r >= '0' && r <= '9' || r >= 'A' && r <= 'F' || r >= 'a' && r <= 'f':
-						case size == 0:
-							err = errEOF
-							break string_loop
-						case r == utf8.RuneError:
-							err = errRune
-							break string_loop
-						}
-						i += Pos(size)
-					}
-				default:
-					switch {
-					case size == 0:
-						err = errEOF
-						break string_loop
-					case r == utf8.RuneError:
-						err = errRune
-						break string_loop
-					default:
-						err = fmt.Errorf("unexpected escape: \\%v", string(r))
-						break string_loop
-					}
-				}
-			default:
-				switch {
-				case size == 0:
-					err = errEOF
-					break string_loop
-				case r == utf8.RuneError:
-					err = errRune
-					break string_loop
-				}
-			}
+		n, scanErr := decodeStr(src[start:])
+		if scanErr != nil {
+			err = scanErr
+			break
 		}
+		i += Pos(n)
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': // Int | Float
 		tok = Number
 		var dec bool
@@ -204,7 +155,7 @@ func NewNodeScanner(sc *TokenScanner) *NodeScanner {
 }
 
 func (s *NodeScanner) Init(src io.Reader) {
-	s.sc.Init(src)
+	s.sc.Reset(src)
 	s.err = nil
 	s.node = nil
 }
@@ -241,7 +192,7 @@ func (s *NodeScanner) scanExpr(lParen Pos) (Node, error) {
 	var expr Expr
 	for {
 		if !s.sc.Scan() {
-			return nil, errEOF
+			return nil, io.ErrUnexpectedEOF
 		}
 		pos, tok, text := s.sc.Token()
 		switch tok {
