@@ -45,7 +45,7 @@ loop:
 				continue
 			}
 			expr.Reset()
-			lisp.StdPrinter(os.Stdout).Print(no[0].Val())
+			lisp.StdPrinter(os.Stdout).Print(no[0].Val)
 		case strings.TrimSpace(input) == "quit":
 			break loop
 		}

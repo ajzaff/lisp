@@ -11,9 +11,7 @@ It features:
 ## Syntax
 
 ```
-val         => expr | id | number
-expr        => '(' val ')'
-id          => [[:punct:]]+ | [^[[:punct:]]()"]+
+id          => [[:letter:]]+
 number      => -? [[:digit:]]+ ('.' [[:digit:]]*)? ([eE] [[:digit]]+)?
-str         => '"' ([^"] | '\"')* '"'
+expr        => '(' (id | number | expr)+ ')'
 ```

@@ -48,7 +48,9 @@ func (d *Decoder) decodeSrc(r io.Reader) {
 			escape = false
 		}
 	}
-	d.sc = lisp.NewNodeScanner(lisp.NewTokenScanner(bytes.NewReader(src)))
+	var s lisp.TokenScanner
+	s.Reset(bytes.NewReader(src))
+	d.sc = lisp.NewNodeScanner(&s)
 }
 
 func (d *Decoder) Decode() (lisp.Val, error) {
@@ -56,5 +58,5 @@ func (d *Decoder) Decode() (lisp.Val, error) {
 	if err := d.sc.Err(); err != nil {
 		return nil, err
 	}
-	return d.sc.Node().Val(), nil
+	return d.sc.Node().Val, nil
 }

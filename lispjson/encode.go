@@ -19,12 +19,12 @@ func (e *Encoder) Encode(v lisp.Val) {
 		if v.Token == lisp.Id {
 			e.w.Write([]byte(strconv.Quote(v.String())))
 		}
-		// IntLit, FloatLit, StringLit
-		e.w.Write([]byte(strconv.Quote(v.String())))
+		// Number
+		e.w.Write([]byte(v.String()))
 	case lisp.Expr:
 		e.w.Write([]byte{'['})
 		for i, elem := range v {
-			e.Encode(elem.Val())
+			e.Encode(elem.Val)
 			if i+1 < len(v) {
 				e.w.Write([]byte{','})
 			}

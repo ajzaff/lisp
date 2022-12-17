@@ -36,11 +36,6 @@ func encode(v lisp.Val, b []byte) int {
 			b[0] = byte(lisp.Id)
 		case lisp.Number:
 			b[0] = byte(lisp.Number)
-		case lisp.String:
-			b[0] = byte(lisp.String)
-			s := v.String()
-			i = copy(b[2:], s[1:len(s)-1])
-			return 2 + i
 		}
 		i = copy(b[2:], []byte(v.String()))
 		return 2 + i
@@ -48,11 +43,11 @@ func encode(v lisp.Val, b []byte) int {
 		b[0] = byte(lisp.LParen)
 		size := 0
 		for _, e := range v {
-			size += EncodedLen(e.Val())
+			size += EncodedLen(e.Val)
 		}
 		i := binary.PutUvarint(b[1:], uint64(size))
 		for _, e := range v {
-			i += encode(e.Val(), b[i:])
+			i += encode(e.Val, b[i:])
 		}
 		return i
 	default:
@@ -72,15 +67,13 @@ func EncodedLen(n lisp.Val) int {
 			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
 		case lisp.Number:
 			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-		case lisp.String:
-			return 1 + varIntLen(uint64(len(x.String())-2)) + len(x.String()) - 2
 		default:
 			panic("unknown Lit token")
 		}
 	case lisp.Expr:
 		size := 0
 		for _, e := range x {
-			size += EncodedLen(e.Val())
+			size += EncodedLen(e.Val)
 		}
 		return 1 + varIntLen(uint64(size)) + size
 	default:

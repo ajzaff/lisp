@@ -1,16 +1,16 @@
 package lisp
 
-func DecodeNum(b []byte) (LitNode, error) {
+func DecodeNum(b []byte) (Node, error) {
 	n, err := decodeNum(b)
 	if err != nil {
-		return LitNode{}, err
+		return Node{}, err
 	}
-	return LitNode{
-		Lit: Lit{
+	return Node{
+		Val: Lit{
 			Token: Number,
 			Text:  string(b[:n]),
 		},
-		EndPos: Pos(n),
+		End: Pos(n),
 	}, nil
 }
 

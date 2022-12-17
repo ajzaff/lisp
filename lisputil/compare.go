@@ -19,7 +19,7 @@ func Compare(a, b lisp.Val) int {
 				return 1
 			}
 			for i := range a {
-				if v := Compare(a[i].Val(), b[i].Val()); v != 0 {
+				if v := Compare(a[i].Val, b[i].Val); v != 0 {
 					return v
 				}
 			}

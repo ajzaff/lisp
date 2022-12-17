@@ -14,7 +14,7 @@ func Equal(a, b lisp.Val) bool {
 				return false
 			}
 			for i := range a {
-				if !Equal(a[i].Val(), b[i].Val()) {
+				if !Equal(a[i].Val, b[i].Val) {
 					return false
 				}
 			}

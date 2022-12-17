@@ -13,9 +13,8 @@ type Token int
 const (
 	Invalid Token = iota
 
-	Id     // x y z + - / ++
+	Id     // x y z
 	Number // 12345 -123.45 1.1e2
-	String // "abc"
 
 	LParen // (
 	RParen // )
@@ -60,26 +59,6 @@ func (t *TokenError) Unwrap() error {
 	return t.Cause
 }
 
-func isExprOrStr(r rune) bool {
-	return r == '(' || r == ')' || r == '"'
-}
-
-func IsSymbol(r rune) bool {
-	return !isExprOrStr(r) && isSymbol(r)
-}
-
-func isSymbol(r rune) bool {
-	return unicode.IsPunct(r) || unicode.IsSymbol(r)
-}
-
-func IsLetter(r rune) bool {
-	return !isExprOrStr(r) && isIdent(r)
-}
-
-func IsIdent(r rune) bool {
-	return !isExprOrStr(r) && (isSymbol(r) || isIdent(r))
-}
-
-func isIdent(r rune) bool {
-	return unicode.IsLetter(r) || unicode.IsMark(r)
+func IsId(r rune) bool {
+	return unicode.IsLetter(r)
 }

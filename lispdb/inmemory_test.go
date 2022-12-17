@@ -10,9 +10,11 @@ import (
 
 func mustParseMultiple(t *testing.T, src string) []lisp.Val {
 	var ns []lisp.Val
-	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(src)))
+	var s lisp.TokenScanner
+	s.Reset(strings.NewReader(src))
+	sc := lisp.NewNodeScanner(&s)
 	for sc.Scan() {
-		ns = append(ns, sc.Node().Val())
+		ns = append(ns, sc.Node().Val)
 	}
 	if err := sc.Err(); err != nil {
 		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))

@@ -27,7 +27,8 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 		gotTok  []Token
 		gotText []string
 	)
-	sc := NewTokenScanner(strings.NewReader(tc.input))
+	var sc TokenScanner
+	sc.Reset(strings.NewReader(tc.input))
 	for sc.Scan() {
 		pos, tok, text := sc.Token()
 		gotPos = append(gotPos, pos, pos+Pos(len(text)))
@@ -48,7 +49,7 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 		t.Errorf("Tokenize(%q) got token err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
 	}
 	sc.Reset(strings.NewReader(tc.input))
-	s := NewNodeScanner(sc)
+	s := NewNodeScanner(&sc)
 	var gotNodes []Node
 	for s.Scan() {
 		gotNodes = append(gotNodes, s.Node())
@@ -69,217 +70,151 @@ func TestTokenizeLit(t *testing.T) {
 		wantPos:   []Pos{0, 3},
 		wantTok:   []Token{Id},
 		wantText:  []string{"foo"},
-		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "foo"}, EndPos: 3}},
-	},
-		// {
-		// 		name:      "symbol",
-		// 		input:     `.+`,
-		// 		wantPos:   []Pos{0, 2},
-		// 		wantTok:   []Token{Id},
-		// 		wantText:  []string{".+"},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: ".+"}, EndPos: 2}},
-		// 	}, {
-		// 		name:     "id symbol id",
-		// 		input:    "foo-bar",
-		// 		wantPos:  []Pos{0, 3, 3, 4, 4, 7},
-		// 		wantTok:  []Token{Id, Id, Id},
-		// 		wantText: []string{"foo", "-", "bar"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "foo"}, EndPos: 3},
-		// 			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "-"}, EndPos: 4},
-		// 			&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "bar"}, EndPos: 7},
-		// 		},
-		// 	}, {
-		// 		name:      "space id",
-		// 		input:     "  \t\n x",
-		// 		wantPos:   []Pos{5, 6},
-		// 		wantTok:   []Token{Id},
-		// 		wantText:  []string{"x"},
-		// 		wantNodes: []Node{&LitNode{LitPos: 5, Lit: Lit{Token: Id, Text: "x"}, EndPos: 6}},
-		// 	}, {
-		// 		name:     "id id id",
-		// 		input:    "a b c",
-		// 		wantPos:  []Pos{0, 1, 2, 3, 4, 5},
-		// 		wantTok:  []Token{Id, Id, Id},
-		// 		wantText: []string{"a", "b", "c"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
-		// 			&LitNode{LitPos: 2, Lit: Lit{Token: Id, Text: "b"}, EndPos: 3},
-		// 			&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "c"}, EndPos: 5},
-		// 		},
-		// 	}, {
-		// 		name:      "symbol 2",
-		// 		input:     ".",
-		// 		wantPos:   []Pos{0, 1},
-		// 		wantTok:   []Token{Id},
-		// 		wantText:  []string{"."},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "."}, EndPos: 1}},
-		// 	}, {
-		// 		name:     "id id int",
-		// 		input:    `a.0`,
-		// 		wantPos:  []Pos{0, 1, 1, 2, 2, 3},
-		// 		wantTok:  []Token{Id, Id, Number},
-		// 		wantText: []string{"a", ".", "0"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
-		// 			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "."}, EndPos: 2},
-		// 			&LitNode{LitPos: 2, Lit: Lit{Token: Number, Text: "0"}, EndPos: 3},
-		// 		},
-		// 	}, {
-		// 		name:     "id symbol",
-		// 		input:    "a...",
-		// 		wantPos:  []Pos{0, 1, 1, 4},
-		// 		wantTok:  []Token{Id, Id},
-		// 		wantText: []string{"a", "..."},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
-		// 			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "..."}, EndPos: 4},
-		// 		},
-		// 	}, {
-		// 		name:     "symbol id",
-		// 		input:    "...a",
-		// 		wantPos:  []Pos{0, 3, 3, 4},
-		// 		wantTok:  []Token{Id, Id},
-		// 		wantText: []string{"...", "a"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "..."}, EndPos: 3},
-		// 			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "a"}, EndPos: 4},
-		// 		},
-		// 	}, {
-		// 		name:     "id string",
-		// 		input:    `a"abc"`,
-		// 		wantPos:  []Pos{0, 1, 1, 6},
-		// 		wantTok:  []Token{Id, String},
-		// 		wantText: []string{"a", `"abc"`},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "a"}, EndPos: 1},
-		// 			&LitNode{LitPos: 1, Lit: Lit{Token: String, Text: `"abc"`}, EndPos: 6},
-		// 		},
-		// 	}, {
-		// 		name:     "id id id 2",
-		// 		input:    "ab cd ef",
-		// 		wantPos:  []Pos{0, 2, 3, 5, 6, 8},
-		// 		wantTok:  []Token{Id, Id, Id},
-		// 		wantText: []string{"ab", "cd", "ef"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Id, Text: "ab"}, EndPos: 2},
-		// 			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "cd"}, EndPos: 5},
-		// 			&LitNode{LitPos: 6, Lit: Lit{Token: Id, Text: "ef"}, EndPos: 8},
-		// 		},
-		// 	}, {
-		// 		name:      "int",
-		// 		input:     "0",
-		// 		wantPos:   []Pos{0, 1},
-		// 		wantTok:   []Token{Number},
-		// 		wantText:  []string{"0"},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0"}, EndPos: 1}},
-		// 	}, {
-		// 		name:     "int 2",
-		// 		input:    "0 1 2",
-		// 		wantPos:  []Pos{0, 1, 2, 3, 4, 5},
-		// 		wantTok:  []Token{Number, Number, Number},
-		// 		wantText: []string{"0", "1", "2"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0"}, EndPos: 1},
-		// 			&LitNode{LitPos: 2, Lit: Lit{Token: Number, Text: "1"}, EndPos: 3},
-		// 			&LitNode{LitPos: 4, Lit: Lit{Token: Number, Text: "2"}, EndPos: 5},
-		// 		},
-		// 	}, {
-		// 		name:      "float",
-		// 		input:     "1.0",
-		// 		wantPos:   []Pos{0, 3},
-		// 		wantTok:   []Token{Number},
-		// 		wantText:  []string{"1.0"},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "1.0"}, EndPos: 3}},
-		// 	}, {
-		// 		name:      "float 2",
-		// 		input:     "1.",
-		// 		wantPos:   []Pos{0, 2},
-		// 		wantTok:   []Token{Number},
-		// 		wantText:  []string{"1."},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "1."}, EndPos: 2}},
-		// 	}, {
-		// 		name:      "float 3",
-		// 		input:     "0.",
-		// 		wantPos:   []Pos{0, 2},
-		// 		wantTok:   []Token{Number},
-		// 		wantText:  []string{"0."},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0."}, EndPos: 2}},
-		// 	}, {
-		// 		name:     "float 4",
-		// 		input:    "1. 2. 3.",
-		// 		wantPos:  []Pos{0, 2, 3, 5, 6, 8},
-		// 		wantTok:  []Token{Number, Number, Number},
-		// 		wantText: []string{"1.", "2.", "3."},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "1."}, EndPos: 2},
-		// 			&LitNode{LitPos: 3, Lit: Lit{Token: Number, Text: "2."}, EndPos: 5},
-		// 			&LitNode{LitPos: 6, Lit: Lit{Token: Number, Text: "3."}, EndPos: 8},
-		// 		},
-		// 	}, {
-		// 		name:     "float 4_2",
-		// 		input:    "0.1 0.2 0.3",
-		// 		wantPos:  []Pos{0, 3, 4, 7, 8, 11},
-		// 		wantTok:  []Token{Number, Number, Number},
-		// 		wantText: []string{"0.1", "0.2", "0.3"},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: Number, Text: "0.1"}, EndPos: 3},
-		// 			&LitNode{LitPos: 4, Lit: Lit{Token: Number, Text: "0.2"}, EndPos: 7},
-		// 			&LitNode{LitPos: 8, Lit: Lit{Token: Number, Text: "0.3"}, EndPos: 11},
-		// 		},
-		// 	},
-		{
-			name:      "string",
-			input:     `"a"`,
-			wantPos:   []Pos{0, 3},
-			wantTok:   []Token{String},
-			wantText:  []string{`"a"`},
-			wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"a"`}, EndPos: 3}},
+		wantNodes: []Node{{Val: Lit{Token: Id, Text: "foo"}, End: 3}},
+	}, {
+		name:         "symbol",
+		input:        `.+`,
+		wantTokenErr: true,
+	}, {
+		name:     "id symbol id",
+		input:    "foo-bar",
+		wantPos:  []Pos{0, 3, 3, 4, 4, 7},
+		wantTok:  []Token{Id, Id, Id},
+		wantText: []string{"foo", "-", "bar"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Id, Text: "foo"}, End: 3},
+			{Pos: 3, Val: Lit{Token: Id, Text: "-"}, End: 4},
+			{Pos: 4, Val: Lit{Token: Id, Text: "bar"}, End: 7},
 		},
-		//  {
-		// 		name:      "string 2",
-		// 		input:     `"a b c"`,
-		// 		wantPos:   []Pos{0, 7},
-		// 		wantTok:   []Token{String},
-		// 		wantText:  []string{`"a b c"`},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"a b c"`}, EndPos: 7}},
-		// 	}, {
-		// 		name:     "string 3",
-		// 		input:    `"a" "b" "c"`,
-		// 		wantPos:  []Pos{0, 3, 4, 7, 8, 11},
-		// 		wantTok:  []Token{String, String, String},
-		// 		wantText: []string{`"a"`, `"b"`, `"c"`},
-		// 		wantNodes: []Node{
-		// 			&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"a"`}, EndPos: 3},
-		// 			&LitNode{LitPos: 4, Lit: Lit{Token: String, Text: `"b"`}, EndPos: 7},
-		// 			&LitNode{LitPos: 8, Lit: Lit{Token: String, Text: `"c"`}, EndPos: 11},
-		// 		},
-		// 	}, {
-		// 		name: "string (multiline)",
-		// 		input: `"
-		// "`,
-		// 		wantPos: []Pos{0, 3},
-		// 		wantTok: []Token{String},
-		// 		wantText: []string{`"
-		// "`},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"
-		// "`}, EndPos: 3}},
-		// 	}, {
-		// 		name:      "string (double escape)",
-		// 		input:     `"\\"`,
-		// 		wantPos:   []Pos{0, 4},
-		// 		wantTok:   []Token{String},
-		// 		wantText:  []string{`"\\"`},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"\\"`}, EndPos: 4}},
-		// 	}, {
-		// 		name:      "byte lit",
-		// 		input:     `"abc\x00\x11\xff"`,
-		// 		wantPos:   []Pos{0, 17},
-		// 		wantTok:   []Token{String},
-		// 		wantText:  []string{`"abc\x00\x11\xff"`},
-		// 		wantNodes: []Node{&LitNode{LitPos: 0, Lit: Lit{Token: String, Text: `"abc\x00\x11\xff"`}, EndPos: 17}},
-		// 	},
-	} {
+	}, {
+		name:      "space id",
+		input:     "  \t\n x",
+		wantPos:   []Pos{5, 6},
+		wantTok:   []Token{Id},
+		wantText:  []string{"x"},
+		wantNodes: []Node{{Pos: 5, Val: Lit{Token: Id, Text: "x"}, End: 6}},
+	}, {
+		name:     "id id id",
+		input:    "a b c",
+		wantPos:  []Pos{0, 1, 2, 3, 4, 5},
+		wantTok:  []Token{Id, Id, Id},
+		wantText: []string{"a", "b", "c"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Id, Text: "a"}, End: 1},
+			{Pos: 2, Val: Lit{Token: Id, Text: "b"}, End: 3},
+			{Pos: 4, Val: Lit{Token: Id, Text: "c"}, End: 5},
+		},
+	}, {
+		name:      "symbol 2",
+		input:     ".",
+		wantPos:   []Pos{0, 1},
+		wantTok:   []Token{Id},
+		wantText:  []string{"."},
+		wantNodes: []Node{{Val: Lit{Token: Id, Text: "."}, End: 1}},
+	}, {
+		name:     "id id int",
+		input:    `a.0`,
+		wantPos:  []Pos{0, 1, 1, 2, 2, 3},
+		wantTok:  []Token{Id, Id, Number},
+		wantText: []string{"a", ".", "0"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Id, Text: "a"}, End: 1},
+			{Pos: 1, Val: Lit{Token: Id, Text: "."}, End: 2},
+			{Pos: 2, Val: Lit{Token: Number, Text: "0"}, End: 3},
+		},
+	}, {
+		name:     "id symbol",
+		input:    "a...",
+		wantPos:  []Pos{0, 1, 1, 4},
+		wantTok:  []Token{Id, Id},
+		wantText: []string{"a", "..."},
+		wantNodes: []Node{
+			{Val: Lit{Token: Id, Text: "a"}, End: 1},
+			{Pos: 1, Val: Lit{Token: Id, Text: "..."}, End: 4},
+		},
+	}, {
+		name:     "symbol id",
+		input:    "...a",
+		wantPos:  []Pos{0, 3, 3, 4},
+		wantTok:  []Token{Id, Id},
+		wantText: []string{"...", "a"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Id, Text: "..."}, End: 3},
+			{Pos: 3, Val: Lit{Token: Id, Text: "a"}, End: 4},
+		},
+	}, {
+		name:     "id id id 2",
+		input:    "ab cd ef",
+		wantPos:  []Pos{0, 2, 3, 5, 6, 8},
+		wantTok:  []Token{Id, Id, Id},
+		wantText: []string{"ab", "cd", "ef"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Id, Text: "ab"}, End: 2},
+			{Pos: 3, Val: Lit{Token: Id, Text: "cd"}, End: 5},
+			{Pos: 6, Val: Lit{Token: Id, Text: "ef"}, End: 8},
+		},
+	}, {
+		name:      "int",
+		input:     "0",
+		wantPos:   []Pos{0, 1},
+		wantTok:   []Token{Number},
+		wantText:  []string{"0"},
+		wantNodes: []Node{{Val: Lit{Token: Number, Text: "0"}, End: 1}},
+	}, {
+		name:     "int 2",
+		input:    "0 1 2",
+		wantPos:  []Pos{0, 1, 2, 3, 4, 5},
+		wantTok:  []Token{Number, Number, Number},
+		wantText: []string{"0", "1", "2"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Number, Text: "0"}, End: 1},
+			{Pos: 2, Val: Lit{Token: Number, Text: "1"}, End: 3},
+			{Pos: 4, Val: Lit{Token: Number, Text: "2"}, End: 5},
+		},
+	}, {
+		name:      "float",
+		input:     "1.0",
+		wantPos:   []Pos{0, 3},
+		wantTok:   []Token{Number},
+		wantText:  []string{"1.0"},
+		wantNodes: []Node{{Val: Lit{Token: Number, Text: "1.0"}, End: 3}},
+	}, {
+		name:      "float 2",
+		input:     "1.",
+		wantPos:   []Pos{0, 2},
+		wantTok:   []Token{Number},
+		wantText:  []string{"1."},
+		wantNodes: []Node{{Val: Lit{Token: Number, Text: "1."}, End: 2}},
+	}, {
+		name:      "float 3",
+		input:     "0.",
+		wantPos:   []Pos{0, 2},
+		wantTok:   []Token{Number},
+		wantText:  []string{"0."},
+		wantNodes: []Node{{Val: Lit{Token: Number, Text: "0."}, End: 2}},
+	}, {
+		name:     "float 4",
+		input:    "1. 2. 3.",
+		wantPos:  []Pos{0, 2, 3, 5, 6, 8},
+		wantTok:  []Token{Number, Number, Number},
+		wantText: []string{"1.", "2.", "3."},
+		wantNodes: []Node{
+			{Val: Lit{Token: Number, Text: "1."}, End: 2},
+			{Pos: 3, Val: Lit{Token: Number, Text: "2."}, End: 5},
+			{Pos: 6, Val: Lit{Token: Number, Text: "3."}, End: 8},
+		},
+	}, {
+		name:     "float 4_2",
+		input:    "0.1 0.2 0.3",
+		wantPos:  []Pos{0, 3, 4, 7, 8, 11},
+		wantTok:  []Token{Number, Number, Number},
+		wantText: []string{"0.1", "0.2", "0.3"},
+		wantNodes: []Node{
+			{Val: Lit{Token: Number, Text: "0.1"}, End: 3},
+			{Pos: 4, Val: Lit{Token: Number, Text: "0.2"}, End: 7},
+			{Pos: 8, Val: Lit{Token: Number, Text: "0.3"}, End: 11},
+		},
+	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
 		})
@@ -287,12 +222,7 @@ func TestTokenizeLit(t *testing.T) {
 }
 
 func TestTokenizeLitErrors(t *testing.T) {
-	for _, tc := range []scanTestCase{{
-		name:         "byte lit EOF",
-		input:        `"abc\x00\x1"`,
-		wantTokenErr: true,
-		wantNodeErr:  true,
-	}} {
+	for _, tc := range []scanTestCase{} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
 		})
@@ -311,55 +241,55 @@ func TestTokenizeExpr(t *testing.T) {
 		wantPos:  []Pos{0, 1, 1, 4, 4, 5},
 		wantTok:  []Token{LParen, Id, RParen},
 		wantText: []string{"(", "abc", ")"},
-		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "abc"}, EndPos: 4},
-		}, RParen: 4}},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Lit{Token: Id, Text: "abc"}, End: 4},
+		}, End: 4}},
 	}, {
 		name:     "expr symbol",
 		input:    "(.)",
 		wantPos:  []Pos{0, 1, 1, 2, 2, 3},
 		wantTok:  []Token{LParen, Id, RParen},
 		wantText: []string{"(", ".", ")"},
-		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "."}, EndPos: 2},
-		}, RParen: 2}},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Lit{Token: Id, Text: "."}, End: 2},
+		}, End: 2}},
 	}, {
 		name:     "expr 2",
 		input:    "(add 1 2)",
 		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
 		wantTok:  []Token{LParen, Id, Number, Number, RParen},
 		wantText: []string{"(", "add", "1", "2", ")"},
-		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "add"}, EndPos: 4},
-			&LitNode{LitPos: 5, Lit: Lit{Token: Number, Text: "1"}, EndPos: 6},
-			&LitNode{LitPos: 7, Lit: Lit{Token: Number, Text: "2"}, EndPos: 8},
-		}, RParen: 8}},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
+			Node{Pos: 5, Val: Lit{Token: Number, Text: "1"}, End: 6},
+			Node{Pos: 7, Val: Lit{Token: Number, Text: "2"}, End: 8},
+		}, End: 8}},
 	}, {
 		name:     "expr 3",
 		input:    "(add (sub 3 2) 2)",
 		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
 		wantTok:  []Token{LParen, Id, LParen, Id, Number, Number, RParen, Number, RParen},
 		wantText: []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
-		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "add"}, EndPos: 4},
-			&ExprNode{LParen: 5, Expr: Expr{
-				&LitNode{LitPos: 6, Lit: Lit{Token: Id, Text: "sub"}, EndPos: 9},
-				&LitNode{LitPos: 10, Lit: Lit{Token: Number, Text: "3"}, EndPos: 11},
-				&LitNode{LitPos: 12, Lit: Lit{Token: Number, Text: "2"}, EndPos: 13},
-			}, RParen: 13},
-			&LitNode{LitPos: 15, Lit: Lit{Token: Number, Text: "2"}, EndPos: 16},
-		}, RParen: 16}},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
+			Node{Pos: 5, Val: Expr{
+				Node{Pos: 6, Val: Lit{Token: Id, Text: "sub"}, End: 9},
+				Node{Pos: 10, Val: Lit{Token: Number, Text: "3"}, End: 11},
+				Node{Pos: 12, Val: Lit{Token: Number, Text: "2"}, End: 13},
+			}, End: 13},
+			Node{Pos: 15, Val: Lit{Token: Number, Text: "2"}, End: 16},
+		}, End: 16}},
 	}, {
 		name:     "expr 4",
 		input:    "((a))",
 		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
 		wantTok:  []Token{LParen, LParen, Id, RParen, RParen},
 		wantText: []string{"(", "(", "a", ")", ")"},
-		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&ExprNode{LParen: 1, Expr: Expr{
-				&LitNode{LitPos: 2, Lit: Lit{Token: Id, Text: "a"}, EndPos: 3},
-			}, RParen: 3},
-		}, RParen: 4}},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Expr{
+				Node{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
+			}, End: 3},
+		}, End: 4}},
 	}, {
 		name:     "expr 5",
 		input:    "(a)(b) (c)",
@@ -367,9 +297,9 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, RParen, LParen, Id, RParen, LParen, Id, RParen},
 		wantText: []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
 		wantNodes: []Node{
-			&ExprNode{LParen: 0, Expr: Expr{&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "a"}, EndPos: 2}}, RParen: 2},
-			&ExprNode{LParen: 3, Expr: Expr{&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "b"}, EndPos: 5}}, RParen: 5},
-			&ExprNode{LParen: 7, Expr: Expr{&LitNode{LitPos: 8, Lit: Lit{Token: Id, Text: "c"}, EndPos: 9}}, RParen: 9},
+			{Val: Expr{Node{Pos: 1, Val: Lit{Token: Id, Text: "a"}, End: 2}}, End: 2},
+			{Pos: 3, Val: Expr{Node{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5}}, End: 5},
+			{Pos: 7, Val: Expr{Node{Pos: 8, Val: Lit{Token: Id, Text: "c"}, End: 9}}, End: 9},
 		},
 	}, {
 		name:     "expr 6",
@@ -377,12 +307,12 @@ func TestTokenizeExpr(t *testing.T) {
 		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6},
 		wantTok:  []Token{LParen, Id, Id, Id, Id, RParen},
 		wantText: []string{"(", "?", "x", "/", "y", ")"},
-		wantNodes: []Node{&ExprNode{LParen: 0, Expr: Expr{
-			&LitNode{LitPos: 1, Lit: Lit{Token: Id, Text: "?"}, EndPos: 2},
-			&LitNode{LitPos: 2, Lit: Lit{Token: Id, Text: "x"}, EndPos: 3},
-			&LitNode{LitPos: 3, Lit: Lit{Token: Id, Text: "/"}, EndPos: 4},
-			&LitNode{LitPos: 4, Lit: Lit{Token: Id, Text: "y"}, EndPos: 5},
-		}, RParen: 5}},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Lit{Token: Id, Text: "?"}, End: 2},
+			Node{Pos: 2, Val: Lit{Token: Id, Text: "x"}, End: 3},
+			Node{Pos: 3, Val: Lit{Token: Id, Text: "/"}, End: 4},
+			Node{Pos: 4, Val: Lit{Token: Id, Text: "y"}, End: 5},
+		}, End: 5}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)

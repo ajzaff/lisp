@@ -21,13 +21,13 @@ func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
 		return v, w
 	}
 	n, w := queryOneNode(db, id)
-	return n.Val(), w
+	return n.Val, w
 }
 
 func queryOneNode(db QueryInterface, id ID) (lisp.Node, float64) {
 	v, w := db.Load(id)
 	if v.Token != lisp.Invalid {
-		return &lisp.LitNode{Lit: v}, w
+		return lisp.Node{Val: v}, w
 	}
 	var x lisp.Expr
 	db.EachRef(id, func(i ID) bool {
@@ -35,7 +35,7 @@ func queryOneNode(db QueryInterface, id ID) (lisp.Node, float64) {
 		x = append(x, e)
 		return true
 	})
-	return &lisp.ExprNode{Expr: x}, w
+	return lisp.Node{Val: x}, w
 }
 
 func EachTransRef(db QueryInterface, root ID, fn func(ID) bool) {
@@ -104,9 +104,11 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
 	var qn []lisp.Val
-	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(q)))
+	var s lisp.TokenScanner
+	s.Reset(strings.NewReader(q))
+	sc := lisp.NewNodeScanner(&s)
 	for sc.Scan() {
-		qn = append(qn, sc.Node().Val())
+		qn = append(qn, sc.Node().Val)
 	}
 	if err := sc.Err(); err != nil {
 		r.err = err

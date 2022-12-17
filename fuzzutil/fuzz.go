@@ -18,7 +18,6 @@ type Rand interface {
 type Generator struct {
 	IdWeight     int
 	NumberWeight int
-	StringWeight int
 	ExprWeight   int
 
 	termFn func() int
@@ -30,7 +29,6 @@ func NewGenerator(r Rand) *Generator {
 	g := &Generator{
 		IdWeight:     1,
 		NumberWeight: 1,
-		StringWeight: 1,
 		ExprWeight:   1,
 		r:            r,
 	}
@@ -47,7 +45,7 @@ func (g *Generator) Seed(seed int64) {
 }
 
 func (g *Generator) weight() int {
-	return g.IdWeight + g.NumberWeight + g.StringWeight + g.ExprWeight
+	return g.IdWeight + g.NumberWeight + g.ExprWeight
 }
 
 func (g *Generator) Token() lisp.Token {
@@ -60,10 +58,6 @@ func (g *Generator) Token() lisp.Token {
 		return lisp.Number
 	}
 	v -= g.NumberWeight
-	if g.StringWeight != 0 && v <= 0 {
-		return lisp.String
-	}
-	v -= g.StringWeight
 	if g.ExprWeight != 0 {
 		return lisp.LParen // Expr
 	}
@@ -76,8 +70,6 @@ func (g *Generator) Next() lisp.Node {
 		return g.NextId()
 	case lisp.Number:
 		return g.NextNumber()
-	case lisp.String:
-		return g.NextString()
 	case lisp.LParen: // Expr
 		return g.NextExpr()
 	default:
@@ -85,15 +77,11 @@ func (g *Generator) Next() lisp.Node {
 	}
 }
 
-func (g *Generator) NextId() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}}
+func (g *Generator) NextId() lisp.Node {
+	return lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}}
 }
 
-func (g *Generator) NextString() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.String, Text: fmt.Sprintf(`"a%d"`, g.r.Uint64())}}
-}
-
-func (g *Generator) NextNumber() *lisp.LitNode {
+func (g *Generator) NextNumber() lisp.Node {
 	if g.r.Intn(2) == 0 {
 		return g.NextInt()
 	} else { // 1
@@ -101,15 +89,15 @@ func (g *Generator) NextNumber() *lisp.LitNode {
 	}
 }
 
-func (g *Generator) NextInt() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.Number, Text: strconv.FormatInt(int64(g.r.Uint64()), 10)}}
+func (g *Generator) NextInt() lisp.Node {
+	return lisp.Node{Val: lisp.Lit{Token: lisp.Number, Text: strconv.FormatInt(int64(g.r.Uint64()), 10)}}
 }
 
-func (g *Generator) NextFloat() *lisp.LitNode {
-	return &lisp.LitNode{Lit: lisp.Lit{Token: lisp.Number, Text: strconv.FormatFloat(g.r.Float64(), 'f', -1, 64)}}
+func (g *Generator) NextFloat() lisp.Node {
+	return lisp.Node{Val: lisp.Lit{Token: lisp.Number, Text: strconv.FormatFloat(g.r.Float64(), 'f', -1, 64)}}
 }
 
-func (g *Generator) NextExpr() *lisp.ExprNode {
+func (g *Generator) NextExpr() lisp.Node {
 	var n int
 	for n <= 0 {
 		n = g.termFn()
@@ -118,5 +106,5 @@ func (g *Generator) NextExpr() *lisp.ExprNode {
 	for i := 0; i < n; i++ {
 		xs = append(xs, g.Next())
 	}
-	return &lisp.ExprNode{Expr: xs}
+	return lisp.Node{Val: xs}
 }

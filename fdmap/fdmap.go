@@ -14,11 +14,12 @@ type FreqMap struct {
 }
 
 func NewFreqMap() *FreqMap {
-	return &FreqMap{sc: lisp.NewTokenScanner(nil), data: make(map[lisp.Lit]int)}
+	var sc lisp.TokenScanner
+	return &FreqMap{sc: &sc, data: make(map[lisp.Lit]int)}
 }
 
 func (m *FreqMap) Init(r io.Reader) {
-	m.sc.Init(r)
+	m.sc.Reset(r)
 }
 
 func (m *FreqMap) Scan() bool {
@@ -30,8 +31,6 @@ func (m *FreqMap) Scan() bool {
 			lit = lisp.Lit{Token: lisp.Id, Text: text}
 		case lisp.Number:
 			lit = lisp.Lit{Token: lisp.Number, Text: text}
-		case lisp.String:
-			lit = lisp.Lit{Token: lisp.String, Text: text}
 		}
 		m.data[lit]++
 	}

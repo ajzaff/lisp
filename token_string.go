@@ -11,14 +11,15 @@ func _() {
 	_ = x[Invalid-0]
 	_ = x[Id-1]
 	_ = x[Number-2]
-	_ = x[String-3]
-	_ = x[LParen-4]
-	_ = x[RParen-5]
+	_ = x[LParen-3]
+	_ = x[RParen-4]
+	_ = x[Pre-5]
+	_ = x[Code-6]
 }
 
-const _Token_name = "InvalidIdNumberStringLParenRParen"
+const _Token_name = "InvalidIdNumberLParenRParenPreCode"
 
-var _Token_index = [...]uint8{0, 7, 9, 15, 21, 27, 33}
+var _Token_index = [...]uint8{0, 7, 9, 15, 21, 27, 30, 34}
 
 func (i Token) String() string {
 	if i < 0 || i >= Token(len(_Token_index)-1) {

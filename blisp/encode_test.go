@@ -12,7 +12,9 @@ import (
 
 func mustParse(t *testing.T, src string) lisp.Val {
 	var n lisp.Node
-	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(src)))
+	var s lisp.TokenScanner
+	s.Reset(strings.NewReader(src))
+	sc := lisp.NewNodeScanner(&s)
 	for sc.Scan() {
 		n = sc.Node()
 		break
@@ -20,10 +22,7 @@ func mustParse(t *testing.T, src string) lisp.Val {
 	if err := sc.Err(); err != nil {
 		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))
 	}
-	if n == nil {
-		return nil
-	}
-	return n.Val()
+	return n.Val
 }
 
 func TestEncodedLen(t *testing.T) {
@@ -45,10 +44,6 @@ func TestEncodedLen(t *testing.T) {
 		name:  "float",
 		input: mustParse(t, "1.125"),
 		want:  10,
-	}, {
-		name:  "string",
-		input: mustParse(t, `"abc"`),
-		want:  5,
 	}, {
 		name:  "expr",
 		input: mustParse(t, "(a)"),

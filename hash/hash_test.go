@@ -26,10 +26,6 @@ func TestDistictHash(t *testing.T) {
 		input1: ".44",
 		input2: "   .44",
 	}, {
-		name:   "str is independent of src pos",
-		input1: `""`,
-		input2: `    ""`,
-	}, {
 		name:         "id and expr are distinct",
 		input1:       "a",
 		input2:       "(a)",
@@ -45,11 +41,14 @@ func TestDistictHash(t *testing.T) {
 		input2:       "(abc)",
 		wantDistinct: true,
 	}} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			var n1 lisp.Node
-			sc := lisp.NewNodeScanner(lisp.NewTokenScanner(strings.NewReader(tc.input1)))
+			var s lisp.TokenScanner
+			s.Reset(strings.NewReader(tc.input1))
+			sc := lisp.NewNodeScanner(&s)
 			for sc.Scan() {
 				n1 = sc.Node()
 				break
@@ -68,10 +67,10 @@ func TestDistictHash(t *testing.T) {
 			}
 
 			var h MapHash
-			h.WriteVal(n1.Val())
+			h.WriteVal(n1.Val)
 			h1 := h.Sum64()
 			h.Reset()
-			h.WriteVal(n2.Val())
+			h.WriteVal(n2.Val)
 			h2 := h.Sum64()
 
 			if tc.wantDistinct && h1 == h2 {

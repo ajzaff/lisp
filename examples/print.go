@@ -12,17 +12,19 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/ajzaff/lisp"
 	"github.com/ajzaff/lisp/blisp"
 	"github.com/ajzaff/lisp/hash"
 	"github.com/ajzaff/lisp/lispdb"
 	"github.com/ajzaff/lisp/lispjson"
+	"golang.org/x/text/unicode/rangetable"
 )
 
 var (
 	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
-	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "json", "none". Default uses StdPrinter)`)
+	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "json", "idtab", "none". Default uses StdPrinter)`)
 	file  = flag.String("file", "", "File to read lisp code from.")
 )
 
@@ -40,7 +42,9 @@ func main() {
 	}
 
 	var ns []lisp.Node
-	sc := lisp.NewNodeScanner(lisp.NewTokenScanner(bytes.NewReader(src)))
+	var s lisp.TokenScanner
+	s.Reset(bytes.NewReader(src))
+	sc := lisp.NewNodeScanner(&s)
 	for sc.Scan() {
 		ns = append(ns, sc.Node())
 	}
@@ -51,10 +55,11 @@ func main() {
 	switch *print {
 	case "": // std
 		for _, n := range ns {
-			lisp.StdPrinter(os.Stdout).Print(n.Val())
+			lisp.StdPrinter(os.Stdout).Print(n.Val)
 		}
 	case "tok":
-		sc := lisp.NewTokenScanner(bytes.NewReader(src))
+		var sc lisp.TokenScanner
+		sc.Reset(bytes.NewReader(src))
 		for sc.Scan() {
 			pos, tok, text := sc.Token()
 			println(strconv.Itoa(int(pos)), "\t", tok.String(), "\t", text)
@@ -78,13 +83,13 @@ func main() {
 			fmt.Println("LIT\t", e.String())
 		})
 		for _, n := range ns {
-			v.Visit(n.Val())
+			v.Visit(n.Val)
 		}
 	case "db":
 		db := lispdb.NewInMemory()
 		var vs []lisp.Val
 		for _, n := range ns {
-			vs = append(vs, n.Val())
+			vs = append(vs, n.Val)
 		}
 		lispdb.Store(db, vs, 1)
 		refs := make(map[lispdb.ID]struct {
@@ -97,7 +102,7 @@ func main() {
 		h.SetSeed(db.Seed())
 		for _, n := range ns {
 			h.Reset()
-			h.WriteVal(n.Val())
+			h.WriteVal(n.Val)
 			root := h.Sum64()
 			lispdb.EachTransRef(db, root, func(i lispdb.ID) bool {
 				v, w := lispdb.QueryOneID(db, i)
@@ -143,13 +148,18 @@ func main() {
 		}
 	case "bin":
 		for _, n := range ns {
-			blisp.NewEncoder(os.Stdout).Encode(n.Val())
+			blisp.NewEncoder(os.Stdout).Encode(n.Val)
 		}
 	case "json":
 		for _, n := range ns {
-			lispjson.NewEncoder(os.Stdout).Encode(n.Val())
+			lispjson.NewEncoder(os.Stdout).Encode(n.Val)
 			println()
 		}
+	case "idtab":
+		t := rangetable.Merge(unicode.Letter)
+		rangetable.Visit(t, func(r rune) {
+			fmt.Print(string(r))
+		})
 	case "none":
 	default:
 		log.Fatalf("unexpected -print mode: %v", *print)

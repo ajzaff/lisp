@@ -3,7 +3,6 @@ package lisp
 import (
 	"fmt"
 	"io"
-	"unicode/utf8"
 )
 
 // Printer implements direct printing of AST nodes.
@@ -19,7 +18,7 @@ type Printer struct {
 func StdPrinter(w io.Writer) *Printer {
 	return &Printer{
 		Writer:  w,
-		Nil:     "<nil>",
+		Nil:     "(nil)",
 		NewLine: "\n",
 	}
 }
@@ -79,19 +78,12 @@ type delimitable int
 
 const (
 	delimitableNone   delimitable = iota
-	delimitableClass1             // Number
-	delimitableClass2             // Symbol
+	delimitableClass1             // Id, Number
 )
 
 func delimitableLitType(e Lit) delimitable {
 	switch e.Token {
-	case Id:
-		r, _ := utf8.DecodeRuneInString(e.String())
-		if IsLetter(r) {
-			return delimitableClass1
-		}
-		return delimitableClass2
-	case Number:
+	case Id, Number:
 		return delimitableClass1
 	default:
 		return delimitableNone

@@ -18,7 +18,7 @@ func TestStdPrint(t *testing.T) {
 		want  string
 	}{{
 		name: "empty",
-		want: "<nil>\n",
+		want: "(nil)\n",
 	}, {
 		name:  "unknown node",
 		input: unknownVal{},
@@ -32,65 +32,32 @@ func TestStdPrint(t *testing.T) {
 		want:  "hello\n",
 	}, {
 		name:  "expr",
-		input: Expr{&LitNode{Lit: Lit{Token: Id, Text: "x"}}},
+		input: Expr{Node{Val: Lit{Token: Id, Text: "x"}}},
 		want:  "(x)\n",
 	}, {
 		name: "expr3",
 		input: Expr{
-			&LitNode{Lit: Lit{Token: Id, Text: "x"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "y"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "z"}},
+			Node{Val: Lit{Token: Id, Text: "x"}},
+			Node{Val: Lit{Token: Id, Text: "y"}},
+			Node{Val: Lit{Token: Id, Text: "z"}},
 		},
 		want: "(x y z)\n",
 	}, {
 		name: "nested expr",
 		input: Expr{
-			&LitNode{Lit: Lit{Token: Id, Text: "x"}},
-			&ExprNode{Expr: Expr{&LitNode{Lit: Lit{Token: Id, Text: "y"}}}},
-			&LitNode{Lit: Lit{Token: Id, Text: "z"}},
+			Node{Val: Lit{Token: Id, Text: "x"}},
+			Node{Val: Expr{Node{Val: Lit{Token: Id, Text: "y"}}}},
+			Node{Val: Lit{Token: Id, Text: "z"}},
 		},
 		want: "(x(y)z)\n",
 	}, {
-		name: "squashed ids and symbols in expr",
-		input: Expr{
-			&LitNode{Lit: Lit{Token: Id, Text: "?"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "x"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "/"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "y"}},
-		},
-		want: "(?x/y)\n",
-	}, {
 		name: "numbers and ids are delimitable",
 		input: Expr{
-			&LitNode{Lit: Lit{Token: Id, Text: "add"}},
-			&LitNode{Lit: Lit{Token: Number, Text: "1"}},
-			&LitNode{Lit: Lit{Token: Number, Text: "2"}},
+			Node{Val: Lit{Token: Id, Text: "add"}},
+			Node{Val: Lit{Token: Number, Text: "1"}},
+			Node{Val: Lit{Token: Number, Text: "2"}},
 		},
 		want: "(add 1 2)\n",
-	}, {
-		name: "numbers and symbols are not delimitable",
-		input: Expr{
-			&LitNode{Lit: Lit{Token: Number, Text: "1"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "+"}},
-			&LitNode{Lit: Lit{Token: Number, Text: "2"}},
-		},
-		want: "(1+2)\n",
-	}, {
-		name: "ids and symbols are not delimitable",
-		input: Expr{
-			&LitNode{Lit: Lit{Token: Id, Text: "a"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "+"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "b"}},
-		},
-		want: "(a+b)\n",
-	}, {
-		name: "repeated distinct symbols are delimitable",
-		input: Expr{
-			&LitNode{Lit: Lit{Token: Id, Text: "+"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "-"}},
-			&LitNode{Lit: Lit{Token: Id, Text: "/"}},
-		},
-		want: "(+ - /)\n",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			var sb strings.Builder

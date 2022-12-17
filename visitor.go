@@ -136,7 +136,7 @@ func (v *Visitor) Visit(x Val) {
 			}
 		}()
 		for _, e := range x {
-			v.Visit(e.Val())
+			v.Visit(e.Val)
 			if v.hasErr() {
 				if v.clearSkipErr() {
 					continue
