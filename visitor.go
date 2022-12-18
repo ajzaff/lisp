@@ -2,7 +2,12 @@ package lisp
 
 import (
 	"errors"
-	"fmt"
+)
+
+// Errors used to flag conditions in the Visitor.
+var (
+	errStop = errors.New("stop")
+	errSkip = errors.New("skip")
 )
 
 // Visitor implements a Val visitor.
@@ -32,11 +37,6 @@ func (v *Visitor) SetBeforeExprVisitor(fn func(Expr)) { v.beforeExprFn = fn }
 // SetNodeListVisitFunc sets the visitor called on every *Expr.
 func (v *Visitor) SetAfterExprVisitor(fn func(Expr)) { v.afterExprFn = fn }
 
-var (
-	errStop = errors.New("stop")
-	errSkip = errors.New("skip")
-)
-
 // Stop the visitor and return as soon as possible.
 func (v *Visitor) Stop() {
 	v.err = errStop
@@ -45,6 +45,37 @@ func (v *Visitor) Stop() {
 // Skip visiting the node recursively for compound nodes.
 func (v *Visitor) Skip() {
 	v.err = errSkip
+}
+
+// Visit the node recursively while calling visitor functions.
+//
+// Visit continues until all nodes are visited or Stop is called.
+func (v *Visitor) Visit(root Val) {
+	if root == nil {
+		return
+	}
+	defer v.clearSkipErr()
+	if v.hasErr() {
+		return
+	}
+	if !callFn(v, v.beforeValFn, root) {
+		return
+	}
+	defer callFn(v, v.afterValFn, root)
+	switch x := root.(type) {
+	case Lit:
+		if !callFn(v, v.litFn, x) {
+			return
+		}
+	case Expr:
+		if !callFn(v, v.beforeExprFn, x) {
+			return
+		}
+		defer callFn(v, v.afterExprFn, x)
+		for _, e := range x {
+			v.Visit(e.Val)
+		}
+	}
 }
 
 func (v *Visitor) hasErr() bool {
@@ -59,93 +90,10 @@ func (v *Visitor) clearSkipErr() bool {
 	return false
 }
 
-func (v *Visitor) callBeforeValFn(e Val) bool {
-	if v.beforeValFn != nil {
-		v.beforeValFn(e)
+func callFn[T Val](v *Visitor, fn func(T), e T) (ok bool) {
+	if fn == nil {
 		return true
 	}
-	return false
-}
-
-func (v *Visitor) callAfterValFn(e Val) bool {
-	if v.afterValFn != nil {
-		v.afterValFn(e)
-		return true
-	}
-	return false
-}
-
-func (v *Visitor) callLitFn(e Lit) bool {
-	if v.litFn != nil {
-		v.litFn(e)
-		return true
-	}
-	return false
-}
-
-func (v *Visitor) callBeforeExprFn(e Expr) bool {
-	if v.beforeExprFn != nil {
-		v.beforeExprFn(e)
-		return true
-	}
-	return false
-}
-
-func (v *Visitor) callAfterExprFn(e Expr) bool {
-	if v.afterExprFn != nil {
-		v.afterExprFn(e)
-		return true
-	}
-	return false
-}
-
-// Visit the node recursively while calling visitor functions.
-//
-// Visit continues until all nodes are visited or Stop is called.
-func (v *Visitor) Visit(x Val) {
-	if x == nil {
-		return
-	}
-	if v.hasErr() {
-		v.clearSkipErr()
-		return
-	}
-	if v.callBeforeValFn(x) && v.hasErr() {
-		v.clearSkipErr()
-		return
-	}
-	defer func() {
-		if v.callAfterValFn(x) && v.hasErr() {
-			v.clearSkipErr()
-		}
-	}()
-	switch x := x.(type) {
-	case Lit:
-		if v.callLitFn(x) && v.hasErr() {
-			v.clearSkipErr()
-			return
-		}
-	case Expr:
-		if v.callBeforeExprFn(x) && v.hasErr() {
-			v.clearSkipErr()
-			return
-		}
-		defer func() {
-			if v.callAfterExprFn(x) && v.hasErr() {
-				v.clearSkipErr()
-			}
-		}()
-		for _, e := range x {
-			v.Visit(e.Val)
-			if v.hasErr() {
-				if v.clearSkipErr() {
-					continue
-				}
-				return
-			}
-		}
-	default: // unknown
-		v.err = fmt.Errorf("unknown Val")
-		return
-	}
+	fn(e)
+	return !v.hasErr()
 }
