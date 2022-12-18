@@ -2,6 +2,7 @@ package lisp
 
 import (
 	"fmt"
+	"unicode"
 )
 
 // Token is an enumeration which specifies a kind of AST token.
@@ -24,24 +25,31 @@ type TokenError struct {
 	Src   []byte
 }
 
-func (t *TokenError) LineCol() (line, col int) {
-	// src := t.src
+// LineCol returns a human readable line and column number based on a Pos and Src.
+//
+// Do not use these to index into Src.
+func (t *TokenError) LineCol() (line, col Pos) {
+	n := t.Pos
 	line, col = 1, 1
-	// for pos := int(t.Pos); ; {
-	// 	n := bytes.IndexByte(src, '\n')
-	// 	if n < 0 {
-	// 		n = len(t.src)
-	// 	} else {
-	// 		n++
-	// 	}
-	// 	if pos < n {
-	// 		return line, pos
-	// 	}
-	// 	line++
-	// 	pos -= n
-	// 	src = src[n:]
-	// }
-	return
+	if n == 0 {
+		return
+	}
+	for _, r := range string(t.Src) {
+		if r == '\n' {
+			line++
+			col = 1
+			continue
+		}
+		if unicode.IsPrint(r) {
+			col++
+		}
+		if n--; n == 0 {
+			return
+		}
+	}
+
+	// Outside Src.
+	return 0, 0
 }
 
 func (t *TokenError) Error() string {
