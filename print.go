@@ -3,74 +3,95 @@ package lisp
 import (
 	"fmt"
 	"io"
+	"sync"
 )
 
 // Printer implements direct printing of AST nodes.
 type Printer struct {
-	io.Writer
+	w io.Writer
 
-	Nil string
+	v    Visitor // init once
+	once sync.Once
 
+	PrinterOptions
+}
+
+// PrinterOptions supplied to the Printer.
+type PrinterOptions struct {
+	Nil             string
 	Prefix, NewLine string
 }
 
-// StdPrinter returns a printer which uses spaces and new lines.
-func StdPrinter(w io.Writer) *Printer {
-	return &Printer{
-		Writer:  w,
+func makeStdPrinterOptions() PrinterOptions {
+	return PrinterOptions{
 		Nil:     "(nil)",
 		NewLine: "\n",
 	}
 }
 
-// Print the Node n.
-func (p *Printer) Print(n Val) {
-	if n == nil {
-		p.Write([]byte(p.Nil))
-		p.Write([]byte(p.NewLine))
-		return
-	}
+func (p *Printer) initVisitor() {
 	var (
 		exprDepth       int
 		firstWrite      = true
 		lastDelimitable delimitable
-		newLine         = fmt.Sprint(p.NewLine, p.Prefix)
 	)
-	var v Visitor
-	v.SetBeforeExprVisitor(func(e Expr) {
+	p.v.SetBeforeExprVisitor(func(e Expr) {
 		if !firstWrite {
-			fmt.Fprint(p.Writer, p.Prefix)
+			fmt.Fprint(p.w, p.Prefix)
 			firstWrite = true
 		}
-		fmt.Fprint(p.Writer, "(")
+		fmt.Fprint(p.w, "(")
 		lastDelimitable = delimitableNone
 		exprDepth++
 	})
-	v.SetAfterExprVisitor(func(e Expr) {
+	p.v.SetAfterExprVisitor(func(e Expr) {
 		exprDepth--
-		fmt.Fprint(p.Writer, ")")
+		fmt.Fprint(p.w, ")")
 		if exprDepth == 0 {
-			fmt.Fprint(p.Writer, newLine)
+			fmt.Fprint(p.w, p.NewLine, p.Prefix)
 		}
 		lastDelimitable = delimitableNone
 	})
-	v.SetLitVisitor(func(e Lit) {
+	p.v.SetLitVisitor(func(e Lit) {
 		if !firstWrite {
-			fmt.Fprint(p.Writer, p.Prefix)
+			fmt.Fprint(p.w, p.Prefix)
 			firstWrite = true
 		}
 		if exprDepth == 0 {
-			fmt.Fprint(p.Writer, e.String(), newLine)
+			fmt.Fprint(p.w, e.String(), p.NewLine, p.Prefix)
 			return
 		}
 		delim := delimitableLitType(e)
 		if lastDelimitable != delimitableNone && lastDelimitable == delim {
-			fmt.Fprint(p.Writer, " ")
+			fmt.Fprint(p.w, " ")
 		}
 		lastDelimitable = delim
-		fmt.Fprint(p.Writer, e.String())
+		fmt.Fprint(p.w, e.String())
 	})
-	v.Visit(n)
+}
+
+// Reset resets the Printer to use the given writer.
+func (p *Printer) Reset(w io.Writer) {
+	p.w = w
+}
+
+// StdPrinter returns a printer which uses spaces and new lines.
+func StdPrinter(w io.Writer) *Printer {
+	var p Printer
+	p.PrinterOptions = makeStdPrinterOptions()
+	p.Reset(w)
+	return &p
+}
+
+// Print the Node n.
+func (p *Printer) Print(n Val) {
+	if n == nil {
+		p.w.Write([]byte(p.Nil))
+		p.w.Write([]byte(p.NewLine))
+		return
+	}
+	p.once.Do(p.initVisitor)
+	p.v.Visit(n)
 }
 
 // Lits in the same delimitable class must be spaced out.
