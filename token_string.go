@@ -10,11 +10,9 @@ func _() {
 	var x [1]struct{}
 	_ = x[Invalid-0]
 	_ = x[Id-1]
-	_ = x[Number-2]
+	_ = x[Int-2]
 	_ = x[LParen-3]
 	_ = x[RParen-4]
-	_ = x[Pre-5]
-	_ = x[Code-6]
 }
 
 const _Token_name = "InvalidIdNumberLParenRParenPreCode"

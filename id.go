@@ -1,31 +1,33 @@
 package lisp
 
 import (
+	"unicode"
 	"unicode/utf8"
 )
 
 type IdDecoder struct{}
 
-func (*IdDecoder) Deocde(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func (*IdDecoder) Decode(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	r, size := utf8.DecodeRune(data)
+	if r == utf8.RuneError {
+		return 0, nil, errRune
+	}
+	if !unicode.IsLetter(r) {
+		return 0, nil, nil
+	}
+	i := 0
+	start := Pos(i)
+	i += size
 	for {
-		r, size := utf8.DecodeRune(data[advance:])
+		r, size := utf8.DecodeRune(data[i:])
 		if r == utf8.RuneError {
-			return advance, nil, errRune
+			return i, nil, errRune
 		}
-		advance += size
-		if !IsId(r) {
-			if advance == size {
-				return advance, nil, errRune
-			}
-			token = data[:advance]
-			break
-		}
-		if len(data) <= advance {
-			if atEOF {
-				token = data[:advance]
-			}
+		i += size
+		if !unicode.Is(idTab, r) {
 			break
 		}
 	}
-	return advance, token, nil
+	end := Pos(i)
+	return i, data[start:end], nil
 }

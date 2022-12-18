@@ -21,16 +21,16 @@ func TestVisitor(t *testing.T) {
 		name: "empty",
 	}, {
 		name:  "int",
-		input: Lit{Token: Number, Text: "1"},
+		input: Lit{Token: Int, Text: "1"},
 		wantVisits: []testVisits{{
 			Visitor: "BeforeVal",
-			Val:     Lit{Token: Number, Text: "1"},
+			Val:     Lit{Token: Int, Text: "1"},
 		}, {
 			Visitor: "Lit",
-			Val:     Lit{Token: Number, Text: "1"},
+			Val:     Lit{Token: Int, Text: "1"},
 		}, {
 			Visitor: "AfterVal",
-			Val:     Lit{Token: Number, Text: "1"},
+			Val:     Lit{Token: Int, Text: "1"},
 		}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {

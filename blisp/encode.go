@@ -34,8 +34,8 @@ func encode(v lisp.Val, b []byte) int {
 		switch v.Token {
 		case lisp.Id:
 			b[0] = byte(lisp.Id)
-		case lisp.Number:
-			b[0] = byte(lisp.Number)
+		case lisp.Int:
+			b[0] = byte(lisp.Int)
 		}
 		i = copy(b[2:], []byte(v.String()))
 		return 2 + i
@@ -65,7 +65,7 @@ func EncodedLen(n lisp.Val) int {
 		switch x.Token {
 		case lisp.Id:
 			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-		case lisp.Number:
+		case lisp.Int:
 			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
 		default:
 			panic("unknown Lit token")

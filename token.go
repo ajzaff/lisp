@@ -3,6 +3,8 @@ package lisp
 import (
 	"fmt"
 	"unicode"
+
+	"golang.org/x/text/unicode/rangetable"
 )
 
 // Token is an enumeration which specifies a kind of AST token.
@@ -12,15 +14,10 @@ type Token int
 
 const (
 	Invalid Token = iota
-
-	Id     // x y z
-	Number // 12345 -123.45 1.1e2
-
-	LParen // (
-	RParen // )
-
-	Pre  // Pre content, see pre.go.
-	Code // Code chunk is untokenized content, see code.go.
+	Id            // abc z3
+	Int           // 12345
+	LParen        // (
+	RParen        // )
 )
 
 // TokenError implements an error at a specified line and column.
@@ -59,6 +56,4 @@ func (t *TokenError) Unwrap() error {
 	return t.Cause
 }
 
-func IsId(r rune) bool {
-	return unicode.IsLetter(r)
-}
+var idTab = rangetable.Merge(unicode.L, unicode.Digit)

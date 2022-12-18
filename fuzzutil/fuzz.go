@@ -16,9 +16,9 @@ type Rand interface {
 }
 
 type Generator struct {
-	IdWeight     int
-	NumberWeight int
-	ExprWeight   int
+	IdWeight   int
+	IntWeight  int
+	ExprWeight int
 
 	termFn func() int
 
@@ -27,10 +27,10 @@ type Generator struct {
 
 func NewGenerator(r Rand) *Generator {
 	g := &Generator{
-		IdWeight:     1,
-		NumberWeight: 1,
-		ExprWeight:   1,
-		r:            r,
+		IdWeight:   1,
+		IntWeight:  1,
+		ExprWeight: 1,
+		r:          r,
 	}
 	g.termFn = g.expTermFn
 	return g
@@ -45,7 +45,7 @@ func (g *Generator) Seed(seed int64) {
 }
 
 func (g *Generator) weight() int {
-	return g.IdWeight + g.NumberWeight + g.ExprWeight
+	return g.IdWeight + g.IntWeight + g.ExprWeight
 }
 
 func (g *Generator) Token() lisp.Token {
@@ -54,10 +54,10 @@ func (g *Generator) Token() lisp.Token {
 		return lisp.Id
 	}
 	v -= g.IdWeight
-	if g.NumberWeight != 0 && v <= 0 {
-		return lisp.Number
+	if g.IntWeight != 0 && v <= 0 {
+		return lisp.Int
 	}
-	v -= g.NumberWeight
+	v -= g.IntWeight
 	if g.ExprWeight != 0 {
 		return lisp.LParen // Expr
 	}
@@ -68,8 +68,8 @@ func (g *Generator) Next() lisp.Node {
 	switch g.Token() {
 	case lisp.Id:
 		return g.NextId()
-	case lisp.Number:
-		return g.NextNumber()
+	case lisp.Int:
+		return g.NextInt()
 	case lisp.LParen: // Expr
 		return g.NextExpr()
 	default:
@@ -81,20 +81,8 @@ func (g *Generator) NextId() lisp.Node {
 	return lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}}
 }
 
-func (g *Generator) NextNumber() lisp.Node {
-	if g.r.Intn(2) == 0 {
-		return g.NextInt()
-	} else { // 1
-		return g.NextFloat()
-	}
-}
-
 func (g *Generator) NextInt() lisp.Node {
-	return lisp.Node{Val: lisp.Lit{Token: lisp.Number, Text: strconv.FormatInt(int64(g.r.Uint64()), 10)}}
-}
-
-func (g *Generator) NextFloat() lisp.Node {
-	return lisp.Node{Val: lisp.Lit{Token: lisp.Number, Text: strconv.FormatFloat(g.r.Float64(), 'f', -1, 64)}}
+	return lisp.Node{Val: lisp.Lit{Token: lisp.Int, Text: strconv.FormatUint(g.r.Uint64(), 10)}}
 }
 
 func (g *Generator) NextExpr() lisp.Node {

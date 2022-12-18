@@ -48,89 +48,102 @@ func (s *TokenScanner) Token() (pos Pos, tok Token, text string) {
 }
 
 func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
-	var tok Token
+	i := 0
 
-	// Skip spaces.
-	var i Pos
-	for i < Pos(len(src)) {
-		r, size := utf8.DecodeRune(src[i:])
+	var r rune
+	var size int
+
+	// Skip space.
+	for i < len(src) {
+		r, size = utf8.DecodeRune(src[i:])
+		if r == utf8.RuneError {
+			if size == 0 {
+				return 0, nil, nil
+			}
+			return 0, nil, errRune
+		}
+		i += size
 		if !unicode.IsSpace(r) {
 			break
 		}
-		i += Pos(size)
 	}
-	start := i
-	if len(src[i:]) == 0 { // No token.
-		return 0, nil, io.EOF
-	}
-	s.start = s.end + i // Update token start.
 
-	// Get the first rune.
-	r, size := utf8.DecodeRune(src[i:])
-	i += Pos(size)
+	switch r {
+	case '(':
+		s.start = Pos(i)
+		s.end = Pos(i + size)
+		s.tok = LParen
+		return size, src[s.start:s.end], nil
+	case ')':
+		s.start = Pos(i)
+		s.end = Pos(i + size)
+		s.tok = RParen
+		return size, src[s.start:s.end], nil
+	case '0':
+		s.start = Pos(i)
+		s.end = Pos(i + size)
+		s.tok = Int
+		return size, src[s.start:s.end], nil
+	}
 	switch {
-	case r == '(': // LParen
-		tok = LParen
-	case r == ')': // RParen
-		tok = RParen
-	case r == '-', '0' <= r && r <= '9': // Int, Float
-		tok = Number
-		var dec bool
-	num_loop:
-		for i < Pos(len(src)) {
+	case unicode.IsDigit(r):
+		s.start = Pos(i)
+		i += size
+		for i < len(src) {
 			r, size := utf8.DecodeRune(src[i:])
-			switch {
-			case '0' <= r && r <= '9':
-			case r == '.':
-				if dec {
-					err = errRune
-					break num_loop
+			if r == utf8.RuneError {
+				if size == 0 {
+					return 0, nil, nil
 				}
-				dec = true
-			default:
-				break num_loop
+				return 0, nil, errRune
 			}
-			i += Pos(size)
-		}
-	case IsId(r): // Id
-		tok = Id
-		var runeFunc func(rune) bool
-		switch {
-		case IsId(r):
-			runeFunc = IsId
-		case size == 0:
-			err = io.EOF
-		case r == utf8.RuneError:
-			err = errRune
-		default:
-			panic("unreachable")
-		}
-		for i < Pos(len(src)) {
-			r, size := utf8.DecodeRune(src[i:])
-			if !runeFunc(r) {
+			i += size
+			if !unicode.IsDigit(r) {
 				break
 			}
-			i += Pos(size)
 		}
-	default: // Unknown
-		err = errRune
+		s.end = Pos(i)
+		s.tok = Int
+		return i, src[s.start:s.end], nil
+	case unicode.IsLetter(r):
+		s.start = Pos(i)
+		i += size
+		for i < len(src) {
+			r, size := utf8.DecodeRune(src[i:])
+			if r == utf8.RuneError {
+				if size == 0 {
+					return 0, nil, nil
+				}
+				return 0, nil, errRune
+			}
+			i += size
+			if !unicode.Is(idTab, r) {
+				break
+			}
+		}
+		s.end = Pos(i)
+		s.tok = Id
+		return i, src[s.start:s.end], nil
 	}
-	if i == Pos(len(src)) && err == nil {
-		err = bufio.ErrFinalToken
-	}
-	advance, token = int(i), src[start:i]
-	s.end += i // Update abs end position.
-	s.tok = tok
-	return advance, token, err
+
+	// Rune error!
+	return i, src[i : i+size], errRune
+}
+
+type TokenScannerInterface interface {
+	Reset(io.Reader)
+	Scan() bool
+	Token() (Pos, Token, string)
+	Err() error
 }
 
 type NodeScanner struct {
-	sc   *TokenScanner
+	sc   TokenScannerInterface
 	err  error
 	node Node
 }
 
-func NewNodeScanner(sc *TokenScanner) *NodeScanner {
+func NewNodeScanner(sc TokenScannerInterface) *NodeScanner {
 	var s NodeScanner
 	s.sc = sc
 	return &s
@@ -157,7 +170,7 @@ func (s *NodeScanner) Scan() bool {
 
 func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 	switch tok {
-	case Id, Number:
+	case Id, Int:
 		return Node{
 			Pos: pos,
 			Val: Lit{Token: tok, Text: text},
@@ -171,7 +184,7 @@ func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 }
 
 func (s *NodeScanner) scanExpr(lParen Pos) (Node, error) {
-	var expr Expr
+	expr := Expr{}
 	for {
 		if !s.sc.Scan() {
 			return Node{}, io.ErrUnexpectedEOF

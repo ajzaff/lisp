@@ -83,7 +83,7 @@ const (
 
 func delimitableLitType(e Lit) delimitable {
 	switch e.Token {
-	case Id, Number:
+	case Id, Int:
 		return delimitableClass1
 	default:
 		return delimitableNone

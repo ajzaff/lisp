@@ -7,7 +7,7 @@ func DecodeNum(b []byte) (Node, error) {
 	}
 	return Node{
 		Val: Lit{
-			Token: Number,
+			Token: Int,
 			Text:  string(b[:n]),
 		},
 		End: Pos(n),

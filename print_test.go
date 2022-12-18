@@ -54,8 +54,8 @@ func TestStdPrint(t *testing.T) {
 		name: "numbers and ids are delimitable",
 		input: Expr{
 			Node{Val: Lit{Token: Id, Text: "add"}},
-			Node{Val: Lit{Token: Number, Text: "1"}},
-			Node{Val: Lit{Token: Number, Text: "2"}},
+			Node{Val: Lit{Token: Int, Text: "1"}},
+			Node{Val: Lit{Token: Int, Text: "2"}},
 		},
 		want: "(add 1 2)\n",
 	}} {
