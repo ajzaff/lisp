@@ -7,11 +7,13 @@ import (
 	"io"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/text/unicode/rangetable"
 )
 
-var (
-	errRune = errors.New("unexpected rune")
-)
+var errRune = errors.New("unexpected rune")
+
+var idTab = rangetable.Merge(unicode.L, unicode.Digit)
 
 // Scanner scans the Lisp source for Tokens.
 type TokenScanner struct {

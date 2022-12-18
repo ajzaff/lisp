@@ -1,9 +1,17 @@
-package lisp
+package decoder
 
 import (
+	"errors"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/ajzaff/lisp"
+	"golang.org/x/text/unicode/rangetable"
 )
+
+var errRune = errors.New("unexpected rune")
+
+var idTab = rangetable.Merge(unicode.L, unicode.Digit)
 
 type IdDecoder struct{}
 
@@ -16,7 +24,7 @@ func (*IdDecoder) Decode(data []byte, atEOF bool) (advance int, token []byte, er
 		return 0, nil, nil
 	}
 	i := 0
-	start := Pos(i)
+	start := lisp.Pos(i)
 	i += size
 	for {
 		r, size := utf8.DecodeRune(data[i:])
@@ -28,6 +36,6 @@ func (*IdDecoder) Decode(data []byte, atEOF bool) (advance int, token []byte, er
 			break
 		}
 	}
-	end := Pos(i)
+	end := lisp.Pos(i)
 	return i, data[start:end], nil
 }

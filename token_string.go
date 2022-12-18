@@ -15,9 +15,9 @@ func _() {
 	_ = x[RParen-4]
 }
 
-const _Token_name = "InvalidIdNumberLParenRParenPreCode"
+const _Token_name = "InvalidIdIntLParenRParen"
 
-var _Token_index = [...]uint8{0, 7, 9, 15, 21, 27, 30, 34}
+var _Token_index = [...]uint8{0, 7, 9, 12, 18, 24}
 
 func (i Token) String() string {
 	if i < 0 || i >= Token(len(_Token_index)-1) {

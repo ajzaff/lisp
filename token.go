@@ -2,9 +2,6 @@ package lisp
 
 import (
 	"fmt"
-	"unicode"
-
-	"golang.org/x/text/unicode/rangetable"
 )
 
 // Token is an enumeration which specifies a kind of AST token.
@@ -55,5 +52,3 @@ func (t *TokenError) Error() string {
 func (t *TokenError) Unwrap() error {
 	return t.Cause
 }
-
-var idTab = rangetable.Merge(unicode.L, unicode.Digit)
