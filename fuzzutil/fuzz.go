@@ -2,6 +2,7 @@ package fuzzutil
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/ajzaff/lisp"
@@ -16,28 +17,30 @@ type Rand interface {
 }
 
 type Generator struct {
-	IdWeight   int
-	IntWeight  int
-	ExprWeight int
+	IdWeight     int
+	IntWeight    int
+	ExprWeight   int
+	ExprMaxDepth int
 
-	termFn func() int
+	termFn func(depth int) int
 
 	r Rand
 }
 
 func NewGenerator(r Rand) *Generator {
 	g := &Generator{
-		IdWeight:   1,
-		IntWeight:  1,
-		ExprWeight: 1,
-		r:          r,
+		IdWeight:     1,
+		IntWeight:    1,
+		ExprWeight:   1,
+		ExprMaxDepth: 3,
+		r:            r,
 	}
 	g.termFn = g.expTermFn
 	return g
 }
 
-func (g *Generator) expTermFn() int {
-	return int(g.r.ExpFloat64())
+func (g *Generator) expTermFn(depth int) int {
+	return int(math.Max(float64(g.ExprMaxDepth-depth), 1) * g.r.ExpFloat64())
 }
 
 func (g *Generator) Seed(seed int64) {
@@ -70,33 +73,43 @@ func (g *Generator) Token() lisp.Token {
 	return tok[2]
 }
 
-func (g *Generator) Next() lisp.Node {
+func (g *Generator) Next() lisp.Val {
+	return g.nextDepth(0)
+}
+
+func (g *Generator) nextDepth(depth int) lisp.Val {
 	switch g.Token() {
 	case lisp.Id:
 		return g.NextId()
 	case lisp.Int:
 		return g.NextInt()
 	default: // Expr
-		return g.NextExpr()
+		return g.nextExprDepth(depth)
 	}
 }
 
-func (g *Generator) NextId() lisp.Node {
-	return lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}}
+func (g *Generator) NextId() lisp.Val {
+	return lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}
 }
 
-func (g *Generator) NextInt() lisp.Node {
-	return lisp.Node{Val: lisp.Lit{Token: lisp.Int, Text: strconv.FormatUint(g.r.Uint64(), 10)}}
+func (g *Generator) NextInt() lisp.Val {
+	return lisp.Lit{Token: lisp.Int, Text: strconv.FormatUint(g.r.Uint64(), 10)}
 }
 
-func (g *Generator) NextExpr() lisp.Node {
-	var n int
-	for n <= 0 {
-		n = g.termFn()
+func (g *Generator) NextExpr() lisp.Val {
+	return g.nextExprDepth(0)
+}
+
+func (g *Generator) nextExprDepth(depth int) lisp.Val {
+	n := g.termFn(depth)
+
+	p := g.ExprMaxDepth - depth
+	if p < 0 {
+		p = 0
 	}
-	var xs lisp.Expr
+	expr := make(lisp.Expr, 0, p)
 	for i := 0; i < n; i++ {
-		xs = append(xs, g.Next())
+		expr = append(expr, lisp.Node{Val: g.nextDepth(depth + 1)})
 	}
-	return lisp.Node{Val: xs}
+	return expr
 }
