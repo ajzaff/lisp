@@ -29,8 +29,8 @@ func (m *FreqMap) Scan() bool {
 		switch t {
 		case lisp.Id:
 			lit = lisp.Lit{Token: lisp.Id, Text: text}
-		case lisp.Number:
-			lit = lisp.Lit{Token: lisp.Number, Text: text}
+		case lisp.Int:
+			lit = lisp.Lit{Token: lisp.Int, Text: text}
 		}
 		m.data[lit]++
 	}
