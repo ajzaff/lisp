@@ -1,1 +1,1 @@
-((?x) is AMan)
+((q x) is AMan)

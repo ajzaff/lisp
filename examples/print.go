@@ -17,8 +17,8 @@ import (
 	"github.com/ajzaff/lisp"
 	"github.com/ajzaff/lisp/blisp"
 	"github.com/ajzaff/lisp/hash"
-	"github.com/ajzaff/lisp/lispdb"
-	"github.com/ajzaff/lisp/lispjson"
+	"github.com/ajzaff/lisp/x/lispdb"
+	"github.com/ajzaff/lisp/x/lispjson"
 	"golang.org/x/text/unicode/rangetable"
 )
 
