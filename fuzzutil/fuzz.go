@@ -49,19 +49,25 @@ func (g *Generator) weight() int {
 }
 
 func (g *Generator) Token() lisp.Token {
+	// Shuffle order to make equal weights fair.
+	// FIXME: can we do better? :)
+	tok := [3]lisp.Token{lisp.Id, lisp.Int, lisp.LParen}
+	w := [3]int{g.IdWeight, g.IntWeight, g.ExprWeight}
+	i := g.r.Intn(3)
+	tok[2], w[2], tok[i], w[i] = tok[i], w[i], tok[2], w[2]
+	i = g.r.Intn(2)
+	tok[1], w[1], tok[i], w[i] = tok[i], w[i], tok[1], w[1]
+
 	v := g.r.Intn(g.weight())
-	if g.IdWeight != 0 && v <= 0 {
-		return lisp.Id
+
+	if w[0] != 0 && v <= w[0] {
+		return tok[0]
 	}
-	v -= g.IdWeight
-	if g.IntWeight != 0 && v <= 0 {
-		return lisp.Int
+	v -= w[0]
+	if w[1] != 0 && v <= w[1] {
+		return tok[1]
 	}
-	v -= g.IntWeight
-	if g.ExprWeight != 0 {
-		return lisp.LParen // Expr
-	}
-	panic("Generator.Token: invalid weights resulted in no Token being emitted")
+	return tok[2]
 }
 
 func (g *Generator) Next() lisp.Node {
@@ -70,10 +76,8 @@ func (g *Generator) Next() lisp.Node {
 		return g.NextId()
 	case lisp.Int:
 		return g.NextInt()
-	case lisp.LParen: // Expr
+	default: // Expr
 		return g.NextExpr()
-	default:
-		panic("Generator.Val: unreachable")
 	}
 }
 
