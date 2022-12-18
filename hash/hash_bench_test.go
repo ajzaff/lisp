@@ -22,7 +22,7 @@ func BenchmarkMapHashMap(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
-			v := g.Next().Val
+			v := g.Next()
 			h.Reset()
 			h.WriteVal(v)
 			maphashDB[h.Sum64()] = struct{}{}
@@ -35,7 +35,7 @@ func BenchmarkValMap(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
-			v := g.Next().Val
+			v := g.Next()
 			valDB[v] = struct{}{}
 		}
 	}
@@ -47,7 +47,7 @@ func BenchmarkBaselineStringHash(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
-			v := g.Next().Val
+			v := g.Next()
 
 			var buf bytes.Buffer
 			lisp.StdPrinter(&buf).Print(v)
