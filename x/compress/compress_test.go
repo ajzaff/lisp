@@ -22,8 +22,8 @@ type CompressWriter interface {
 
 func benchmarkCompress(b *testing.B, zw CompressWriter) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprMaxDepth = 10
-	g.ExprWeight = 5
+	g.ConsMaxDepth = 10
+	g.ConsWeight = 5
 
 	printBuf := bytes.NewBuffer(make([]byte, 0, 256))
 	compressBuf := bytes.NewBuffer(make([]byte, 0, 256))

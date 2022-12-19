@@ -23,28 +23,19 @@ func TestVisitor(t *testing.T) {
 		name:  "int",
 		input: Lit{Token: Int, Text: "1"},
 		wantVisits: []testVisits{{
-			Visitor: "BeforeVal",
+			Visitor: "Val",
 			Val:     Lit{Token: Int, Text: "1"},
 		}, {
 			Visitor: "Lit",
-			Val:     Lit{Token: Int, Text: "1"},
-		}, {
-			Visitor: "AfterVal",
 			Val:     Lit{Token: Int, Text: "1"},
 		}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotVisits []testVisits
 			var v Visitor
-			v.SetBeforeValVisitor(func(e Val) {
+			v.SetValVisitor(func(e Val) {
 				gotVisits = append(gotVisits, testVisits{
-					Visitor: "BeforeVal",
-					Val:     e,
-				})
-			})
-			v.SetAfterValVisitor(func(e Val) {
-				gotVisits = append(gotVisits, testVisits{
-					Visitor: "AfterVal",
+					Visitor: "Val",
 					Val:     e,
 				})
 			})
@@ -54,15 +45,21 @@ func TestVisitor(t *testing.T) {
 					Val:     e,
 				})
 			})
-			v.SetBeforeExprVisitor(func(e Expr) {
+			v.SetBeforeConsVisitor(func(e *Cons) {
 				gotVisits = append(gotVisits, testVisits{
-					Visitor: "BeforeExpr",
+					Visitor: "BeforeCons",
 					Val:     e,
 				})
 			})
-			v.SetAfterExprVisitor(func(e Expr) {
+			v.SetConsVisitor(func(e *Cons) {
 				gotVisits = append(gotVisits, testVisits{
-					Visitor: "AfterExpr",
+					Visitor: "Cons",
+					Val:     e,
+				})
+			})
+			v.SetAfterConsVisitor(func(e *Cons) {
+				gotVisits = append(gotVisits, testVisits{
+					Visitor: "AfterCons",
 					Val:     e,
 				})
 			})

@@ -46,7 +46,7 @@ func TestEncodedLen(t *testing.T) {
 		input: mustParse(t, "1.125"),
 		want:  10,
 	}, {
-		name:  "expr",
+		name:  "cons",
 		input: mustParse(t, "(a)"),
 		want:  5,
 	}} {
@@ -69,7 +69,7 @@ func TestEncode(t *testing.T) {
 	}{{
 		name: "empty",
 	}, {
-		name:  "complex nested expr",
+		name:  "complex nested cons",
 		input: "(1 (2 (3 4)))",
 		want:  []byte{0x05, 0x02, 0x00, 0x31, 0x05, 0x02, 0x00, 0x32, 0x05, 0x02, 0x00, 0x33, 0x02, 0x00},
 	}} {

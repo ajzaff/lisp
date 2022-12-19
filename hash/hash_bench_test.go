@@ -17,7 +17,7 @@ var (
 
 func BenchmarkMapHashMap(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprWeight = 0
+	g.ConsWeight = 0
 	var h MapHash
 
 	for i := 0; i < b.N; i++ {
@@ -31,7 +31,7 @@ func BenchmarkMapHashMap(b *testing.B) {
 }
 func BenchmarkValMap(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprWeight = 0
+	g.ConsWeight = 0
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
@@ -43,7 +43,7 @@ func BenchmarkValMap(b *testing.B) {
 
 func BenchmarkBaselineStringHash(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprWeight = 0
+	g.ConsWeight = 0
 
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {

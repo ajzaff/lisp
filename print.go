@@ -31,23 +31,23 @@ func makeStdPrinterOptions() PrinterOptions {
 
 func (p *Printer) initVisitor() {
 	var (
-		exprDepth       int
+		consDepth       int
 		firstWrite      = true
 		lastDelimitable delimitable
 	)
-	p.v.SetBeforeExprVisitor(func(e Expr) {
+	p.v.SetBeforeConsVisitor(func(e *Cons) {
 		if !firstWrite {
 			fmt.Fprint(p.w, p.Prefix)
 			firstWrite = true
 		}
 		fmt.Fprint(p.w, "(")
 		lastDelimitable = delimitableNone
-		exprDepth++
+		consDepth++
 	})
-	p.v.SetAfterExprVisitor(func(e Expr) {
-		exprDepth--
+	p.v.SetAfterConsVisitor(func(e *Cons) {
+		consDepth--
 		fmt.Fprint(p.w, ")")
-		if exprDepth == 0 {
+		if consDepth == 0 {
 			fmt.Fprint(p.w, p.NewLine, p.Prefix)
 		}
 		lastDelimitable = delimitableNone
@@ -57,7 +57,7 @@ func (p *Printer) initVisitor() {
 			fmt.Fprint(p.w, p.Prefix)
 			firstWrite = true
 		}
-		if exprDepth == 0 {
+		if consDepth == 0 {
 			fmt.Fprint(p.w, e.String(), p.NewLine, p.Prefix)
 			return
 		}

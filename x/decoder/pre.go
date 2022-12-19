@@ -24,7 +24,7 @@ func (s *PreDecoder) scanRawToken(data []byte, atEOF bool) (advance int, token [
 	}
 
 	if s.depth == 0 {
-		// Depth=0: Scan until the first Expr.
+		// Depth=0: Scan until the first Cons.
 		for _, r := range string(data) {
 			if r == '(' {
 				s.depth++
@@ -40,7 +40,7 @@ func (s *PreDecoder) scanRawToken(data []byte, atEOF bool) (advance int, token [
 
 	// Scan for the next Paren.
 	if s.depth > 0 {
-		// Depth>0: Scan until the RParen or the next Expr start.
+		// Depth>0: Scan until the RParen or the next Cons start.
 		for _, r := range string(data) {
 			advance++
 			switch r {

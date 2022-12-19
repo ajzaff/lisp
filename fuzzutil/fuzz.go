@@ -19,8 +19,8 @@ type Rand interface {
 type Generator struct {
 	IdWeight     int
 	IntWeight    int
-	ExprWeight   int
-	ExprMaxDepth int
+	ConsWeight   int
+	ConsMaxDepth int
 
 	termFn func(depth int) int
 
@@ -31,8 +31,8 @@ func NewGenerator(r Rand) *Generator {
 	g := &Generator{
 		IdWeight:     1,
 		IntWeight:    1,
-		ExprWeight:   1,
-		ExprMaxDepth: 3,
+		ConsWeight:   1,
+		ConsMaxDepth: 3,
 		r:            r,
 	}
 	g.termFn = g.expTermFn
@@ -40,7 +40,7 @@ func NewGenerator(r Rand) *Generator {
 }
 
 func (g *Generator) expTermFn(depth int) int {
-	return int(math.Max(float64(g.ExprMaxDepth-depth), 1) * g.r.ExpFloat64())
+	return int(math.Max(float64(g.ConsMaxDepth-depth), 1) * g.r.ExpFloat64())
 }
 
 func (g *Generator) Seed(seed int64) {
@@ -48,14 +48,14 @@ func (g *Generator) Seed(seed int64) {
 }
 
 func (g *Generator) weight() int {
-	return g.IdWeight + g.IntWeight + g.ExprWeight
+	return g.IdWeight + g.IntWeight + g.ConsWeight
 }
 
 func (g *Generator) Token() lisp.Token {
 	// Shuffle order to make equal weights fair.
 	// FIXME: can we do better? :)
 	tok := [3]lisp.Token{lisp.Id, lisp.Int, lisp.LParen}
-	w := [3]int{g.IdWeight, g.IntWeight, g.ExprWeight}
+	w := [3]int{g.IdWeight, g.IntWeight, g.ConsWeight}
 	i := g.r.Intn(3)
 	tok[2], w[2], tok[i], w[i] = tok[i], w[i], tok[2], w[2]
 	i = g.r.Intn(2)
@@ -83,8 +83,8 @@ func (g *Generator) nextDepth(depth int) lisp.Val {
 		return g.NextId()
 	case lisp.Int:
 		return g.NextInt()
-	default: // Expr
-		return g.nextExprDepth(depth)
+	default: // Cons
+		return g.nextConsDepth(depth)
 	}
 }
 
@@ -96,20 +96,23 @@ func (g *Generator) NextInt() lisp.Val {
 	return lisp.Lit{Token: lisp.Int, Text: strconv.FormatUint(g.r.Uint64(), 10)}
 }
 
-func (g *Generator) NextExpr() lisp.Val {
-	return g.nextExprDepth(0)
+func (g *Generator) NextCons() lisp.Val {
+	return g.nextConsDepth(0)
 }
 
-func (g *Generator) nextExprDepth(depth int) lisp.Val {
+func (g *Generator) nextConsDepth(depth int) lisp.Val {
 	n := g.termFn(depth)
 
-	p := g.ExprMaxDepth - depth
+	p := g.ConsMaxDepth - depth
 	if p < 0 {
 		p = 0
 	}
-	expr := make(lisp.Expr, 0, p)
+	head := &lisp.Cons{}
+	e := head
 	for i := 0; i < n; i++ {
-		expr = append(expr, lisp.Node{Val: g.nextDepth(depth + 1)})
+		e.Node = lisp.Node{Val: g.nextDepth(depth + 1)}
+		e.Cons = &lisp.Cons{}
+		e = e.Cons
 	}
-	return expr
+	return head
 }

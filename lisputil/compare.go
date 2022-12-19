@@ -1,16 +1,14 @@
 package lisputil
 
-import (
-	"github.com/ajzaff/lisp"
-)
+import "github.com/ajzaff/lisp"
 
 // Compare two values of unknown type.
 func Compare(a, b lisp.Val) int {
 	switch first := a.(type) {
 	case lisp.Lit:
 		return compareLitOther(first, b)
-	case lisp.Expr:
-		return compareExprOther(first, b)
+	case *lisp.Cons:
+		return compareConsOther(first, b)
 	default:
 		return 1 // not reachable
 	}
@@ -20,8 +18,8 @@ func compareLitOther(a lisp.Lit, b lisp.Val) int {
 	switch other := b.(type) {
 	case lisp.Lit:
 		return CompareLit(a, other)
-	case lisp.Expr:
-		return -1 // Lit < Expr
+	case *lisp.Cons:
+		return -1 // Lit < Cons
 	default:
 		return 1 // not reachable
 	}
@@ -44,30 +42,35 @@ func CompareLit(a, b lisp.Lit) int {
 	return 0
 }
 
-func compareExprOther(a lisp.Expr, b lisp.Val) int {
+func compareConsOther(a *lisp.Cons, b lisp.Val) int {
 	switch other := b.(type) {
 	case lisp.Lit:
-		return 1 // Lit < Expr
-	case lisp.Expr:
-		return CompareExpr(a, other)
+		return 1 // Lit < Cons
+	case *lisp.Cons:
+		return CompareCons(a, other)
 	default:
 		return 1 // not reachable
 	}
 }
 
-// CompareExpr compares expressions recursively.
-func CompareExpr(a, b lisp.Expr) int {
-	if len(a) != len(b) {
-		if len(a) < len(b) {
-			return -1
+// CompareCons compares expressions recursively.
+func CompareCons(a, b *lisp.Cons) int {
+	for a, b := a, b; ; a, b = a.Cons, b.Cons {
+		// Check for boundary conditions.
+		if a == nil {
+			if b == nil {
+				return 0
+			}
+			return -1 // len(a) < len(b)
 		}
-		return 1
-	}
-	for i := range a {
-		r := Compare(a[i].Val, b[i].Val)
-		if r != 0 {
-			return r
+		// a != nil:
+		if b == nil {
+			return 1 // len(b) < len(a)
+		}
+		// a != nil && b != nil:
+		// Compare Vals.
+		if w := Compare(a.Val, b.Val); w != 0 {
+			return w
 		}
 	}
-	return 0
 }
