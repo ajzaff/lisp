@@ -13,14 +13,19 @@ import (
 
 var errRune = errors.New("unexpected rune")
 
-var idTab = rangetable.Merge(unicode.L, unicode.Digit)
+var decTab = rangetable.New('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
+
+var idTab = rangetable.Merge(
+	unicode.L,
+	decTab,
+)
 
 // Scanner scans the Lisp source for Tokens.
 type TokenScanner struct {
-	sc    *bufio.Scanner
-	start Pos   // absolute token start position
-	end   Pos   // absolute token end position
-	tok   Token // last token scanned
+	sc        *bufio.Scanner
+	prev, off Pos   // absolute offsets
+	pos       Pos   // relative token position
+	tok       Token // last token scanned
 }
 
 func (s *TokenScanner) Reset(r io.Reader) {
@@ -46,90 +51,80 @@ func (s *TokenScanner) Text() string {
 }
 
 func (s *TokenScanner) Token() (pos Pos, tok Token, text string) {
-	return s.start, s.tok, s.Text()
+	return s.prev + s.pos, s.tok, s.Text()
 }
 
 func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
-	i := 0
-
-	var r rune
-	var size int
-
-	// Skip space.
-	for i < len(src) {
-		r, size = utf8.DecodeRune(src[i:])
-		if r == utf8.RuneError {
-			if size == 0 {
-				return 0, nil, nil
-			}
-			return 0, nil, errRune
-		}
-		i += size
+	if atEOF && len(src) == 0 {
+		return 0, nil, nil
+	}
+	defer func() {
+		// Maintain absolute positions into the scanner.
+		s.prev = s.off
+		s.off += Pos(advance)
+	}()
+	// Skip leading spaces.
+	for size := 0; advance < len(src); advance += size {
+		var r rune
+		r, size = utf8.DecodeRune(src[advance:])
 		if !unicode.IsSpace(r) {
 			break
 		}
 	}
-
-	switch r {
-	case '(':
-		s.start = Pos(i)
-		s.end = Pos(i + size)
-		s.tok = LParen
-		return size, src[s.start:s.end], nil
-	case ')':
-		s.start = Pos(i)
-		s.end = Pos(i + size)
-		s.tok = RParen
-		return size, src[s.start:s.end], nil
-	case '0':
-		s.start = Pos(i)
-		s.end = Pos(i + size)
-		s.tok = Int
-		return size, src[s.start:s.end], nil
+	if len(src) <= advance {
+		// Request more data, if any.
+		return len(src), nil, nil
 	}
+	// Decode length-1 tokens.
+	switch src[advance] {
+	case '(': // LParen
+		s.pos = Pos(advance)
+		s.tok = LParen
+		return advance + 1, src[advance : advance+1], nil
+	case ')': // RParen
+		s.pos += Pos(advance)
+		s.tok = RParen
+		return advance + 1, src[advance : advance+1], nil
+	case '0': // Int(0)
+		s.pos += Pos(advance)
+		s.tok = Int
+		return advance + 1, src[advance : advance+1], nil
+	}
+	// Decode longer tokens.
+	r, size := utf8.DecodeRune(src[advance:])
 	switch {
-	case unicode.IsDigit(r):
-		s.start = Pos(i)
-		i += size
-		for i < len(src) {
-			r, size := utf8.DecodeRune(src[i:])
-			if r == utf8.RuneError {
-				if size == 0 {
-					return 0, nil, nil
-				}
-				return 0, nil, errRune
-			}
-			i += size
-			if !unicode.IsDigit(r) {
+	case '1' <= r && r <= '9': // Int
+		pos := Pos(advance)
+		s.pos = pos
+		for advance < len(src) {
+			r, size := utf8.DecodeRune(src[advance:])
+			if r < '0' || '9' < r {
 				break
 			}
+			advance += size
 		}
-		s.end = Pos(i)
 		s.tok = Int
-		return i, src[s.start:s.end], nil
-	case unicode.IsLetter(r):
-		s.start = Pos(i)
-		i += size
-		for i < len(src) {
-			r, size := utf8.DecodeRune(src[i:])
-			if r == utf8.RuneError {
-				if size == 0 {
-					return 0, nil, nil
-				}
-				return 0, nil, errRune
-			}
-			i += size
+		return advance, src[pos:advance], nil
+	case unicode.IsLetter(r): // Id
+		pos := Pos(advance)
+		s.pos = pos
+		advance += size
+		for advance < len(src) {
+			r, size := utf8.DecodeRune(src[advance:])
 			if !unicode.Is(idTab, r) {
 				break
 			}
+			advance += size
 		}
-		s.end = Pos(i)
 		s.tok = Id
-		return i, src[s.start:s.end], nil
+		return advance, src[pos:advance], nil
 	}
-
-	// Rune error!
-	return i, src[i : i+size], errRune
+	// Rune error.
+	return advance, nil, &TokenError{
+		Pos:   Pos(advance),
+		Cause: fmt.Errorf("%w: %#q", errRune, r),
+		Src:   src,
+	}
 }
 
 type TokenScannerInterface interface {
@@ -190,7 +185,7 @@ func (s *NodeScanner) scanExpr(lParen Pos) (Node, error) {
 			return Node{
 				Pos: lParen,
 				Val: expr,
-				End: pos,
+				End: pos + 1,
 			}, nil
 		}
 		e, err := s.scan(pos, tok, text)

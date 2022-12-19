@@ -52,11 +52,16 @@ func (t *TokenError) LineCol() (line, col Pos) {
 	return 0, 0
 }
 
+// Error returns the error and cause.
 func (t *TokenError) Error() string {
 	line, col := t.LineCol()
-	return fmt.Sprintf("%v: at line %d: col %d", t.Cause, line, col)
+	if t.Cause == nil {
+		return fmt.Sprintf("TokenError: line %d, col %d", line, col)
+	}
+	return fmt.Sprintf("TokenError: line %d, col %d: %v", line, col, t.Cause)
 }
 
+// Unwrap implements error unwrapping, returning Cause.
 func (t *TokenError) Unwrap() error {
 	return t.Cause
 }

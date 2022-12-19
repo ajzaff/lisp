@@ -150,25 +150,18 @@ func TestTokenizeExpr(t *testing.T) {
 		wantText: []string{"(", "abc", ")"},
 		wantNodes: []Node{{Val: Expr{
 			Node{Pos: 1, Val: Lit{Token: Id, Text: "abc"}, End: 4},
-		}, End: 4}},
-	}, {
-		name:      "expr symbol",
-		input:     "(.)",
-		wantPos:   []Pos{0, 1, 2, 3},
-		wantTok:   []Token{LParen, RParen},
-		wantText:  []string{"(", ")"},
-		wantNodes: []Node{{Val: Expr{}, End: 2}},
+		}, End: 5}},
 	}, {
 		name:     "expr 2",
 		input:    "(add 1 2)",
-		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
+		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 9, 10},
 		wantTok:  []Token{LParen, Id, Int, Int, RParen},
 		wantText: []string{"(", "add", "1", "2", ")"},
 		wantNodes: []Node{{Val: Expr{
 			Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
 			Node{Pos: 5, Val: Lit{Token: Int, Text: "1"}, End: 6},
 			Node{Pos: 7, Val: Lit{Token: Int, Text: "2"}, End: 8},
-		}, End: 8}},
+		}, End: 10}},
 	}, {
 		name:     "expr 3",
 		input:    "(add (sub 3 2) 2)",
@@ -181,9 +174,9 @@ func TestTokenizeExpr(t *testing.T) {
 				Node{Pos: 6, Val: Lit{Token: Id, Text: "sub"}, End: 9},
 				Node{Pos: 10, Val: Lit{Token: Int, Text: "3"}, End: 11},
 				Node{Pos: 12, Val: Lit{Token: Int, Text: "2"}, End: 13},
-			}, End: 13},
+			}, End: 14},
 			Node{Pos: 15, Val: Lit{Token: Int, Text: "2"}, End: 16},
-		}, End: 16}},
+		}, End: 17}},
 	}, {
 		name:     "expr 4",
 		input:    "((a))",
@@ -193,8 +186,8 @@ func TestTokenizeExpr(t *testing.T) {
 		wantNodes: []Node{{Val: Expr{
 			Node{Pos: 1, Val: Expr{
 				Node{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
-			}, End: 3},
-		}, End: 4}},
+			}, End: 4},
+		}, End: 5}},
 	}, {
 		name:     "expr 5",
 		input:    "(a)(b) (c)",
@@ -202,20 +195,24 @@ func TestTokenizeExpr(t *testing.T) {
 		wantTok:  []Token{LParen, Id, RParen, LParen, Id, RParen, LParen, Id, RParen},
 		wantText: []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
 		wantNodes: []Node{
-			{Val: Expr{Node{Pos: 1, Val: Lit{Token: Id, Text: "a"}, End: 2}}, End: 2},
-			{Pos: 3, Val: Expr{Node{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5}}, End: 5},
-			{Pos: 7, Val: Expr{Node{Pos: 8, Val: Lit{Token: Id, Text: "c"}, End: 9}}, End: 9},
+			{Val: Expr{Node{Pos: 1, Val: Lit{Token: Id, Text: "a"}, End: 2}}, End: 3},
+			{Pos: 3, Val: Expr{Node{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5}}, End: 6},
+			{Pos: 7, Val: Expr{Node{Pos: 8, Val: Lit{Token: Id, Text: "c"}, End: 9}}, End: 10},
 		},
 	}, {
 		name:     "expr 6",
-		input:    "(?x/y)\n",
-		wantPos:  []Pos{0, 1, 2, 3, 4, 5, 5, 6},
-		wantTok:  []Token{LParen, Id, Id, RParen},
-		wantText: []string{"(", "x", "y", ")"},
+		input:    "(div (q x) y)\n",
+		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 13, 14},
+		wantTok:  []Token{LParen, Id, LParen, Id, Id, RParen, Id, RParen},
+		wantText: []string{"(", "div", "(", "q", "x", ")", "y", ")"},
 		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 2, Val: Lit{Token: Id, Text: "x"}, End: 3},
-			Node{Pos: 4, Val: Lit{Token: Id, Text: "y"}, End: 5},
-		}, End: 5}},
+			Node{Pos: 1, Val: Lit{Token: Id, Text: "div"}, End: 4},
+			Node{Pos: 5, Val: Expr{
+				{Pos: 6, Val: Lit{Token: Id, Text: "q"}, End: 7},
+				{Pos: 8, Val: Lit{Token: Id, Text: "x"}, End: 9},
+			}, End: 10},
+			Node{Pos: 11, Val: Lit{Token: Id, Text: "y"}, End: 12},
+		}, End: 14}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
