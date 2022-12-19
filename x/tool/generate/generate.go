@@ -29,10 +29,10 @@ func main() {
 
 	r := rand.New(rand.NewSource(seed))
 	g := fuzzutil.NewGenerator(r)
-	g.ExprMaxDepth = *exprMaxDepth
+	g.ConsMaxDepth = *exprMaxDepth
 	g.IdWeight = *idWeight
 	g.IntWeight = *intWeight
-	g.ExprWeight = *exprWeight
+	g.ConsWeight = *exprWeight
 
 	lisp.StdPrinter(os.Stdout).Print(g.Next())
 }
