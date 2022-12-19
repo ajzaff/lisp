@@ -26,15 +26,15 @@ func (e *litEntryInMemory) AddWeight(w float64, inverseRefs []ID) {
 	e.inverseRefs = append(e.inverseRefs, inverseRefs...)
 }
 
-type exprEntryInMemory struct {
+type consEntryInMemory struct {
 	refs        []ID
 	inverseRefs []ID
 	weight      float64
 }
 
-func (e *exprEntryInMemory) entry()          {}
-func (e *exprEntryInMemory) Weight() float64 { return e.weight }
-func (e *exprEntryInMemory) AddWeight(w float64, inverseRefs []ID) {
+func (e *consEntryInMemory) entry()          {}
+func (e *consEntryInMemory) Weight() float64 { return e.weight }
+func (e *consEntryInMemory) AddWeight(w float64, inverseRefs []ID) {
 	e.weight += w
 	e.inverseRefs = append(e.inverseRefs, inverseRefs...)
 }
@@ -84,7 +84,7 @@ func (m *InMemory) Store(t []*TVal, w float64) error {
 		}
 		switch {
 		case te.Lit.Token == lisp.Invalid:
-			e = &exprEntryInMemory{refs: te.Refs}
+			e = &consEntryInMemory{refs: te.Refs}
 		default:
 			e = &litEntryInMemory{Lit: te.Lit}
 		}
@@ -101,7 +101,7 @@ func (m *InMemory) EachRef(root ID, fn func(ID) bool) {
 	if !ok {
 		return
 	}
-	if e, ok := e.(*exprEntryInMemory); ok {
+	if e, ok := e.(*consEntryInMemory); ok {
 		for _, r := range e.refs {
 			if !fn(r) {
 				return
@@ -122,7 +122,7 @@ func (m *InMemory) EachInverseRef(root ID, fn func(ID) bool) {
 	switch e := e.(type) {
 	case *litEntryInMemory:
 		inverseRefs = e.inverseRefs
-	case *exprEntryInMemory:
+	case *consEntryInMemory:
 		inverseRefs = e.inverseRefs
 	default:
 		panic("unreachable")

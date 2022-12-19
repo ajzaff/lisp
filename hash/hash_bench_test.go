@@ -9,18 +9,15 @@ import (
 	"github.com/ajzaff/lisp/fuzzutil"
 )
 
-var (
-	strDB     = make(map[string]struct{})
-	valDB     = make(map[lisp.Val]struct{})
-	maphashDB = make(map[uint64]struct{})
-)
+var res int
 
 func BenchmarkMapHashMap(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprWeight = 0
 	var h MapHash
+	maphashDB := make(map[uint64]struct{})
 
-	for i := 0; i < b.N; i++ {
+	i := 0
+	for i = 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
 			v := g.Next()
 			h.Reset()
@@ -28,24 +25,29 @@ func BenchmarkMapHashMap(b *testing.B) {
 			maphashDB[h.Sum64()] = struct{}{}
 		}
 	}
+	res = i
 }
+
 func BenchmarkValMap(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprWeight = 0
+	valDB := make(map[lisp.Val]struct{})
 
-	for i := 0; i < b.N; i++ {
+	i := 0
+	for i = 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
 			v := g.Next()
 			valDB[v] = struct{}{}
 		}
 	}
+	res = i
 }
 
 func BenchmarkBaselineStringHash(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	g.ExprWeight = 0
+	strDB := make(map[string]struct{})
 
-	for i := 0; i < b.N; i++ {
+	i := 0
+	for i = 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
 			v := g.Next()
 
@@ -54,4 +56,5 @@ func BenchmarkBaselineStringHash(b *testing.B) {
 			strDB[buf.String()] = struct{}{}
 		}
 	}
+	res = i
 }

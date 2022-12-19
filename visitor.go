@@ -12,30 +12,29 @@ var (
 
 // Visitor implements a Val visitor.
 type Visitor struct {
-	beforeValFn func(Val)
-	afterValFn  func(Val)
-	litFn       func(Lit)
+	valFn func(Val)
+	litFn func(Lit)
 
-	beforeExprFn func(Expr)
-	afterExprFn  func(Expr)
+	beforeConsFn func(*Cons)
+	consFn       func(*Cons)
+	afterConsFn  func(*Cons)
 
 	err error
 }
 
-// SetBeforeNodeVisitor sets the visitor called on every Node.
-func (v *Visitor) SetBeforeValVisitor(fn func(Val)) { v.beforeValFn = fn }
+// SetValVisitor sets the visitor called on every Val.
+func (v *Visitor) SetValVisitor(fn func(Val)) { v.valFn = fn }
 
-// SetAfterNodeVisitor sets the visitor called on every Node.
-func (v *Visitor) SetAfterValVisitor(fn func(Val)) { v.afterValFn = fn }
-
-// SetLitVisitor sets the visitor called on every *Lit.
+// SetLitVisitor sets the visitor called on every Lit.
 func (v *Visitor) SetLitVisitor(fn func(Lit)) { v.litFn = fn }
 
-// SetNodeListVisitFunc sets the visitor called on every *Expr.
-func (v *Visitor) SetBeforeExprVisitor(fn func(Expr)) { v.beforeExprFn = fn }
+// SetBeforeConsVisitor sets the visitor called on every Cons.
+func (v *Visitor) SetBeforeConsVisitor(fn func(*Cons)) { v.beforeConsFn = fn }
 
-// SetNodeListVisitFunc sets the visitor called on every *Expr.
-func (v *Visitor) SetAfterExprVisitor(fn func(Expr)) { v.afterExprFn = fn }
+func (v *Visitor) SetConsVisitor(fn func(*Cons)) { v.consFn = fn }
+
+// SetAfterConsVisitor sets the visitor called on every Cons after descending the Val.
+func (v *Visitor) SetAfterConsVisitor(fn func(*Cons)) { v.afterConsFn = fn }
 
 // Stop the visitor and return as soon as possible.
 func (v *Visitor) Stop() {
@@ -58,22 +57,27 @@ func (v *Visitor) Visit(root Val) {
 	if v.hasErr() {
 		return
 	}
-	if !callFn(v, v.beforeValFn, root) {
+	if !callFn(v, v.valFn, root) {
 		return
 	}
-	defer callFn(v, v.afterValFn, root)
 	switch x := root.(type) {
 	case Lit:
 		if !callFn(v, v.litFn, x) {
 			return
 		}
-	case Expr:
-		if !callFn(v, v.beforeExprFn, x) {
+	case *Cons:
+		if !callFn(v, v.beforeConsFn, x) {
 			return
 		}
-		defer callFn(v, v.afterExprFn, x)
-		for _, e := range x {
+		e := x
+		for ; e != nil; e = e.Cons {
+			if !callFn(v, v.consFn, e) {
+				return
+			}
 			v.Visit(e.Val)
+		}
+		if !callFn(v, v.afterConsFn, e) {
+			return
 		}
 	}
 }

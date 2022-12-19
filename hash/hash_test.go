@@ -22,11 +22,7 @@ func TestDistictHash(t *testing.T) {
 		input1: "12",
 		input2: "   12",
 	}, {
-		name:   "float is independent of src pos",
-		input1: ".44",
-		input2: "   .44",
-	}, {
-		name:         "id and expr are distinct",
+		name:         "id and cons are distinct",
 		input1:       "a",
 		input2:       "(a)",
 		wantDistinct: true,
@@ -36,7 +32,7 @@ func TestDistictHash(t *testing.T) {
 		input2:       "abc",
 		wantDistinct: true,
 	}, {
-		name:         "spaces inserted between id lits in expr",
+		name:         "spaces inserted between id lits in cons",
 		input1:       "(a b c)",
 		input2:       "(abc)",
 		wantDistinct: true,

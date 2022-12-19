@@ -18,13 +18,15 @@ func (e *Encoder) Encode(v lisp.Val) {
 		// FIXME: No need to Quote the Id if its valid.
 		// (Number | Letter) & ~Print = {}.
 		e.w.Write([]byte(v.String()))
-	case lisp.Expr:
+	case *lisp.Cons:
 		e.w.Write([]byte{'['})
-		for i, elem := range v {
-			e.Encode(elem.Val)
-			if i+1 < len(v) {
+		i := 0
+		for v := v; v != nil; v = v.Cons {
+			if i > 0 {
 				e.w.Write([]byte{','})
 			}
+			e.Encode(v.Val)
+			i++
 		}
 		e.w.Write([]byte{']'})
 	}

@@ -29,10 +29,12 @@ func queryOneNode(db QueryInterface, id ID) (lisp.Node, float64) {
 	if v.Token != lisp.Invalid {
 		return lisp.Node{Val: v}, w
 	}
-	var x lisp.Expr
+	x := &lisp.Cons{}
 	db.EachRef(id, func(i ID) bool {
 		e, _ := queryOneNode(db, i)
-		x = append(x, e)
+		x.Node = e
+		x.Cons = &lisp.Cons{}
+		x = x.Cons
 		return true
 	})
 	return lisp.Node{Val: x}, w
@@ -133,10 +135,10 @@ func Query(db QueryInterface, q string) *QueryResult {
 
 func queryElements(q lisp.Val) (elems []string) {
 	var v lisp.Visitor
-	v.SetBeforeExprVisitor(func(e lisp.Expr) {
+	v.SetBeforeConsVisitor(func(e *lisp.Cons) {
 		if x := lisputil.Head(e); x != nil {
-			if lisputil.Equal(x, lisp.Lit{Token: lisp.Id, Text: "?"}) {
-				name := lisputil.Head(e[1:])
+			if lisputil.Equal(x, lisp.Lit{Token: lisp.Id, Text: "q"}) {
+				name := lisputil.Head(e.Cons)
 				if name != nil {
 					if x, ok := name.(lisp.Lit); ok {
 						elems = append(elems, x.String())

@@ -123,9 +123,15 @@ type TokenScannerInterface interface {
 	Err() error
 }
 
+type consStackEntry struct {
+	*Node       // Node for the cons.
+	Root  *Cons // Root cons.
+	Last  *Cons // Link to the last node, for fast insertion.
+}
+
 type NodeScanner struct {
 	sc    TokenScannerInterface
-	stack []Node // FIXME: allow user-supplied buffer and Expr allocating config.
+	stack []*consStackEntry // FIXME: allow user-supplied buffer.
 	err   error
 	node  Node
 }
@@ -170,31 +176,45 @@ func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 			End: pos + Pos(len(text)),
 		}
 		if i := len(s.stack); i > 0 {
-			s.stack[i-1].Val = append(s.stack[i-1].Val.(Expr), n)
-			// Need more scanning to finish this Expr.
+			e := s.stack[i-1]
+			if e.Last.Val != nil {
+				e.Last.Cons = &Cons{}
+				e.Last = e.Last.Cons
+			}
+			e.Last.Node = n
+			// Need more scanning to finish this Cons.
 			return Node{}, nil
 		}
 		return n, nil
-	case LParen: // BEGIN Expr
-		// FIXME: Allow for tuning the Expr constructor (e.g. custom capacity).
-		s.stack = append(s.stack, Node{Pos: pos, Val: Expr{}})
-		// Need more scanning to finish this Expr.
+	case LParen: // BEGIN Cons
+		e := &consStackEntry{}
+		cons := &Cons{}
+		e.Node = &Node{Pos: pos, Val: cons}
+		e.Root, e.Last = cons, cons
+		s.stack = append(s.stack, e)
+		// Need more scanning to finish this Cons.
 		return Node{}, nil
-	case RParen: // END Expr
+	case RParen: // END Cons
 		if len(s.stack) == 0 {
 			// FIXME: Use *NodeError.
 			return Node{}, fmt.Errorf("unexpected ')'")
 		}
 		i := len(s.stack)
-		n := s.stack[i-1]
-		n.End = pos + 1
+		x := s.stack[i-1]
+		x.End = pos + 1
 		s.stack = s.stack[:i-1]
 		if i := len(s.stack); i > 0 {
-			s.stack[i-1].Val = append(s.stack[i-1].Val.(Expr), n)
-			// Need more scanning to finish this Expr.
+			e := s.stack[i-1]
+			if e.Last.Val != nil {
+				e.Last.Cons = &Cons{}
+				e.Last = e.Last.Cons
+			}
+			// Append the cons to the prev cons.
+			e.Last.Node = *x.Node
+			// Need more scanning to finish this Cons.
 			return Node{}, nil
 		}
-		return n, nil
+		return *x.Node, nil
 	default: // Unknown Token
 		// FIXME: Use *NodeError.
 		return Node{}, fmt.Errorf("unexpected token")

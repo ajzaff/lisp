@@ -17,7 +17,7 @@ var tab = rangetable.Merge(
 	rangetable.New('(', ')'),
 )
 
-// Escape escapes the literal to incorporate unicode expressions in place of unsupported code points.
+// Escape escapes the literal to incorporate unicode in place of unsupported code points.
 func Escape(s string) string {
 	var sb strings.Builder
 	sb.Grow(len(s))
@@ -33,7 +33,7 @@ func Escape(s string) string {
 
 var escapePattern = regexp.MustCompile(`\(\s*u\s+(\d+)\)`)
 
-// Unescape unescapes the string by removing unicode expressions.
+// Unescape unescapes the string by removing unicode.
 func Unescape(s string) string {
 	var sb strings.Builder
 	sb.Grow(len(s))

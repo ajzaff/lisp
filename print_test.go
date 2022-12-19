@@ -23,39 +23,51 @@ func TestStdPrint(t *testing.T) {
 		name:  "unknown node",
 		input: unknownVal{},
 	}, {
-		name:  "empty expr",
-		input: Expr{},
+		name:  "empty cons",
+		input: &Cons{},
 		want:  "()\n",
 	}, {
 		name:  "lit",
 		input: Lit{Token: Id, Text: "hello"},
 		want:  "hello\n",
 	}, {
-		name:  "expr",
-		input: Expr{Node{Val: Lit{Token: Id, Text: "x"}}},
+		name:  "cons",
+		input: &Cons{Node: Node{Val: Lit{Token: Id, Text: "x"}}},
 		want:  "(x)\n",
 	}, {
-		name: "expr3",
-		input: Expr{
-			Node{Val: Lit{Token: Id, Text: "x"}},
-			Node{Val: Lit{Token: Id, Text: "y"}},
-			Node{Val: Lit{Token: Id, Text: "z"}},
+		name: "cons3",
+		input: &Cons{
+			Node: Node{Val: Lit{Token: Id, Text: "x"}},
+			Cons: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "y"}},
+				Cons: &Cons{
+					Node: Node{Val: Lit{Token: Id, Text: "z"}},
+				},
+			},
 		},
 		want: "(x y z)\n",
 	}, {
-		name: "nested expr",
-		input: Expr{
-			Node{Val: Lit{Token: Id, Text: "x"}},
-			Node{Val: Expr{Node{Val: Lit{Token: Id, Text: "y"}}}},
-			Node{Val: Lit{Token: Id, Text: "z"}},
+		name: "nested cons",
+		input: &Cons{
+			Node: Node{Val: Lit{Token: Id, Text: "x"}},
+			Cons: &Cons{
+				Node: Node{Val: &Cons{Node: Node{Val: Lit{Token: Id, Text: "y"}}}},
+				Cons: &Cons{
+					Node: Node{Val: Lit{Token: Id, Text: "z"}},
+				},
+			},
 		},
 		want: "(x(y)z)\n",
 	}, {
 		name: "numbers and ids are delimitable",
-		input: Expr{
-			Node{Val: Lit{Token: Id, Text: "add"}},
-			Node{Val: Lit{Token: Int, Text: "1"}},
-			Node{Val: Lit{Token: Int, Text: "2"}},
+		input: &Cons{
+			Node: Node{Val: Lit{Token: Id, Text: "add"}},
+			Cons: &Cons{
+				Node: Node{Val: Lit{Token: Int, Text: "1"}},
+				Cons: &Cons{
+					Node: Node{Val: Lit{Token: Int, Text: "2"}},
+				},
+			},
 		},
 		want: "(add 1 2)\n",
 	}} {

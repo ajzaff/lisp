@@ -31,20 +31,20 @@ func doRepl() {
 	}()
 
 	sc := bufio.NewScanner(os.Stdin)
-	var expr strings.Builder
+	var cons strings.Builder
 
 loop:
 	for sc.Scan() {
 		input := sc.Text()
 		switch {
-		case expr.Len() > 0 && input == "":
-			no, err := lisp.Parser{}.Parse(expr.String())
+		case cons.Len() > 0 && input == "":
+			no, err := lisp.Parser{}.Parse(cons.String())
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
-				expr.Reset()
+				cons.Reset()
 				continue
 			}
-			expr.Reset()
+			cons.Reset()
 			lisp.StdPrinter(os.Stdout).Print(no[0].Val)
 		case strings.TrimSpace(input) == "quit":
 			break loop
@@ -53,12 +53,12 @@ loop:
 		if strings.TrimSpace(input) != "" {
 			t := lisp.Tokenizer{}
 			if _, err := t.Tokenize(input); err != nil {
-				expr.Reset()
+				cons.Reset()
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
-			expr.WriteString(input)
-			expr.WriteByte('\n')
+			cons.WriteString(input)
+			cons.WriteByte('\n')
 		}
 	}
 }

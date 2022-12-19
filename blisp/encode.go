@@ -39,14 +39,14 @@ func encode(v lisp.Val, b []byte) int {
 		}
 		i = copy(b[2:], []byte(v.String()))
 		return 2 + i
-	case lisp.Expr:
+	case *lisp.Cons:
 		b[0] = byte(lisp.LParen)
 		size := 0
-		for _, e := range v {
+		for e := v; e != nil; e = e.Cons {
 			size += EncodedLen(e.Val)
 		}
 		i := binary.PutUvarint(b[1:], uint64(size))
-		for _, e := range v {
+		for e := v; e != nil; e = e.Cons {
 			i += encode(e.Val, b[i:])
 		}
 		return i
@@ -70,9 +70,9 @@ func EncodedLen(n lisp.Val) int {
 		default:
 			panic("unknown Lit token")
 		}
-	case lisp.Expr:
+	case *lisp.Cons:
 		size := 0
-		for _, e := range x {
+		for e := x; e != nil; e = e.Cons {
 			size += EncodedLen(e.Val)
 		}
 		return 1 + varIntLen(uint64(size)) + size

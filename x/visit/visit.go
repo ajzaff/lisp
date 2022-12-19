@@ -8,8 +8,8 @@ func Visit(root lisp.Val, visitFn func(v lisp.Val)) {
 		return
 	}
 	visitFn(root)
-	if expr, ok := root.(lisp.Expr); ok {
-		for _, e := range expr {
+	if e, ok := root.(*lisp.Cons); ok {
+		for e := e; e != nil; e = e.Cons {
 			Visit(e.Val, visitFn)
 		}
 	}
@@ -17,7 +17,7 @@ func Visit(root lisp.Val, visitFn func(v lisp.Val)) {
 
 // VisitStack visits the elements of root in order.
 //
-// It is a bit less featureful than the full Visitor but may be better suited to larger expressions.
+// It is a bit less featureful than the full Visitor but may be better suited to larger cons.
 func VisitStack(root lisp.Val, stack []lisp.Val, visitFn func(v lisp.Val)) {
 	if root == nil {
 		return
@@ -29,9 +29,11 @@ func VisitStack(root lisp.Val, stack []lisp.Val, visitFn func(v lisp.Val)) {
 		x := stack[n]
 		stack = stack[:n]
 		visitFn(x)
-		if expr, ok := x.(lisp.Expr); ok {
-			for i := len(expr) - 1; i >= 0; i-- {
-				stack = append(stack, expr[i].Val)
+		if e, ok := x.(*lisp.Cons); ok {
+			for e := e; e != nil; e = e.Cons {
+				// Use defer to reverse the linked list.
+				// FIXME: we should benchmark how a non-defer solution fares here.
+				defer func(e *lisp.Cons) { stack = append(stack, e.Val) }(e)
 			}
 		}
 	}

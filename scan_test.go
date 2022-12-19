@@ -136,107 +136,126 @@ func TestTokenizeLitErrors(t *testing.T) {
 	}
 }
 
-func TestTokenizeExpr(t *testing.T) {
+func TestTokenizeCons(t *testing.T) {
 	for _, tc := range []scanTestCase{{
 		name: "empty",
 	}, {
 		name:  "whitespace",
 		input: "  \t\r\n",
 	}, {
-		name:      "empty expr",
+		name:      "empty cons",
 		input:     "()",
 		wantPos:   []Pos{0, 1, 1, 2},
 		wantTok:   []Token{LParen, RParen},
 		wantText:  []string{"(", ")"},
-		wantNodes: []Node{{Val: Expr{}, End: 2}},
+		wantNodes: []Node{{Val: &Cons{}, End: 2}},
 	}, {
-		name:      "nested expr",
+		name:      "nested cons",
 		input:     "(())",
 		wantPos:   []Pos{0, 1, 1, 2, 2, 3, 3, 4},
 		wantTok:   []Token{LParen, LParen, RParen, RParen},
 		wantText:  []string{"(", "(", ")", ")"},
-		wantNodes: []Node{{Val: Expr{{Pos: 1, Val: Expr{}, End: 3}}, End: 4}},
+		wantNodes: []Node{{Val: &Cons{Node: Node{Pos: 1, Val: &Cons{}, End: 3}}, End: 4}},
 	}, {
-		name:     "expr",
+		name:     "cons",
 		input:    "(abc)",
 		wantPos:  []Pos{0, 1, 1, 4, 4, 5},
 		wantTok:  []Token{LParen, Id, RParen},
 		wantText: []string{"(", "abc", ")"},
-		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 1, Val: Lit{Token: Id, Text: "abc"}, End: 4},
+		wantNodes: []Node{{Val: &Cons{
+			Node: Node{Pos: 1, Val: Lit{Token: Id, Text: "abc"}, End: 4},
 		}, End: 5}},
 	}, {
-		name:     "expr 2",
+		name:     "cons 2",
 		input:    "(add 1 2)",
 		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
 		wantTok:  []Token{LParen, Id, Int, Int, RParen},
 		wantText: []string{"(", "add", "1", "2", ")"},
-		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
-			Node{Pos: 5, Val: Lit{Token: Int, Text: "1"}, End: 6},
-			Node{Pos: 7, Val: Lit{Token: Int, Text: "2"}, End: 8},
+		wantNodes: []Node{{Val: &Cons{
+			Node: Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
+			Cons: &Cons{
+				Node: Node{Pos: 5, Val: Lit{Token: Int, Text: "1"}, End: 6},
+				Cons: &Cons{
+					Node: Node{Pos: 7, Val: Lit{Token: Int, Text: "2"}, End: 8},
+				},
+			},
 		}, End: 9}},
 	}, {
-		name:     "expr 3",
+		name:     "cons 3",
 		input:    "(add (sub 3 2) 2)",
 		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
 		wantTok:  []Token{LParen, Id, LParen, Id, Int, Int, RParen, Int, RParen},
 		wantText: []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
-		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
-			Node{Pos: 5, Val: Expr{
-				Node{Pos: 6, Val: Lit{Token: Id, Text: "sub"}, End: 9},
-				Node{Pos: 10, Val: Lit{Token: Int, Text: "3"}, End: 11},
-				Node{Pos: 12, Val: Lit{Token: Int, Text: "2"}, End: 13},
-			}, End: 14},
-			Node{Pos: 15, Val: Lit{Token: Int, Text: "2"}, End: 16},
-		}, End: 17}},
+		wantNodes: []Node{{Val: &Cons{
+			Node: Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
+			Cons: &Cons{
+				Node: Node{Pos: 5, Val: &Cons{
+					Node: Node{Pos: 6, Val: Lit{Token: Id, Text: "sub"}, End: 9},
+					Cons: &Cons{
+						Node: Node{Pos: 10, Val: Lit{Token: Int, Text: "3"}, End: 11},
+						Cons: &Cons{
+							Node: Node{Pos: 12, Val: Lit{Token: Int, Text: "2"}, End: 13},
+						},
+					},
+				}, End: 14},
+				Cons: &Cons{
+					Node: Node{Pos: 15, Val: Lit{Token: Int, Text: "2"}, End: 16},
+				},
+			}}, End: 17}},
 	}, {
-		name:     "expr 4",
+		name:     "cons 4",
 		input:    "((a))",
 		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
 		wantTok:  []Token{LParen, LParen, Id, RParen, RParen},
 		wantText: []string{"(", "(", "a", ")", ")"},
-		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 1, Val: Expr{
-				Node{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
+		wantNodes: []Node{{Val: &Cons{
+			Node: Node{Pos: 1, Val: &Cons{
+				Node: Node{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
 			}, End: 4},
 		}, End: 5}},
 	}, {
-		name:     "expr 5",
+		name:     "cons 5",
 		input:    "(a)(b) (c)",
 		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10},
 		wantTok:  []Token{LParen, Id, RParen, LParen, Id, RParen, LParen, Id, RParen},
 		wantText: []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
 		wantNodes: []Node{
-			{Val: Expr{Node{Pos: 1, Val: Lit{Token: Id, Text: "a"}, End: 2}}, End: 3},
-			{Pos: 3, Val: Expr{Node{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5}}, End: 6},
-			{Pos: 7, Val: Expr{Node{Pos: 8, Val: Lit{Token: Id, Text: "c"}, End: 9}}, End: 10},
+			{Val: &Cons{Node: Node{Pos: 1, Val: Lit{Token: Id, Text: "a"}, End: 2}}, End: 3},
+			{Pos: 3, Val: &Cons{Node: Node{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5}}, End: 6},
+			{Pos: 7, Val: &Cons{Node: Node{Pos: 8, Val: Lit{Token: Id, Text: "c"}, End: 9}}, End: 10},
 		},
 	}, {
-		name:     "expr 6",
+		name:     "cons 6",
 		input:    "(div (q x) y)\n",
 		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13},
 		wantTok:  []Token{LParen, Id, LParen, Id, Id, RParen, Id, RParen},
 		wantText: []string{"(", "div", "(", "q", "x", ")", "y", ")"},
-		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 1, Val: Lit{Token: Id, Text: "div"}, End: 4},
-			Node{Pos: 5, Val: Expr{
-				{Pos: 6, Val: Lit{Token: Id, Text: "q"}, End: 7},
-				{Pos: 8, Val: Lit{Token: Id, Text: "x"}, End: 9},
-			}, End: 10},
-			Node{Pos: 11, Val: Lit{Token: Id, Text: "y"}, End: 12},
+		wantNodes: []Node{{Val: &Cons{
+			Node: Node{Pos: 1, Val: Lit{Token: Id, Text: "div"}, End: 4},
+			Cons: &Cons{
+				Node: Node{Pos: 5, Val: &Cons{
+					Node: Node{Pos: 6, Val: Lit{Token: Id, Text: "q"}, End: 7},
+					Cons: &Cons{
+						Node: Node{Pos: 8, Val: Lit{Token: Id, Text: "x"}, End: 9},
+					},
+				}, End: 10},
+				Cons: &Cons{
+					Node: Node{Pos: 11, Val: Lit{Token: Id, Text: "y"}, End: 12},
+				},
+			},
 		}, End: 13}},
 	}, {
-		name:     "expr 7",
+		name:     "cons 7",
 		input:    "((a b))\n",
 		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 4, 5, 5, 6, 6, 7},
 		wantTok:  []Token{LParen, LParen, Id, Id, RParen, RParen},
 		wantText: []string{"(", "(", "a", "b", ")", ")"},
-		wantNodes: []Node{{Val: Expr{
-			Node{Pos: 1, Val: Expr{
-				{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
-				{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5},
+		wantNodes: []Node{{Val: &Cons{
+			Node: Node{Pos: 1, Val: &Cons{
+				Node: Node{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
+				Cons: &Cons{
+					Node: Node{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5},
+				},
 			}, End: 6},
 		}, End: 7}},
 	}} {
