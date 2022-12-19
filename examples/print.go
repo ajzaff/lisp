@@ -44,7 +44,8 @@ func main() {
 	var ns []lisp.Node
 	var s lisp.TokenScanner
 	s.Reset(bytes.NewReader(src))
-	sc := lisp.NewNodeScanner(&s)
+	var sc lisp.NodeScanner
+	sc.Reset(&s)
 	for sc.Scan() {
 		ns = append(ns, sc.Node())
 	}

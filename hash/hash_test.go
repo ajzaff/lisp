@@ -48,7 +48,8 @@ func TestDistictHash(t *testing.T) {
 			var n1 lisp.Node
 			var s lisp.TokenScanner
 			s.Reset(strings.NewReader(tc.input1))
-			sc := lisp.NewNodeScanner(&s)
+			var sc lisp.NodeScanner
+			sc.Reset(&s)
 			for sc.Scan() {
 				n1 = sc.Node()
 				break
@@ -57,7 +58,8 @@ func TestDistictHash(t *testing.T) {
 				t.Fatalf("Parse(%q): fails: %v", tc.input1, err)
 			}
 			var n2 lisp.Node
-			sc.Init(strings.NewReader(tc.input2))
+			s.Reset(strings.NewReader(tc.input2))
+			sc.Reset(&s)
 			for sc.Scan() {
 				n2 = sc.Node()
 				break

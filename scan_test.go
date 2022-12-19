@@ -48,8 +48,11 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 	if (gotTokenErr != nil) != tc.wantTokenErr {
 		t.Errorf("Tokenize(%q) got token err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
 	}
+
+	// TODO: Split this to another test case.
 	sc.Reset(strings.NewReader(tc.input))
-	s := NewNodeScanner(&sc)
+	var s NodeScanner
+	s.Reset(&sc)
 	var gotNodes []Node
 	for s.Scan() {
 		gotNodes = append(gotNodes, s.Node())

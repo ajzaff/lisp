@@ -145,16 +145,9 @@ type NodeScanner struct {
 	node Node
 }
 
-func NewNodeScanner(sc TokenScannerInterface) *NodeScanner {
-	var s NodeScanner
+func (s *NodeScanner) Reset(sc TokenScannerInterface) {
+	*s = NodeScanner{}
 	s.sc = sc
-	return &s
-}
-
-func (s *NodeScanner) Init(src io.Reader) {
-	s.sc.Reset(src)
-	s.err = nil
-	s.node = Node{}
 }
 
 func (s *NodeScanner) Scan() bool {

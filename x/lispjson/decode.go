@@ -50,7 +50,9 @@ func (d *Decoder) decodeSrc(r io.Reader) {
 	}
 	var s lisp.TokenScanner
 	s.Reset(bytes.NewReader(src))
-	d.sc = lisp.NewNodeScanner(&s)
+	var sc lisp.NodeScanner
+	sc.Reset(&s)
+	d.sc = &sc
 }
 
 func (d *Decoder) Decode() (lisp.Val, error) {

@@ -14,7 +14,8 @@ func mustParse(t *testing.T, src string) lisp.Val {
 	var n lisp.Node
 	var s lisp.TokenScanner
 	s.Reset(strings.NewReader(src))
-	sc := lisp.NewNodeScanner(&s)
+	var sc lisp.NodeScanner
+	sc.Reset(&s)
 	for sc.Scan() {
 		n = sc.Node()
 		break

@@ -106,7 +106,8 @@ func Query(db QueryInterface, q string) *QueryResult {
 	var qn []lisp.Val
 	var s lisp.TokenScanner
 	s.Reset(strings.NewReader(q))
-	sc := lisp.NewNodeScanner(&s)
+	var sc lisp.NodeScanner
+	sc.Reset(&s)
 	for sc.Scan() {
 		qn = append(qn, sc.Node().Val)
 	}
