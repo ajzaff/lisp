@@ -82,11 +82,11 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		s.tok = LParen
 		return advance + 1, src[advance : advance+1], nil
 	case ')': // RParen
-		s.pos += Pos(advance)
+		s.pos = Pos(advance)
 		s.tok = RParen
 		return advance + 1, src[advance : advance+1], nil
 	case '0': // Int(0)
-		s.pos += Pos(advance)
+		s.pos = Pos(advance)
 		s.tok = Int
 		return advance + 1, src[advance : advance+1], nil
 	}
@@ -94,30 +94,28 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 	r, size := utf8.DecodeRune(src[advance:])
 	switch {
 	case '1' <= r && r <= '9': // Int
-		pos := Pos(advance)
-		s.pos = pos
-		for advance < len(src) {
-			r, size := utf8.DecodeRune(src[advance:])
-			if r < '0' || '9' < r {
+		s.pos = Pos(advance)
+		// Int parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
+		for advance++; advance < len(src); advance++ {
+			b := src[advance]
+			if b < '0' || '9' < b {
 				break
 			}
-			advance += size
 		}
 		s.tok = Int
-		return advance, src[pos:advance], nil
+		return advance, src[s.pos:advance], nil
 	case unicode.IsLetter(r): // Id
-		pos := Pos(advance)
-		s.pos = pos
+		s.pos = Pos(advance)
 		advance += size
-		for advance < len(src) {
-			r, size := utf8.DecodeRune(src[advance:])
+		for size := 0; advance < len(src); advance += size {
+			var r rune
+			r, size = utf8.DecodeRune(src[advance:])
 			if !unicode.Is(idTab, r) {
 				break
 			}
-			advance += size
 		}
 		s.tok = Id
-		return advance, src[pos:advance], nil
+		return advance, src[s.pos:advance], nil
 	}
 	// Rune error.
 	return advance, nil, &TokenError{
@@ -135,9 +133,10 @@ type TokenScannerInterface interface {
 }
 
 type NodeScanner struct {
-	sc   TokenScannerInterface
-	err  error
-	node Node
+	sc    TokenScannerInterface
+	stack []Node // FIXME: allow user-supplied buffer and Expr allocating config.
+	err   error
+	node  Node
 }
 
 func (s *NodeScanner) Reset(sc TokenScannerInterface) {
@@ -146,60 +145,79 @@ func (s *NodeScanner) Reset(sc TokenScannerInterface) {
 }
 
 func (s *NodeScanner) Scan() bool {
-	if !s.sc.Scan() {
-		return false
+	var n Node
+
+	// Scan until a full Node is constructed.
+	for s.sc.Scan() {
+		var err error
+		n, err = s.scan(s.sc.Token())
+		if err != nil {
+			s.err = err
+			return false
+		}
+		// If the Node has valid indices, we're done.
+		if n.Pos < n.End {
+			break
+		}
 	}
-	node, err := s.scan(s.sc.Token())
-	if err != nil {
+	if err := s.sc.Err(); err != nil {
 		s.err = err
 		return false
 	}
-	s.node = node
-	return true
+	s.node = n
+	// Return true when valid Node scanned.
+	// The final Scan call will be empty.
+	return n.Pos < n.End
 }
 
 func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 	switch tok {
-	case Id, Int:
-		return Node{
+	case Id, Int: // Id, Int
+		n := Node{
 			Pos: pos,
 			Val: Lit{Token: tok, Text: text},
 			End: pos + Pos(len(text)),
-		}, nil
-	case LParen, RParen:
-		return s.scanExpr(pos)
-	default:
+		}
+		if i := len(s.stack); i > 0 {
+			s.stack[i-1].Val = append(s.stack[i-1].Val.(Expr), n)
+			// Need more scanning to finish this Expr.
+			return Node{}, nil
+		}
+		return n, nil
+	case LParen: // BEGIN Expr
+		// FIXME: Allow for tuning the Expr constructor (e.g. custom capacity).
+		s.stack = append(s.stack, Node{Pos: pos, Val: Expr{}})
+		// Need more scanning to finish this Expr.
+		return Node{}, nil
+	case RParen: // END Expr
+		if len(s.stack) == 0 {
+			// FIXME: Use *NodeError.
+			return Node{}, fmt.Errorf("unexpected ')'")
+		}
+		i := len(s.stack)
+		n := s.stack[i-1]
+		n.End = pos + 1
+		s.stack = s.stack[:i-1]
+		if i := len(s.stack); i > 0 {
+			s.stack[i-1].Val = append(s.stack[i-1].Val.(Expr), n)
+			// Need more scanning to finish this Expr.
+			return Node{}, nil
+		}
+		return n, nil
+	default: // Unknown Token
+		// FIXME: Use *NodeError.
 		return Node{}, fmt.Errorf("unexpected token")
 	}
 }
 
-func (s *NodeScanner) scanExpr(lParen Pos) (Node, error) {
-	expr := Expr{}
-	for {
-		if !s.sc.Scan() {
-			return Node{}, io.ErrUnexpectedEOF
-		}
-		pos, tok, text := s.sc.Token()
-		switch tok {
-		case RParen:
-			return Node{
-				Pos: lParen,
-				Val: expr,
-				End: pos + 1,
-			}, nil
-		}
-		e, err := s.scan(pos, tok, text)
-		if err != nil {
-			return Node{}, err
-		}
-		expr = append(expr, e)
-	}
-}
-
+// Node returns the last Node scanned.
+//
+// Valid scanned nodes always have indices set, i.e. Pos < End.
 func (s *NodeScanner) Node() Node {
 	return s.node
 }
 
+// Err returns the NodeScanner error.
 func (s *NodeScanner) Err() error {
 	if s.err != nil {
 		return s.err

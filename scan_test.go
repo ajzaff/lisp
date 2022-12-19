@@ -143,6 +143,20 @@ func TestTokenizeExpr(t *testing.T) {
 		name:  "whitespace",
 		input: "  \t\r\n",
 	}, {
+		name:      "empty expr",
+		input:     "()",
+		wantPos:   []Pos{0, 1, 1, 2},
+		wantTok:   []Token{LParen, RParen},
+		wantText:  []string{"(", ")"},
+		wantNodes: []Node{{Val: Expr{}, End: 2}},
+	}, {
+		name:      "nested expr",
+		input:     "(())",
+		wantPos:   []Pos{0, 1, 1, 2, 2, 3, 3, 4},
+		wantTok:   []Token{LParen, LParen, RParen, RParen},
+		wantText:  []string{"(", "(", ")", ")"},
+		wantNodes: []Node{{Val: Expr{{Pos: 1, Val: Expr{}, End: 3}}, End: 4}},
+	}, {
 		name:     "expr",
 		input:    "(abc)",
 		wantPos:  []Pos{0, 1, 1, 4, 4, 5},
@@ -154,14 +168,14 @@ func TestTokenizeExpr(t *testing.T) {
 	}, {
 		name:     "expr 2",
 		input:    "(add 1 2)",
-		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 9, 10},
+		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
 		wantTok:  []Token{LParen, Id, Int, Int, RParen},
 		wantText: []string{"(", "add", "1", "2", ")"},
 		wantNodes: []Node{{Val: Expr{
 			Node{Pos: 1, Val: Lit{Token: Id, Text: "add"}, End: 4},
 			Node{Pos: 5, Val: Lit{Token: Int, Text: "1"}, End: 6},
 			Node{Pos: 7, Val: Lit{Token: Int, Text: "2"}, End: 8},
-		}, End: 10}},
+		}, End: 9}},
 	}, {
 		name:     "expr 3",
 		input:    "(add (sub 3 2) 2)",
@@ -202,7 +216,7 @@ func TestTokenizeExpr(t *testing.T) {
 	}, {
 		name:     "expr 6",
 		input:    "(div (q x) y)\n",
-		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 13, 14},
+		wantPos:  []Pos{0, 1, 1, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13},
 		wantTok:  []Token{LParen, Id, LParen, Id, Id, RParen, Id, RParen},
 		wantText: []string{"(", "div", "(", "q", "x", ")", "y", ")"},
 		wantNodes: []Node{{Val: Expr{
@@ -212,7 +226,19 @@ func TestTokenizeExpr(t *testing.T) {
 				{Pos: 8, Val: Lit{Token: Id, Text: "x"}, End: 9},
 			}, End: 10},
 			Node{Pos: 11, Val: Lit{Token: Id, Text: "y"}, End: 12},
-		}, End: 14}},
+		}, End: 13}},
+	}, {
+		name:     "expr 7",
+		input:    "((a b))\n",
+		wantPos:  []Pos{0, 1, 1, 2, 2, 3, 4, 5, 5, 6, 6, 7},
+		wantTok:  []Token{LParen, LParen, Id, Id, RParen, RParen},
+		wantText: []string{"(", "(", "a", "b", ")", ")"},
+		wantNodes: []Node{{Val: Expr{
+			Node{Pos: 1, Val: Expr{
+				{Pos: 2, Val: Lit{Token: Id, Text: "a"}, End: 3},
+				{Pos: 4, Val: Lit{Token: Id, Text: "b"}, End: 5},
+			}, End: 6},
+		}, End: 7}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
