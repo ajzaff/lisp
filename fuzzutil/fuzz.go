@@ -1,11 +1,14 @@
 package fuzzutil
 
 import (
-	"fmt"
 	"math"
 	"strconv"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/ajzaff/lisp"
+	"golang.org/x/text/unicode/rangetable"
 )
 
 type Rand interface {
@@ -23,6 +26,7 @@ type Generator struct {
 	ExprMaxDepth int
 
 	termFn func(depth int) int
+	idFn   func() int
 
 	r Rand
 }
@@ -36,11 +40,17 @@ func NewGenerator(r Rand) *Generator {
 		r:            r,
 	}
 	g.termFn = g.expTermFn
+	g.idFn = g.expIdFn
 	return g
 }
 
 func (g *Generator) expTermFn(depth int) int {
 	return int(math.Max(float64(g.ExprMaxDepth-depth), 1) * g.r.ExpFloat64())
+}
+
+func (g *Generator) expIdFn() int {
+	// Generate the approx. length of an ID in bytes (most runes are 4 bytes long).
+	return int(math.Ceil(40 * g.r.ExpFloat64()))
 }
 
 func (g *Generator) Seed(seed int64) {
@@ -88,8 +98,23 @@ func (g *Generator) nextDepth(depth int) lisp.Val {
 	}
 }
 
+var idTab = make([]rune, 0, 131241) // len(unicode.L)
+
+func init() {
+	rangetable.Visit(unicode.L, func(r rune) { idTab = append(idTab, r) })
+}
+
 func (g *Generator) NextId() lisp.Val {
-	return lisp.Lit{Token: lisp.Id, Text: fmt.Sprintf("a%d", g.r.Uint64())}
+	n := g.expIdFn()
+	var sb strings.Builder
+	sb.Grow(n)
+	for i := 0; i < n; i++ {
+		r := idTab[g.r.Intn(len(idTab))]
+		size := utf8.RuneLen(r)
+		sb.WriteRune(r)
+		i += size
+	}
+	return lisp.Lit{Token: lisp.Id, Text: sb.String()}
 }
 
 func (g *Generator) NextInt() lisp.Val {

@@ -11,7 +11,7 @@ It features:
 ## Syntax
 
 ```
-id          => \p{Letter}[\p{Letter}\d]*
+id          => \p{Letter}+
 number      => 0 | [1-9]\d*
 expr        => '(' (id | number | expr)* ')'
 ```
