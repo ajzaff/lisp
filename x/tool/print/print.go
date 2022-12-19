@@ -1,6 +1,4 @@
-//go:build print
-// +build print
-
+// Binary
 package main
 
 import (
