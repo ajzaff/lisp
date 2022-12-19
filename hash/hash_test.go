@@ -22,10 +22,6 @@ func TestDistictHash(t *testing.T) {
 		input1: "12",
 		input2: "   12",
 	}, {
-		name:   "float is independent of src pos",
-		input1: ".44",
-		input2: "   .44",
-	}, {
 		name:         "id and cons are distinct",
 		input1:       "a",
 		input2:       "(a)",
