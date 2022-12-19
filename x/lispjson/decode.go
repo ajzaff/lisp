@@ -18,36 +18,25 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 func (d *Decoder) decodeSrc(r io.Reader) {
+	// Transform JSON source to Lisp in-place.
 	var buf bytes.Buffer
-	// FIXME: Do proper JSON token scanning.
 	io.Copy(&buf, r)
 	src := buf.Bytes()
-	var (
-		str    bool
-		escape bool
-	)
 	for i, b := range src {
 		switch {
-		case !str && b == '[':
+		case b == '[':
 			src[i] = '('
-		case !str && b == ']':
+		case b == ']':
 			src[i] = ')'
-		case !str && b == ',':
+		case b == ',':
 			src[i] = ' '
 		case b == '"':
-			if str && escape {
-				escape = false
-				continue
-			}
-			str = !str
-		case str && b == '\\':
-			escape = !escape
-			continue
-		}
-		if escape {
-			escape = false
+			// Unquote literals by replacing '"".
+			// FIXME: Creative, but this may cause issues.
+			src[i] = ' '
 		}
 	}
+	// Tokenize and parse normally.
 	var s lisp.TokenScanner
 	s.Reset(bytes.NewReader(src))
 	var sc lisp.NodeScanner

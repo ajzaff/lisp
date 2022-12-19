@@ -2,7 +2,6 @@ package lispjson
 
 import (
 	"io"
-	"strconv"
 
 	"github.com/ajzaff/lisp"
 )
@@ -16,10 +15,8 @@ func NewEncoder(w io.Writer) *Encoder {
 func (e *Encoder) Encode(v lisp.Val) {
 	switch v := v.(type) {
 	case lisp.Lit:
-		if v.Token == lisp.Id {
-			e.w.Write([]byte(strconv.Quote(v.String())))
-		}
-		// Number
+		// FIXME: No need to Quote the Id if its valid.
+		// (Number | Letter) & ~Print = {}.
 		e.w.Write([]byte(v.String()))
 	case lisp.Expr:
 		e.w.Write([]byte{'['})
