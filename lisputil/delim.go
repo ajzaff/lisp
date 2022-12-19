@@ -13,6 +13,7 @@ const (
 	DelimNone DelimClass = iota // No delimiter needed when printing. Expr.
 	DelimId                     // Delimiter needed. Id.
 	DelimInt                    // Delimiter needed. Int.
+	DelimExpr                   // Delimiter not needed. Expr.
 )
 
 // Delim returns the DelimClass for a lisp Value.
@@ -25,6 +26,8 @@ func Delim(v lisp.Val) DelimClass {
 		case lisp.Int:
 			return DelimInt
 		}
+	case *lisp.Cons:
+		return DelimExpr
 	}
 	return DelimNone
 }
@@ -36,6 +39,8 @@ func DelimRune(r rune) DelimClass {
 		return DelimId
 	case '0' <= r && r <= '9':
 		return DelimInt
+	case r == '(', r == ')':
+		return DelimExpr
 	default:
 		return DelimNone
 	}
