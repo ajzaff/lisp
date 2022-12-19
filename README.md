@@ -11,7 +11,7 @@ It features:
 ## Syntax
 
 ```
-id          => [[:letter:]]+
-number      => -? [[:digit:]]+ ('.' [[:digit:]]*)? ([eE] [[:digit]]+)?
-expr        => '(' (id | number | expr)+ ')'
+id          => \p{Letter}[\p{Letter}\d]*
+number      => 0 | [1-9]\d*
+expr        => '(' (id | number | expr)* ')'
 ```
