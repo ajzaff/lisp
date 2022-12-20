@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/hash"
-	"github.com/ajzaff/lisp/lisputil"
+	lisputil "github.com/ajzaff/lisp/lisp"
+	"github.com/ajzaff/lisp/x/hash"
 )
 
 type QueryInterface interface {

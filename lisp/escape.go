@@ -1,4 +1,4 @@
-package lisputil
+package lisp
 
 import (
 	"fmt"

@@ -2,7 +2,7 @@ package lisp
 
 import (
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/lisputil"
+	lisputil "github.com/ajzaff/lisp/lisp"
 )
 
 func FromId(v lisp.Val) string {

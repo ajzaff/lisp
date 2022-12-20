@@ -1,4 +1,4 @@
-package lisputil
+package lisp
 
 // Regular patterns describing Lisp syntactic elements.
 const (
