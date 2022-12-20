@@ -55,22 +55,22 @@ func compareConsOther(a *lisp.Cons, b lisp.Val) int {
 
 // CompareCons compares expressions recursively.
 func CompareCons(a, b *lisp.Cons) int {
-	for a, b := a, b; ; a, b = a.Cons, b.Cons {
-		// Check for boundary conditions.
-		if a == nil {
-			if b == nil {
-				return 0
-			}
-			return -1 // len(a) < len(b)
-		}
-		// a != nil:
+	// Check for boundary conditions.
+	if a == nil {
 		if b == nil {
-			return 1 // len(b) < len(a)
+			return 0
 		}
-		// a != nil && b != nil:
-		// Compare Vals.
-		if w := Compare(a.Val, b.Val); w != 0 {
-			return w
-		}
+		return -1 // len(a) < len(b)
 	}
+	// a != nil:
+	if b == nil {
+		return 1 // len(b) < len(a)
+	}
+	// a != nil && b != nil:
+	// Compare Vals.
+	if w := Compare(a.Val, b.Val); w != 0 {
+		return w
+	}
+	// Compare Cons recursively.
+	return CompareCons(a.Cons, b.Cons)
 }

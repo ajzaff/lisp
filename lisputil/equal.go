@@ -39,19 +39,19 @@ func equalConsOther(a *lisp.Cons, b lisp.Val) bool {
 
 // EqualCons returns whether two expressions are syntactically equivalent by equating elements recursively.
 func EqualCons(a, b *lisp.Cons) bool {
-	for a, b := a, b; ; a, b = a.Cons, b.Cons {
-		// Check for boundary conditions.
-		if a == nil {
-			return b == nil
-		}
-		// a != nil.
-		if b == nil {
-			return false
-		}
-		// a != nil && b != nil:
-		// Compare Vals.
-		if !Equal(a.Val, b.Val) {
-			return false
-		}
+	// Check for boundary conditions.
+	if a == nil {
+		return b == nil
 	}
+	// a != nil.
+	if b == nil {
+		return false
+	}
+	// a != nil && b != nil:
+	// Compare Vals.
+	if !Equal(a.Val, b.Val) {
+		return false
+	}
+	// Equate Cons recursively.
+	return EqualCons(a.Cons, b.Cons)
 }
