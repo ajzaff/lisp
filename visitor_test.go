@@ -29,6 +29,127 @@ func TestVisitor(t *testing.T) {
 			Visitor: "Lit",
 			Val:     Lit{Token: Int, Text: "1"},
 		}},
+	}, {
+		name: "cons",
+		// (a b(c))
+		input: &Cons{Node: Node{Val: Lit{Token: Id, Text: "a"}}, Cons: &Cons{
+			Node: Node{Val: Lit{Token: Id, Text: "b"}},
+			Cons: &Cons{
+				Node: Node{Val: &Cons{
+					Node: Node{Val: Lit{Token: Id, Text: "c"}},
+				}},
+			},
+		}},
+		wantVisits: []testVisits{{
+			Visitor: "Val",
+			Val: &Cons{Node: Node{Val: Lit{Token: Id, Text: "a"}}, Cons: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "b"}},
+				Cons: &Cons{
+					Node: Node{Val: &Cons{
+						Node: Node{Val: Lit{Token: Id, Text: "c"}},
+					}},
+				},
+			}},
+		}, {
+			Visitor: "BeforeCons",
+			Val: &Cons{Node: Node{Val: Lit{Token: Id, Text: "a"}}, Cons: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "b"}},
+				Cons: &Cons{
+					Node: Node{Val: &Cons{
+						Node: Node{Val: Lit{Token: Id, Text: "c"}},
+					}},
+				},
+			}},
+		}, {
+			Visitor: "Cons",
+			Val: &Cons{Node: Node{Val: Lit{Token: Id, Text: "a"}}, Cons: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "b"}},
+				Cons: &Cons{
+					Node: Node{Val: &Cons{
+						Node: Node{Val: Lit{Token: Id, Text: "c"}},
+					}},
+				},
+			}},
+		}, {
+			Visitor: "Val",
+			Val:     Lit{Token: Id, Text: "a"},
+		}, {
+			Visitor: "Lit",
+			Val:     Lit{Token: Id, Text: "a"},
+		}, {
+			Visitor: "Val",
+			Val: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "b"}},
+				Cons: &Cons{
+					Node: Node{Val: &Cons{
+						Node: Node{Val: Lit{Token: Id, Text: "c"}},
+					}},
+				},
+			},
+		}, {
+			Visitor: "Cons",
+			Val: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "b"}},
+				Cons: &Cons{
+					Node: Node{Val: &Cons{
+						Node: Node{Val: Lit{Token: Id, Text: "c"}},
+					}},
+				},
+			},
+		}, {
+			Visitor: "Val",
+			Val:     Lit{Token: Id, Text: "b"},
+		}, {
+			Visitor: "Lit",
+			Val:     Lit{Token: Id, Text: "b"},
+		}, {
+			Visitor: "Val",
+			Val: &Cons{
+				Node: Node{Val: &Cons{
+					Node: Node{Val: Lit{Token: Id, Text: "c"}},
+				}},
+			},
+		}, {
+			Visitor: "Cons",
+			Val: &Cons{
+				Node: Node{Val: &Cons{
+					Node: Node{Val: Lit{Token: Id, Text: "c"}},
+				}},
+			},
+		}, {
+			Visitor: "Val",
+			Val: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "c"}},
+			},
+		}, {
+			Visitor: "BeforeCons",
+			Val: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "c"}},
+			},
+		}, {
+			Visitor: "Cons",
+			Val: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "c"}},
+			},
+		}, {
+			Visitor: "Val",
+			Val:     Lit{Token: Id, Text: "c"},
+		}, {
+			Visitor: "Lit",
+			Val:     Lit{Token: Id, Text: "c"},
+		}, {
+			Visitor: "AfterCons",
+			Val: &Cons{
+				Node: Node{Val: Lit{Token: Id, Text: "c"}},
+			},
+		}, {
+			Visitor: "AfterCons",
+			Val: &Cons{
+				Node: Node{Val: &Cons{
+					Node: Node{Val: Lit{Token: Id, Text: "c"}},
+				}},
+			},
+		}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotVisits []testVisits

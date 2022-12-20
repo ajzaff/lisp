@@ -68,28 +68,39 @@ func (v *Visitor) Visit(root Val) {
 			return
 		}
 	case *Cons:
-		v.VisitCons(x)
+		v.visitConsNoVal(x)
 	}
 }
 
 // VisitCons visits the Cons recursively.
 func (v *Visitor) VisitCons(root *Cons) {
+	if !callFn[Val](v, v.valFn, root) {
+		return
+	}
+	v.visitConsNoVal(root)
+}
+
+func (v *Visitor) visitConsNoVal(root *Cons) {
 	if !callFn(v, v.beforeConsFn, root) {
+		return
+	}
+	if root == nil {
 		return
 	}
 	v.visitCons(root)
 }
 
+// visitCons precondition: root != nil.
 func (v *Visitor) visitCons(root *Cons) {
-	if root == nil {
-		return
-	}
 	if !callFn(v, v.consFn, root) {
 		return
 	}
 	v.Visit(root.Val)
 	if root.Cons == nil {
 		callFn(v, v.afterConsFn, root)
+		return
+	}
+	if !callFn[Val](v, v.valFn, root.Cons) {
 		return
 	}
 	v.visitCons(root.Cons)
