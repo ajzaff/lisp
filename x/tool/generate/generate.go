@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/fuzzutil"
+	"github.com/ajzaff/lisp/x/fuzzutil"
 )
 
 var (
