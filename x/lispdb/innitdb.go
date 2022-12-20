@@ -4,7 +4,7 @@ import (
 	"hash/maphash"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/hash"
+	"github.com/ajzaff/lisp/x/hash"
 )
 
 type ID = uint64

@@ -2,7 +2,7 @@ package lispdb
 
 import (
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/hash"
+	"github.com/ajzaff/lisp/x/hash"
 )
 
 type StoreInterface interface {
