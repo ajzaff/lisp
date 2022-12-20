@@ -23,10 +23,14 @@ type Generator struct {
 	IdWeight     int
 	IntWeight    int
 	ConsWeight   int
+	ConsMeanLen  int
 	ConsMaxDepth int
 
-	termFn func(depth int) int
-	idFn   func() int
+	// Generates number of links in Cons.
+	termFn func() int
+
+	// Generates lengths of Ids.
+	idFn func() int
 
 	r Rand
 }
@@ -36,6 +40,7 @@ func NewGenerator(r Rand) *Generator {
 		IdWeight:     1,
 		IntWeight:    1,
 		ConsWeight:   1,
+		ConsMeanLen:  3,
 		ConsMaxDepth: 3,
 		r:            r,
 	}
@@ -44,8 +49,8 @@ func NewGenerator(r Rand) *Generator {
 	return g
 }
 
-func (g *Generator) expTermFn(depth int) int {
-	return int(math.Max(float64(g.ConsMaxDepth-depth), 1) * g.r.ExpFloat64())
+func (g *Generator) expTermFn() int {
+	return int(float64(g.ConsMeanLen) * g.r.ExpFloat64())
 }
 
 func (g *Generator) expIdFn() int {
@@ -62,19 +67,36 @@ func (g *Generator) weight() int {
 }
 
 func (g *Generator) Token() lisp.Token {
-	// Shuffle order to make equal weights fair.
-	// FIXME: can we do better? :)
-	tok := [3]lisp.Token{lisp.Id, lisp.Int, lisp.LParen}
-	w := [3]int{g.IdWeight, g.IntWeight, g.ConsWeight}
-	i := g.r.Intn(3)
-	tok[2], w[2], tok[i], w[i] = tok[i], w[i], tok[2], w[2]
-	i = g.r.Intn(2)
+	return g.tokenDepth(0)
+}
+
+func (g *Generator) tokenDepth(depth int) lisp.Token {
+	tok := []lisp.Token{lisp.Id, lisp.Int, lisp.LParen}
+	w := []int{g.IdWeight, g.IntWeight, g.ConsWeight}
+	weightMax := g.weight()
+	if g.ConsMaxDepth <= depth {
+		// No more Cons.
+		tok = tok[:2]
+		w = w[:2]
+		weightMax -= g.ConsWeight
+	} else {
+		// Swap once.
+		i := g.r.Intn(3)
+		tok[2], w[2], tok[i], w[i] = tok[i], w[i], tok[2], w[2]
+	}
+	// Swap again.
+	i := g.r.Intn(2)
 	tok[1], w[1], tok[i], w[i] = tok[i], w[i], tok[1], w[1]
+	// tok, w are shuffled.
 
-	v := g.r.Intn(g.weight())
-
+	// Use weighted selection.
+	v := g.r.Intn(weightMax)
 	if w[0] != 0 && v <= w[0] {
 		return tok[0]
+	}
+	if len(tok) == 2 {
+		// When no Cons we can return early.
+		return tok[1]
 	}
 	v -= w[0]
 	if w[1] != 0 && v <= w[1] {
@@ -88,7 +110,7 @@ func (g *Generator) Next() lisp.Val {
 }
 
 func (g *Generator) nextDepth(depth int) lisp.Val {
-	switch g.Token() {
+	switch g.tokenDepth(depth) {
 	case lisp.Id:
 		return g.NextId()
 	case lisp.Int:
@@ -126,12 +148,7 @@ func (g *Generator) NextCons() lisp.Val {
 }
 
 func (g *Generator) nextConsDepth(depth int) lisp.Val {
-	n := g.termFn(depth)
-
-	p := g.ConsMaxDepth - depth
-	if p < 0 {
-		p = 0
-	}
+	n := g.termFn()
 	head := &lisp.Cons{}
 	e := head
 	for i := 0; i < n; i++ {
