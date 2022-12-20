@@ -2,16 +2,21 @@ package visit
 
 import "github.com/ajzaff/lisp"
 
-// Visit visits the elements of root in order.
+// Visit visits elements of root in order.
 func Visit(root lisp.Val, visitFn func(v lisp.Val)) {
-	if root == nil {
-		return
+	switch root := root.(type) {
+	case *lisp.Cons:
+		VisitCons(root, visitFn)
+	default:
+		visitFn(root)
 	}
-	visitFn(root)
-	if e, ok := root.(*lisp.Cons); ok {
-		for e := e; e != nil; e = e.Cons {
-			Visit(e.Val, visitFn)
-		}
+}
+
+// VisitCons visits the elements of the Cons recursively.
+func VisitCons(root *lisp.Cons, visitFn func(v lisp.Val)) {
+	if root != nil {
+		Visit(root.Val, visitFn)
+		VisitCons(root.Cons, visitFn)
 	}
 }
 
