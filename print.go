@@ -1,14 +1,14 @@
 package lisp
 
 import (
-	"fmt"
+	"bufio"
 	"io"
 	"sync"
 )
 
 // Printer implements direct printing of AST nodes.
 type Printer struct {
-	w io.Writer
+	w *bufio.Writer
 
 	v    Visitor // init once
 	once sync.Once
@@ -18,13 +18,14 @@ type Printer struct {
 
 // PrinterOptions supplied to the Printer.
 type PrinterOptions struct {
-	Nil             string
-	Prefix, NewLine string
+	Nil     string
+	Prefix  string // Prefix added before every line.
+	NewLine string // NewLine added after every top-level expression.
 }
 
 func makeStdPrinterOptions() PrinterOptions {
 	return PrinterOptions{
-		Nil:     "(nil)",
+		Nil:     "()",
 		NewLine: "\n",
 	}
 }
@@ -32,47 +33,39 @@ func makeStdPrinterOptions() PrinterOptions {
 func (p *Printer) initVisitor() {
 	var (
 		consDepth       int
-		firstWrite      = true
 		lastDelimitable delimitable
 	)
 	p.v.SetBeforeConsVisitor(func(e *Cons) {
-		if !firstWrite {
-			fmt.Fprint(p.w, p.Prefix)
-			firstWrite = true
-		}
-		fmt.Fprint(p.w, "(")
+		p.w.WriteByte('(')
 		lastDelimitable = delimitableNone
 		consDepth++
 	})
 	p.v.SetAfterConsVisitor(func(e *Cons) {
 		consDepth--
-		fmt.Fprint(p.w, ")")
+		p.w.WriteByte(')')
 		if consDepth == 0 {
-			fmt.Fprint(p.w, p.NewLine, p.Prefix)
+			p.w.WriteString(p.NewLine)
+			p.w.WriteString(p.Prefix)
 		}
 		lastDelimitable = delimitableNone
 	})
 	p.v.SetLitVisitor(func(e Lit) {
-		if !firstWrite {
-			fmt.Fprint(p.w, p.Prefix)
-			firstWrite = true
-		}
-		if consDepth == 0 {
-			fmt.Fprint(p.w, e.String(), p.NewLine, p.Prefix)
-			return
-		}
 		delim := delimitableLitType(e)
 		if lastDelimitable != delimitableNone && lastDelimitable == delim {
-			fmt.Fprint(p.w, " ")
+			p.w.WriteByte(' ')
 		}
 		lastDelimitable = delim
-		fmt.Fprint(p.w, e.String())
+		p.w.WriteString(e.Text)
+		if consDepth == 0 {
+			p.w.WriteString(p.NewLine)
+			p.w.WriteString(p.Prefix)
+		}
 	})
 }
 
 // Reset resets the Printer to use the given writer.
 func (p *Printer) Reset(w io.Writer) {
-	p.w = w
+	p.w = bufio.NewWriter(w)
 }
 
 // StdPrinter returns a printer which uses spaces and new lines.
@@ -85,12 +78,14 @@ func StdPrinter(w io.Writer) *Printer {
 
 // Print the Node n.
 func (p *Printer) Print(n Val) {
+	defer p.w.Flush()
 	if n == nil {
 		p.w.Write([]byte(p.Nil))
 		p.w.Write([]byte(p.NewLine))
 		return
 	}
 	p.once.Do(p.initVisitor)
+	p.w.WriteString(p.Prefix)
 	p.v.Visit(n)
 }
 
