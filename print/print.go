@@ -68,7 +68,14 @@ func (p *Printer) initVisitor() {
 
 // Reset resets the Printer to use the given writer.
 func (p *Printer) Reset(w io.Writer) {
-	p.w = bufio.NewWriter(w)
+	if w, ok := w.(*bufio.Writer); ok {
+		p.w = w
+		return
+	}
+	if p.w == nil {
+		p.w = new(bufio.Writer)
+	}
+	p.w.Reset(w)
 }
 
 // StdPrinter returns a printer which uses spaces and new lines.
