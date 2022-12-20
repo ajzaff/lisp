@@ -26,13 +26,13 @@ type Val interface {
 // See the Val interface for allowed AST types.
 type Node struct {
 	Pos Pos
-	Val Val
+	Val
 	End Pos
 }
 
-// Cons is a singly linked-list link construct used to build expressions.
+// Cons is a construct used to build linked lists.
 //
-// It maintains pointers to a Val and the next Cons.
+// It maintains pointers to a Val and the next Cons in the list.
 type Cons struct {
 	Node
 	*Cons
