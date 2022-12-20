@@ -4,20 +4,20 @@ import "github.com/ajzaff/lisp"
 
 // Compare two values of unknown type.
 func Compare(a, b lisp.Val) int {
-	switch first := a.(type) {
+	switch a := a.(type) {
 	case lisp.Lit:
-		return compareLitOther(first, b)
+		return compareLitOther(a, b)
 	case *lisp.Cons:
-		return compareConsOther(first, b)
+		return compareConsOther(a, b)
 	default:
 		return 1 // not reachable
 	}
 }
 
 func compareLitOther(a lisp.Lit, b lisp.Val) int {
-	switch other := b.(type) {
+	switch b := b.(type) {
 	case lisp.Lit:
-		return CompareLit(a, other)
+		return CompareLit(a, b)
 	case *lisp.Cons:
 		return -1 // Lit < Cons
 	default:
@@ -56,14 +56,12 @@ func compareConsOther(a *lisp.Cons, b lisp.Val) int {
 // CompareCons compares expressions recursively.
 func CompareCons(a, b *lisp.Cons) int {
 	// Check for boundary conditions.
-	if a == nil {
-		if b == nil {
-			return 0
-		}
+	switch {
+	case a == nil && b == nil:
+		return 0
+	case a == nil:
 		return -1 // len(a) < len(b)
-	}
-	// a != nil:
-	if b == nil {
+	case b == nil:
 		return 1 // len(b) < len(a)
 	}
 	// a != nil && b != nil:
