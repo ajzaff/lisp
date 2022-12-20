@@ -28,9 +28,10 @@ func (v *Visitor) SetValVisitor(fn func(Val)) { v.valFn = fn }
 // SetLitVisitor sets the visitor called on every Lit.
 func (v *Visitor) SetLitVisitor(fn func(Lit)) { v.litFn = fn }
 
-// SetBeforeConsVisitor sets the visitor called on every Cons.
+// SetBeforeConsVisitor sets the visitor called on the first Cons.
 func (v *Visitor) SetBeforeConsVisitor(fn func(*Cons)) { v.beforeConsFn = fn }
 
+// SetConsVisitor sets the visitor called on every cons before descending the Val.
 func (v *Visitor) SetConsVisitor(fn func(*Cons)) { v.consFn = fn }
 
 // SetAfterConsVisitor sets the visitor called on every Cons after descending the Val.
@@ -66,20 +67,30 @@ func (v *Visitor) Visit(root Val) {
 			return
 		}
 	case *Cons:
-		if !callFn(v, v.beforeConsFn, x) {
-			return
-		}
-		e := x
-		for ; e != nil; e = e.Cons {
-			if !callFn(v, v.consFn, e) {
-				return
-			}
-			v.Visit(e.Val)
-		}
-		if !callFn(v, v.afterConsFn, e) {
-			return
-		}
+		v.VisitCons(x)
 	}
+}
+
+// VisitCons visits the Cons recursively.
+func (v *Visitor) VisitCons(root *Cons) {
+	if !callFn(v, v.beforeConsFn, root) {
+		return
+	}
+	v.visitCons(root)
+}
+
+func (v *Visitor) visitCons(root *Cons) {
+	if root == nil {
+		return
+	}
+	if !callFn(v, v.consFn, root) {
+		return
+	}
+	v.Visit(root.Val)
+	if !callFn(v, v.afterConsFn, root) {
+		return
+	}
+	v.visitCons(root.Cons)
 }
 
 func (v *Visitor) hasErr() bool {
