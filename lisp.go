@@ -8,6 +8,17 @@
 // It supports basic identifiers, numbers, and constructed expressions called Cons.
 package lisp
 
+// Token is an enumeration which specifies a kind of AST token.
+type Token int
+
+const (
+	Invalid Token = iota
+	Id            // abc
+	Int           // 123
+	LParen        // (
+	RParen        // )
+)
+
 // Pos defines a position in the slice of code runes.
 type Pos int
 

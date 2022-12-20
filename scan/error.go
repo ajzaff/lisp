@@ -1,34 +1,23 @@
-package lisp
+package scan
 
 import (
 	"fmt"
 	"unicode"
-)
 
-// Token is an enumeration which specifies a kind of AST token.
-//
-//go:generate stringer -type Token
-type Token int
-
-const (
-	Invalid Token = iota
-	Id            // abc z3
-	Int           // 12345
-	LParen        // (
-	RParen        // )
+	"github.com/ajzaff/lisp"
 )
 
 // TokenError implements an error at a specified line and column.
 type TokenError struct {
 	Cause error
-	Pos   Pos
+	Pos   lisp.Pos
 	Src   []byte
 }
 
 // LineCol returns a human readable line and column number based on a Pos and Src.
 //
 // Do not use these to index into Src.
-func (t *TokenError) LineCol() (line, col Pos) {
+func (t *TokenError) LineCol() (line, col lisp.Pos) {
 	n := t.Pos
 	line, col = 1, 1
 	if n == 0 {

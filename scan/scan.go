@@ -111,7 +111,7 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		return advance, src[s.pos:advance], nil
 	}
 	// Rune error.
-	return advance, nil, &lisp.TokenError{
+	return advance, nil, &TokenError{
 		Pos:   lisp.Pos(advance),
 		Cause: fmt.Errorf("%w: %#q", errRune, r),
 		Src:   src,
