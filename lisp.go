@@ -21,6 +21,15 @@ type Val interface {
 	val()
 }
 
+// Node represents an AST node in context with source file indices.
+//
+// See the Val interface for allowed AST types.
+type Node struct {
+	Pos Pos
+	Val Val
+	End Pos
+}
+
 // Cons is a singly linked-list link construct used to build expressions.
 //
 // It maintains pointers to a Val and the next Cons.
@@ -41,12 +50,3 @@ type Lit struct {
 
 func (Lit) val()             {}
 func (x Lit) String() string { return x.Text }
-
-// Node represents an AST node in context with source file indices.
-//
-// See the Val interface for allowed AST types.
-type Node struct {
-	Pos Pos
-	Val Val
-	End Pos
-}
