@@ -24,10 +24,8 @@ func BenchmarkVisitBaseline(b *testing.B) {
 
 	var r int
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
 		r++
 		n := g.Next()
-		b.StartTimer()
 
 		v.Visit(n)
 	}
@@ -43,10 +41,8 @@ func BenchmarkVisitExperimental(b *testing.B) {
 
 	var r int
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
 		r++
 		n := g.Next()
-		b.StartTimer()
 
 		Visit(n, visitFn)
 	}
@@ -63,10 +59,8 @@ func BenchmarkVisitExperimentalStack(b *testing.B) {
 
 	var r int
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
 		r++
 		n := g.Next()
-		b.StartTimer()
 
 		VisitStack(n, queue, visitFn)
 	}

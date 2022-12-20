@@ -30,11 +30,14 @@ func VisitStack(root lisp.Val, stack []lisp.Val, visitFn func(v lisp.Val)) {
 		stack = stack[:n]
 		visitFn(x)
 		if e, ok := x.(*lisp.Cons); ok {
-			for e := e; e != nil; e = e.Cons {
-				// Use defer to reverse the linked list.
-				// FIXME: we should benchmark how a non-defer solution fares here.
-				defer func(e *lisp.Cons) { stack = append(stack, e.Val) }(e)
-			}
+			// Use closure to trigger defers.
+			func() {
+				for e := e; e != nil; e = e.Cons {
+					// Use defer to reverse the linked list.
+					// FIXME: we should benchmark how a non-defer solution fares here.
+					defer func(e *lisp.Cons) { stack = append(stack, e.Val) }(e)
+				}
+			}()
 		}
 	}
 }
