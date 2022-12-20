@@ -13,8 +13,8 @@ import (
 	"unicode"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/blisp"
 	"github.com/ajzaff/lisp/hash"
+	"github.com/ajzaff/lisp/x/blisp"
 	"github.com/ajzaff/lisp/x/lispdb"
 	"github.com/ajzaff/lisp/x/lispjson"
 	"golang.org/x/text/unicode/rangetable"
