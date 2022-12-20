@@ -1,4 +1,4 @@
-package lisp
+package scan
 
 import (
 	"bufio"
@@ -7,16 +7,18 @@ import (
 	"io"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/ajzaff/lisp"
 )
 
 var errRune = errors.New("unexpected rune")
 
-// Scanner scans the Lisp source for Tokens.
+// Scanner scans the Lisp source for lisp.Tokens.
 type TokenScanner struct {
 	sc        *bufio.Scanner
-	prev, off Pos   // absolute offsets
-	pos       Pos   // relative token position
-	tok       Token // last token scanned
+	prev, off lisp.Pos   // absolute offsets
+	pos       lisp.Pos   // relative lisp.Token lisp.Position
+	tok       lisp.Token // last lisp.Token scanned
 }
 
 func (s *TokenScanner) Reset(r io.Reader) {
@@ -41,7 +43,7 @@ func (s *TokenScanner) Text() string {
 	return s.sc.Text()
 }
 
-func (s *TokenScanner) Token() (pos Pos, tok Token, text string) {
+func (s *TokenScanner) Token() (pos lisp.Pos, tok lisp.Token, text string) {
 	return s.prev + s.pos, s.tok, s.Text()
 }
 
@@ -50,9 +52,9 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		return 0, nil, nil
 	}
 	defer func() {
-		// Maintain absolute positions into the scanner.
+		// Maintain absolute lisp.Positions into the scanner.
 		s.prev = s.off
-		s.off += Pos(advance)
+		s.off += lisp.Pos(advance)
 	}()
 	// Skip leading spaces.
 	for size := 0; advance < len(src); advance += size {
@@ -66,26 +68,26 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		// Request more data, if any.
 		return len(src), nil, nil
 	}
-	// Decode length-1 tokens.
+	// Decode length-1 lisp.Tokens.
 	switch src[advance] {
 	case '(': // LParen
-		s.pos = Pos(advance)
-		s.tok = LParen
+		s.pos = lisp.Pos(advance)
+		s.tok = lisp.LParen
 		return advance + 1, src[advance : advance+1], nil
 	case ')': // RParen
-		s.pos = Pos(advance)
-		s.tok = RParen
+		s.pos = lisp.Pos(advance)
+		s.tok = lisp.RParen
 		return advance + 1, src[advance : advance+1], nil
 	case '0': // Int(0)
-		s.pos = Pos(advance)
-		s.tok = Int
+		s.pos = lisp.Pos(advance)
+		s.tok = lisp.Int
 		return advance + 1, src[advance : advance+1], nil
 	}
-	// Decode longer tokens.
+	// Decode longer lisp.Tokens.
 	r, size := utf8.DecodeRune(src[advance:])
 	switch {
 	case '1' <= r && r <= '9': // Int
-		s.pos = Pos(advance)
+		s.pos = lisp.Pos(advance)
 		// Int parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
 		for advance++; advance < len(src); advance++ {
 			b := src[advance]
@@ -93,10 +95,10 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 				break
 			}
 		}
-		s.tok = Int
+		s.tok = lisp.Int
 		return advance, src[s.pos:advance], nil
 	case unicode.IsLetter(r): // Id
-		s.pos = Pos(advance)
+		s.pos = lisp.Pos(advance)
 		advance += size
 		for size := 0; advance < len(src); advance += size {
 			var r rune
@@ -105,12 +107,12 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 				break
 			}
 		}
-		s.tok = Id
+		s.tok = lisp.Id
 		return advance, src[s.pos:advance], nil
 	}
 	// Rune error.
-	return advance, nil, &TokenError{
-		Pos:   Pos(advance),
+	return advance, nil, &lisp.TokenError{
+		Pos:   lisp.Pos(advance),
 		Cause: fmt.Errorf("%w: %#q", errRune, r),
 		Src:   src,
 	}
@@ -119,21 +121,21 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 type TokenScannerInterface interface {
 	Reset(io.Reader)
 	Scan() bool
-	Token() (Pos, Token, string)
+	Token() (lisp.Pos, lisp.Token, string)
 	Err() error
 }
 
 type consStackEntry struct {
-	*Node       // Node for the cons.
-	Root  *Cons // Root cons.
-	Last  *Cons // Link to the last node, for fast insertion.
+	*lisp.Node            // Node for the cons.
+	Root       *lisp.Cons // Root cons.
+	Last       *lisp.Cons // Link to the last node, for fast insertion.
 }
 
 type NodeScanner struct {
 	sc    TokenScannerInterface
 	stack []*consStackEntry // FIXME: allow user-supplied buffer.
 	err   error
-	node  Node
+	node  lisp.Node
 }
 
 func (s *NodeScanner) Reset(sc TokenScannerInterface) {
@@ -142,7 +144,7 @@ func (s *NodeScanner) Reset(sc TokenScannerInterface) {
 }
 
 func (s *NodeScanner) Scan() bool {
-	var n Node
+	var n lisp.Node
 
 	// Scan until a full Node is constructed.
 	for s.sc.Scan() {
@@ -167,37 +169,37 @@ func (s *NodeScanner) Scan() bool {
 	return n.Pos < n.End
 }
 
-func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
+func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (lisp.Node, error) {
 	switch tok {
-	case Id, Int: // Id, Int
-		n := Node{
+	case lisp.Id, lisp.Int: // Id, Int
+		n := lisp.Node{
 			Pos: pos,
-			Val: Lit{Token: tok, Text: text},
-			End: pos + Pos(len(text)),
+			Val: lisp.Lit{Token: tok, Text: text},
+			End: pos + lisp.Pos(len(text)),
 		}
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
 			if e.Last.Val != nil {
-				e.Last.Cons = &Cons{}
+				e.Last.Cons = &lisp.Cons{}
 				e.Last = e.Last.Cons
 			}
 			e.Last.Node = n
 			// Need more scanning to finish this Cons.
-			return Node{}, nil
+			return lisp.Node{}, nil
 		}
 		return n, nil
-	case LParen: // BEGIN Cons
+	case lisp.LParen: // BEGIN Cons
 		e := &consStackEntry{}
-		cons := &Cons{}
-		e.Node = &Node{Pos: pos, Val: cons}
+		cons := &lisp.Cons{}
+		e.Node = &lisp.Node{Pos: pos, Val: cons}
 		e.Root, e.Last = cons, cons
 		s.stack = append(s.stack, e)
 		// Need more scanning to finish this Cons.
-		return Node{}, nil
-	case RParen: // END Cons
+		return lisp.Node{}, nil
+	case lisp.RParen: // END Cons
 		if len(s.stack) == 0 {
-			// FIXME: Use *NodeError.
-			return Node{}, fmt.Errorf("unexpected ')'")
+			// FIXME: Use  *lisp.NodeError.
+			return lisp.Node{}, fmt.Errorf("unexpected ')'")
 		}
 		i := len(s.stack)
 		x := s.stack[i-1]
@@ -206,25 +208,25 @@ func (s *NodeScanner) scan(pos Pos, tok Token, text string) (Node, error) {
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
 			if e.Last.Val != nil {
-				e.Last.Cons = &Cons{}
+				e.Last.Cons = &lisp.Cons{}
 				e.Last = e.Last.Cons
 			}
 			// Append the cons to the prev cons.
 			e.Last.Node = *x.Node
 			// Need more scanning to finish this Cons.
-			return Node{}, nil
+			return lisp.Node{}, nil
 		}
 		return *x.Node, nil
-	default: // Unknown Token
-		// FIXME: Use *NodeError.
-		return Node{}, fmt.Errorf("unexpected token")
+	default: // Unknown lisp.Token
+		// FIXME: Use  *lisp.NodeError.
+		return lisp.Node{}, fmt.Errorf("unexpected lisp.Token")
 	}
 }
 
 // Node returns the last Node scanned.
 //
-// Valid scanned nodes always have indices set, i.e. Pos < End.
-func (s *NodeScanner) Node() Node {
+// Valid scanned nodes always have indices set, i.e. lisp.Pos < End.
+func (s *NodeScanner) Node() lisp.Node {
 	return s.node
 }
 

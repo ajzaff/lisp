@@ -1,16 +1,19 @@
-package lisp
+package print
 
 import (
 	"bufio"
 	"io"
 	"sync"
+
+	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/visit"
 )
 
 // Printer implements direct printing of AST nodes.
 type Printer struct {
 	w *bufio.Writer
 
-	v    Visitor // init once
+	v    visit.Visitor // init once
 	once sync.Once
 
 	PrinterOptions
@@ -35,12 +38,12 @@ func (p *Printer) initVisitor() {
 		consDepth       int
 		lastDelimitable delimitable
 	)
-	p.v.SetBeforeConsVisitor(func(e *Cons) {
+	p.v.SetBeforeConsVisitor(func(e *lisp.Cons) {
 		p.w.WriteByte('(')
 		lastDelimitable = delimitableNone
 		consDepth++
 	})
-	p.v.SetAfterConsVisitor(func(e *Cons) {
+	p.v.SetAfterConsVisitor(func(e *lisp.Cons) {
 		consDepth--
 		p.w.WriteByte(')')
 		if consDepth == 0 {
@@ -49,7 +52,7 @@ func (p *Printer) initVisitor() {
 		}
 		lastDelimitable = delimitableNone
 	})
-	p.v.SetLitVisitor(func(e Lit) {
+	p.v.SetLitVisitor(func(e lisp.Lit) {
 		delim := delimitableLitType(e)
 		if lastDelimitable != delimitableNone && lastDelimitable == delim {
 			p.w.WriteByte(' ')
@@ -77,7 +80,7 @@ func StdPrinter(w io.Writer) *Printer {
 }
 
 // Print the Node n.
-func (p *Printer) Print(n Val) {
+func (p *Printer) Print(n lisp.Val) {
 	defer p.w.Flush()
 	if n == nil {
 		p.w.Write([]byte(p.Nil))
@@ -97,9 +100,9 @@ const (
 	delimitableClass1             // Id, Number
 )
 
-func delimitableLitType(e Lit) delimitable {
+func delimitableLitType(e lisp.Lit) delimitable {
 	switch e.Token {
-	case Id, Int:
+	case lisp.Id, lisp.Int:
 		return delimitableClass1
 	default:
 		return delimitableNone

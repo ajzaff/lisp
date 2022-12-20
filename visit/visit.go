@@ -1,7 +1,9 @@
-package lisp
+package visit
 
 import (
 	"errors"
+
+	"github.com/ajzaff/lisp"
 )
 
 // Errors used to flag conditions in the Visitor.
@@ -12,30 +14,30 @@ var (
 
 // Visitor implements a Val visitor.
 type Visitor struct {
-	valFn func(Val)
-	litFn func(Lit)
+	valFn func(lisp.Val)
+	litFn func(lisp.Lit)
 
-	beforeConsFn func(*Cons)
-	consFn       func(*Cons)
-	afterConsFn  func(*Cons)
+	beforeConsFn func(*lisp.Cons)
+	consFn       func(*lisp.Cons)
+	afterConsFn  func(*lisp.Cons)
 
 	err error
 }
 
 // SetValVisitor sets the visitor called on every Val.
-func (v *Visitor) SetValVisitor(fn func(Val)) { v.valFn = fn }
+func (v *Visitor) SetValVisitor(fn func(lisp.Val)) { v.valFn = fn }
 
 // SetLitVisitor sets the visitor called on every Lit.
-func (v *Visitor) SetLitVisitor(fn func(Lit)) { v.litFn = fn }
+func (v *Visitor) SetLitVisitor(fn func(lisp.Lit)) { v.litFn = fn }
 
 // SetBeforeConsVisitor sets the visitor called on the first Cons.
-func (v *Visitor) SetBeforeConsVisitor(fn func(*Cons)) { v.beforeConsFn = fn }
+func (v *Visitor) SetBeforeConsVisitor(fn func(*lisp.Cons)) { v.beforeConsFn = fn }
 
 // SetConsVisitor sets the visitor called on every cons before descending the Val.
-func (v *Visitor) SetConsVisitor(fn func(*Cons)) { v.consFn = fn }
+func (v *Visitor) SetConsVisitor(fn func(*lisp.Cons)) { v.consFn = fn }
 
 // SetAfterConsVisitor sets the visitor called on the last Cons.
-func (v *Visitor) SetAfterConsVisitor(fn func(*Cons)) { v.afterConsFn = fn }
+func (v *Visitor) SetAfterConsVisitor(fn func(*lisp.Cons)) { v.afterConsFn = fn }
 
 // Stop the visitor and return as soon as possible.
 func (v *Visitor) Stop() {
@@ -51,7 +53,7 @@ func (v *Visitor) Skip() {
 //
 // Visit continues in-order, descending Cons links, or until Stop is called.
 // Calling Skip will cause the next Val to not be descended.
-func (v *Visitor) Visit(root Val) {
+func (v *Visitor) Visit(root lisp.Val) {
 	if root == nil {
 		return
 	}
@@ -63,24 +65,25 @@ func (v *Visitor) Visit(root Val) {
 		return
 	}
 	switch x := root.(type) {
-	case Lit:
+	case lisp.Lit:
 		if !callFn(v, v.litFn, x) {
 			return
 		}
-	case *Cons:
+	case *lisp.Cons:
 		v.visitConsNoVal(x)
 	}
 }
 
 // VisitCons visits the Cons recursively.
-func (v *Visitor) VisitCons(root *Cons) {
-	if !callFn[Val](v, v.valFn, root) {
+func (v *Visitor) VisitCons(root *lisp.Cons) {
+	if !callFn[lisp.Val](v, v.valFn, root) {
 		return
 	}
 	v.visitConsNoVal(root)
 }
 
-func (v *Visitor) visitConsNoVal(root *Cons) {
+// visitConsNoVal precondition: valFn(root) called.
+func (v *Visitor) visitConsNoVal(root *lisp.Cons) {
 	if !callFn(v, v.beforeConsFn, root) {
 		return
 	}
@@ -91,7 +94,7 @@ func (v *Visitor) visitConsNoVal(root *Cons) {
 }
 
 // visitCons precondition: root != nil.
-func (v *Visitor) visitCons(root *Cons) {
+func (v *Visitor) visitCons(root *lisp.Cons) {
 	if !callFn(v, v.consFn, root) {
 		return
 	}
@@ -100,7 +103,7 @@ func (v *Visitor) visitCons(root *Cons) {
 		callFn(v, v.afterConsFn, root)
 		return
 	}
-	if !callFn[Val](v, v.valFn, root.Cons) {
+	if !callFn[lisp.Val](v, v.valFn, root.Cons) {
 		return
 	}
 	v.visitCons(root.Cons)
@@ -118,7 +121,7 @@ func (v *Visitor) clearSkipErr() bool {
 	return false
 }
 
-func callFn[T Val](v *Visitor, fn func(T), e T) (ok bool) {
+func callFn[T lisp.Val](v *Visitor, fn func(T), e T) (ok bool) {
 	if fn == nil {
 		return true
 	}
