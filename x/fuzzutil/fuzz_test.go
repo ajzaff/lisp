@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/print"
 )
 
 func TestFuzzExample(t *testing.T) {
@@ -14,6 +14,6 @@ func TestFuzzExample(t *testing.T) {
 		g := NewGenerator(rand.New(rand.NewSource(seeds.Int63())))
 		g.ConsWeight = 2
 		g.ConsMaxDepth = 3
-		lisp.StdPrinter(os.Stdout).Print(g.Next())
+		print.StdPrinter(os.Stdout).Print(g.Next())
 	}
 }

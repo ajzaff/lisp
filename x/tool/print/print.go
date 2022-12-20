@@ -13,6 +13,9 @@ import (
 	"unicode"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/print"
+	"github.com/ajzaff/lisp/scan"
+	"github.com/ajzaff/lisp/visit"
 	"github.com/ajzaff/lisp/x/blisp"
 	"github.com/ajzaff/lisp/x/hash"
 	"github.com/ajzaff/lisp/x/lispdb"
@@ -22,9 +25,11 @@ import (
 
 var (
 	order = flag.String("order", "", `Print order for AST print mode (Optional "reverse". Default uses in-order)`)
-	print = flag.String("print", "", `Print mode (Optional "tok", "ast", "db", "bin", "json", "idtab", "none". Default uses StdPrinter)`)
+	mode  = flag.String("mode", "", `Print mode (Optional "tok", "ast", "db", "bin", "json", "idtab", "none". Default uses StdPrinter)`)
 	file  = flag.String("file", "", "File to read lisp code from.")
 )
+
+var tokStr = []string{"?", "Id", "Nat", "(", ")"}
 
 func main() {
 	flag.Parse()
@@ -40,9 +45,9 @@ func main() {
 	}
 
 	var ns []lisp.Node
-	var s lisp.TokenScanner
+	var s scan.TokenScanner
 	s.Reset(bytes.NewReader(src))
-	var sc lisp.NodeScanner
+	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
 		ns = append(ns, sc.Node())
@@ -51,23 +56,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	switch *print {
+	switch *mode {
 	case "": // std
 		for _, n := range ns {
-			lisp.StdPrinter(os.Stdout).Print(n.Val)
+			print.StdPrinter(os.Stdout).Print(n.Val)
 		}
 	case "tok":
-		var sc lisp.TokenScanner
+		var sc scan.TokenScanner
 		sc.Reset(bytes.NewReader(src))
 		for sc.Scan() {
 			pos, tok, text := sc.Token()
-			println(strconv.Itoa(int(pos)), "\t", tok.String(), "\t", text)
+			println(strconv.Itoa(int(pos)), "\t", tokStr[tok], "\t", text)
 		}
 	case "ast":
-		var v lisp.Visitor
+		var v visit.Visitor
 		consVisitor := func(e *lisp.Cons) {
 			var sb strings.Builder
-			lisp.StdPrinter(&sb).Print(e)
+			print.StdPrinter(&sb).Print(e)
 			fmt.Print("EXPR\t", sb.String())
 		}
 		switch *order {
@@ -133,7 +138,7 @@ func main() {
 			visited[id] = true
 			fmt.Printf("%d\t", id)
 			fmt.Printf("%f\t", e.Fc)
-			lisp.StdPrinter(os.Stdout).Print(e.Val)
+			print.StdPrinter(os.Stdout).Print(e.Val)
 			fmt.Print("Refs: ")
 			for _, i := range e.Refs {
 				fmt.Printf("%d,", i)
@@ -161,6 +166,6 @@ func main() {
 		})
 	case "none":
 	default:
-		log.Fatalf("unexpected -print mode: %v", *print)
+		log.Fatalf("unexpected -print mode: %v", *mode)
 	}
 }

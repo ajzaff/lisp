@@ -5,6 +5,8 @@ import (
 
 	"github.com/ajzaff/lisp"
 	lisputil "github.com/ajzaff/lisp/lisp"
+	"github.com/ajzaff/lisp/scan"
+	"github.com/ajzaff/lisp/visit"
 	"github.com/ajzaff/lisp/x/hash"
 )
 
@@ -106,9 +108,9 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
 	var qn []lisp.Val
-	var s lisp.TokenScanner
+	var s scan.TokenScanner
 	s.Reset(strings.NewReader(q))
-	var sc lisp.NodeScanner
+	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
 		qn = append(qn, sc.Node().Val)
@@ -134,7 +136,7 @@ func Query(db QueryInterface, q string) *QueryResult {
 }
 
 func queryElements(q lisp.Val) (elems []string) {
-	var v lisp.Visitor
+	var v visit.Visitor
 	v.SetBeforeConsVisitor(func(e *lisp.Cons) {
 		if x := lisputil.Head(e); x != nil {
 			if lisputil.Equal(x, lisp.Lit{Token: lisp.Id, Text: "q"}) {

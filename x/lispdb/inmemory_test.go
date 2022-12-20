@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/scan"
 )
 
 func mustParseMultiple(t *testing.T, src string) []lisp.Val {
 	var ns []lisp.Val
-	var s lisp.TokenScanner
+	var s scan.TokenScanner
 	s.Reset(strings.NewReader(src))
-	var sc lisp.NodeScanner
+	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
 		ns = append(ns, sc.Node().Val)

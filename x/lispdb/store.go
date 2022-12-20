@@ -2,6 +2,7 @@ package lispdb
 
 import (
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/visit"
 	"github.com/ajzaff/lisp/x/hash"
 )
 
@@ -25,7 +26,7 @@ func Store(s StoreInterface, vals []lisp.Val, w float64) error {
 		stack []*TVal
 		t     []*TVal
 		h     hash.MapHash
-		v     lisp.Visitor
+		v     visit.Visitor
 	)
 	h.SetSeed(s.Seed())
 

@@ -7,14 +7,16 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/print"
+	"github.com/ajzaff/lisp/scan"
 	"github.com/google/go-cmp/cmp"
 )
 
 func mustParse(t *testing.T, src string) lisp.Val {
 	var n lisp.Node
-	var s lisp.TokenScanner
+	var s scan.TokenScanner
 	s.Reset(strings.NewReader(src))
-	var sc lisp.NodeScanner
+	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
 		n = sc.Node()
@@ -53,7 +55,7 @@ func TestEncodedLen(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := EncodedLen(tc.input); got != tc.want {
 				var buf bytes.Buffer
-				lisp.StdPrinter(&buf).Print(tc.input)
+				print.StdPrinter(&buf).Print(tc.input)
 				t.Errorf("EncodedLen(%v): got %d, want %d", buf.String(), got, tc.want)
 			}
 		})

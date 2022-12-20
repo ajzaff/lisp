@@ -5,16 +5,17 @@ import (
 	"io"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/scan"
 )
 
 type FreqMap struct {
-	sc   *lisp.TokenScanner
+	sc   *scan.TokenScanner
 	err  error
 	data map[lisp.Lit]int
 }
 
 func NewFreqMap() *FreqMap {
-	var sc lisp.TokenScanner
+	var sc scan.TokenScanner
 	return &FreqMap{sc: &sc, data: make(map[lisp.Lit]int)}
 }
 
@@ -29,8 +30,8 @@ func (m *FreqMap) Scan() bool {
 		switch t {
 		case lisp.Id:
 			lit = lisp.Lit{Token: lisp.Id, Text: text}
-		case lisp.Int:
-			lit = lisp.Lit{Token: lisp.Int, Text: text}
+		case lisp.Nat:
+			lit = lisp.Lit{Token: lisp.Nat, Text: text}
 		}
 		m.data[lit]++
 	}

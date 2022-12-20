@@ -9,7 +9,7 @@ func DecodeNum(b []byte) (lisp.Node, error) {
 	}
 	return lisp.Node{
 		Val: lisp.Lit{
-			Token: lisp.Int,
+			Token: lisp.Nat,
 			Text:  string(b[:n]),
 		},
 		End: lisp.Pos(n),

@@ -71,7 +71,7 @@ func (g *Generator) Token() lisp.Token {
 }
 
 func (g *Generator) tokenDepth(depth int) lisp.Token {
-	tok := []lisp.Token{lisp.Id, lisp.Int, lisp.LParen}
+	tok := []lisp.Token{lisp.Id, lisp.Nat, lisp.LParen}
 	w := []int{g.IdWeight, g.IntWeight, g.ConsWeight}
 	weightMax := g.weight()
 	if g.ConsMaxDepth <= depth {
@@ -113,7 +113,7 @@ func (g *Generator) nextDepth(depth int) lisp.Val {
 	switch g.tokenDepth(depth) {
 	case lisp.Id:
 		return g.NextId()
-	case lisp.Int:
+	case lisp.Nat:
 		return g.NextInt()
 	default: // Cons
 		return g.nextConsDepth(depth)
@@ -140,7 +140,7 @@ func (g *Generator) NextId() lisp.Val {
 }
 
 func (g *Generator) NextInt() lisp.Val {
-	return lisp.Lit{Token: lisp.Int, Text: strconv.FormatUint(g.r.Uint64(), 10)}
+	return lisp.Lit{Token: lisp.Nat, Text: strconv.FormatUint(g.r.Uint64(), 10)}
 }
 
 func (g *Generator) NextCons() lisp.Val {

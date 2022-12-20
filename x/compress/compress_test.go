@@ -10,7 +10,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/x/fuzzutil"
 )
 
@@ -34,7 +34,7 @@ func benchmarkCompress(b *testing.B, zw CompressWriter) {
 
 		v := g.Next()
 
-		lisp.StdPrinter(printBuf).Print(v)
+		print.StdPrinter(printBuf).Print(v)
 		origLen := printBuf.Len()
 
 		if _, err := io.Copy(zw, printBuf); err != nil {

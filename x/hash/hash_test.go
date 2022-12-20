@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/scan"
 )
 
 func TestDistictHash(t *testing.T) {
@@ -42,9 +43,9 @@ func TestDistictHash(t *testing.T) {
 			t.Parallel()
 
 			var n1 lisp.Node
-			var s lisp.TokenScanner
+			var s scan.TokenScanner
 			s.Reset(strings.NewReader(tc.input1))
-			var sc lisp.NodeScanner
+			var sc scan.NodeScanner
 			sc.Reset(&s)
 			for sc.Scan() {
 				n1 = sc.Node()

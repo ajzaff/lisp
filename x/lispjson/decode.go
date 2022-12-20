@@ -5,10 +5,11 @@ import (
 	"io"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/scan"
 )
 
 type Decoder struct {
-	sc *lisp.NodeScanner
+	sc *scan.NodeScanner
 }
 
 func NewDecoder(r io.Reader) *Decoder {
@@ -37,9 +38,9 @@ func (d *Decoder) decodeSrc(r io.Reader) {
 		}
 	}
 	// Tokenize and parse normally.
-	var s lisp.TokenScanner
+	var s scan.TokenScanner
 	s.Reset(bytes.NewReader(src))
-	var sc lisp.NodeScanner
+	var sc scan.NodeScanner
 	sc.Reset(&s)
 	d.sc = &sc
 }

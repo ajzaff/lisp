@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/x/fuzzutil"
 )
 
@@ -69,7 +70,7 @@ func BenchmarkBaselineStringHash(b *testing.B) {
 			v := g.Next()
 
 			var buf bytes.Buffer
-			lisp.StdPrinter(&buf).Print(v)
+			print.StdPrinter(&buf).Print(v)
 			strDB[buf.String()] = struct{}{}
 		}
 	}

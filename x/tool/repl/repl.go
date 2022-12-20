@@ -9,6 +9,8 @@ import (
 	"syscall"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/print"
+	"github.com/ajzaff/lisp/scan"
 )
 
 const (
@@ -27,8 +29,8 @@ func main() {
 		os.Exit(0)
 	}()
 
-	var ts lisp.TokenScanner
-	var s lisp.NodeScanner
+	var ts scan.TokenScanner
+	var s scan.NodeScanner
 
 	var sb strings.Builder
 	sc := bufio.NewScanner(os.Stdin)
@@ -47,7 +49,7 @@ func main() {
 				continue
 			}
 			for _, n := range nodes {
-				lisp.StdPrinter(os.Stdout).Print(n.Val)
+				print.StdPrinter(os.Stdout).Print(n.Val)
 			}
 			sb.Reset()
 		case input == "quit":

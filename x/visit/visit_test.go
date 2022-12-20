@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/visit"
 	"github.com/ajzaff/lisp/x/fuzzutil"
 )
 
@@ -15,7 +16,7 @@ func BenchmarkVisitBaseline(b *testing.B) {
 	g.ConsWeight = 3
 	g.ConsMaxDepth = 10
 
-	var v lisp.Visitor
+	var v visit.Visitor
 	v.SetValVisitor(func(lisp.Val) {})
 	v.SetLitVisitor(func(lisp.Lit) {})
 	v.SetBeforeConsVisitor(func(*lisp.Cons) {})
