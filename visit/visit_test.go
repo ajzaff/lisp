@@ -22,13 +22,13 @@ func TestVisitor(t *testing.T) {
 		name: "empty",
 	}, {
 		name:  "int",
-		input: lisp.Lit{Token: lisp.Int, Text: "1"},
+		input: lisp.Lit{Token: lisp.Nat, Text: "1"},
 		wantVisits: []testVisits{{
 			Visitor: "Val",
-			Val:     lisp.Lit{Token: lisp.Int, Text: "1"},
+			Val:     lisp.Lit{Token: lisp.Nat, Text: "1"},
 		}, {
 			Visitor: "Lit",
-			Val:     lisp.Lit{Token: lisp.Int, Text: "1"},
+			Val:     lisp.Lit{Token: lisp.Nat, Text: "1"},
 		}},
 	}, {
 		name: "cons",

@@ -102,7 +102,7 @@ const (
 
 func delimitableLitType(e lisp.Lit) delimitable {
 	switch e.Token {
-	case lisp.Id, lisp.Int:
+	case lisp.Id, lisp.Nat:
 		return delimitableClass1
 	default:
 		return delimitableNone

@@ -78,24 +78,24 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		s.pos = lisp.Pos(advance)
 		s.tok = lisp.RParen
 		return advance + 1, src[advance : advance+1], nil
-	case '0': // Int(0)
+	case '0': // Nat(0)
 		s.pos = lisp.Pos(advance)
-		s.tok = lisp.Int
+		s.tok = lisp.Nat
 		return advance + 1, src[advance : advance+1], nil
 	}
 	// Decode longer lisp.Tokens.
 	r, size := utf8.DecodeRune(src[advance:])
 	switch {
-	case '1' <= r && r <= '9': // Int
+	case '1' <= r && r <= '9': // Nat
 		s.pos = lisp.Pos(advance)
-		// Int parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
+		// Nat parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
 		for advance++; advance < len(src); advance++ {
 			b := src[advance]
 			if b < '0' || '9' < b {
 				break
 			}
 		}
-		s.tok = lisp.Int
+		s.tok = lisp.Nat
 		return advance, src[s.pos:advance], nil
 	case unicode.IsLetter(r): // Id
 		s.pos = lisp.Pos(advance)
@@ -171,7 +171,7 @@ func (s *NodeScanner) Scan() bool {
 
 func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (lisp.Node, error) {
 	switch tok {
-	case lisp.Id, lisp.Int: // Id, Int
+	case lisp.Id, lisp.Nat: // Id, Nat
 		n := lisp.Node{
 			Pos: pos,
 			Val: lisp.Lit{Token: tok, Text: text},

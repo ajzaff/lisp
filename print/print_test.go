@@ -57,9 +57,9 @@ func TestStdPrint(t *testing.T) {
 		input: &lisp.Cons{
 			Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "add"}},
 			Cons: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Int, Text: "1"}},
+				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Nat, Text: "1"}},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Val: lisp.Lit{Token: lisp.Int, Text: "2"}},
+					Node: lisp.Node{Val: lisp.Lit{Token: lisp.Nat, Text: "2"}},
 				},
 			},
 		},

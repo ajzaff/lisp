@@ -1,11 +1,4 @@
-// Package lisp implements a minimal LISP-like cons expressions useful as a research
-// language or wherever a bare-minimum language is required.
-//
-// The code here is split up into xxxNode types which implement Node and
-// Value types which implement Val. Node types represent AST with source
-// position information while Value types only contain context-free values.
-//
-// It supports basic identifiers, numbers, and constructed expressions called Cons.
+// Package lisp implements minimal LISP-like expressions.
 package lisp
 
 // Token is an enumeration which specifies a kind of AST token.
@@ -13,8 +6,8 @@ type Token int
 
 const (
 	Invalid Token = iota
-	Id            // abc
-	Int           // 123
+	Id            // abc. Strings of valid runes having the unicode Letter property.
+	Nat           // 123. Natural number (plus 0), unsigned.
 	LParen        // (
 	RParen        // )
 )

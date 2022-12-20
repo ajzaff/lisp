@@ -108,19 +108,19 @@ func TestTokenizeLit(t *testing.T) {
 		name:      "int",
 		input:     "0",
 		wantPos:   []lisp.Pos{0, 1},
-		wantTok:   []lisp.Token{lisp.Int},
+		wantTok:   []lisp.Token{lisp.Nat},
 		wantText:  []string{"0"},
-		wantNodes: []lisp.Node{{Val: lisp.Lit{Token: lisp.Int, Text: "0"}, End: 1}},
+		wantNodes: []lisp.Node{{Val: lisp.Lit{Token: lisp.Nat, Text: "0"}, End: 1}},
 	}, {
 		name:     "int 2",
 		input:    "0 1 2",
 		wantPos:  []lisp.Pos{0, 1, 2, 3, 4, 5},
-		wantTok:  []lisp.Token{lisp.Int, lisp.Int, lisp.Int},
+		wantTok:  []lisp.Token{lisp.Nat, lisp.Nat, lisp.Nat},
 		wantText: []string{"0", "1", "2"},
 		wantNodes: []lisp.Node{
-			{Val: lisp.Lit{Token: lisp.Int, Text: "0"}, End: 1},
-			{Pos: 2, Val: lisp.Lit{Token: lisp.Int, Text: "1"}, End: 3},
-			{Pos: 4, Val: lisp.Lit{Token: lisp.Int, Text: "2"}, End: 5},
+			{Val: lisp.Lit{Token: lisp.Nat, Text: "0"}, End: 1},
+			{Pos: 2, Val: lisp.Lit{Token: lisp.Nat, Text: "1"}, End: 3},
+			{Pos: 4, Val: lisp.Lit{Token: lisp.Nat, Text: "2"}, End: 5},
 		},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -170,14 +170,14 @@ func TestTokenizeCons(t *testing.T) {
 		name:     "cons 2",
 		input:    "(add 1 2)",
 		wantPos:  []lisp.Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
-		wantTok:  []lisp.Token{lisp.LParen, lisp.Id, lisp.Int, lisp.Int, lisp.RParen},
+		wantTok:  []lisp.Token{lisp.LParen, lisp.Id, lisp.Nat, lisp.Nat, lisp.RParen},
 		wantText: []string{"(", "add", "1", "2", ")"},
 		wantNodes: []lisp.Node{{Val: &lisp.Cons{
 			Node: lisp.Node{Pos: 1, Val: lisp.Lit{Token: lisp.Id, Text: "add"}, End: 4},
 			Cons: &lisp.Cons{
-				Node: lisp.Node{Pos: 5, Val: lisp.Lit{Token: lisp.Int, Text: "1"}, End: 6},
+				Node: lisp.Node{Pos: 5, Val: lisp.Lit{Token: lisp.Nat, Text: "1"}, End: 6},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Pos: 7, Val: lisp.Lit{Token: lisp.Int, Text: "2"}, End: 8},
+					Node: lisp.Node{Pos: 7, Val: lisp.Lit{Token: lisp.Nat, Text: "2"}, End: 8},
 				},
 			},
 		}, End: 9}},
@@ -185,7 +185,7 @@ func TestTokenizeCons(t *testing.T) {
 		name:     "cons 3",
 		input:    "(add (sub 3 2) 2)",
 		wantPos:  []lisp.Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
-		wantTok:  []lisp.Token{lisp.LParen, lisp.Id, lisp.LParen, lisp.Id, lisp.Int, lisp.Int, lisp.RParen, lisp.Int, lisp.RParen},
+		wantTok:  []lisp.Token{lisp.LParen, lisp.Id, lisp.LParen, lisp.Id, lisp.Nat, lisp.Nat, lisp.RParen, lisp.Nat, lisp.RParen},
 		wantText: []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
 		wantNodes: []lisp.Node{{Val: &lisp.Cons{
 			Node: lisp.Node{Pos: 1, Val: lisp.Lit{Token: lisp.Id, Text: "add"}, End: 4},
@@ -193,14 +193,14 @@ func TestTokenizeCons(t *testing.T) {
 				Node: lisp.Node{Pos: 5, Val: &lisp.Cons{
 					Node: lisp.Node{Pos: 6, Val: lisp.Lit{Token: lisp.Id, Text: "sub"}, End: 9},
 					Cons: &lisp.Cons{
-						Node: lisp.Node{Pos: 10, Val: lisp.Lit{Token: lisp.Int, Text: "3"}, End: 11},
+						Node: lisp.Node{Pos: 10, Val: lisp.Lit{Token: lisp.Nat, Text: "3"}, End: 11},
 						Cons: &lisp.Cons{
-							Node: lisp.Node{Pos: 12, Val: lisp.Lit{Token: lisp.Int, Text: "2"}, End: 13},
+							Node: lisp.Node{Pos: 12, Val: lisp.Lit{Token: lisp.Nat, Text: "2"}, End: 13},
 						},
 					},
 				}, End: 14},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Pos: 15, Val: lisp.Lit{Token: lisp.Int, Text: "2"}, End: 16},
+					Node: lisp.Node{Pos: 15, Val: lisp.Lit{Token: lisp.Nat, Text: "2"}, End: 16},
 				},
 			}}, End: 17}},
 	}, {
