@@ -1,84 +1,95 @@
 package blisp
 
 import (
-	"encoding/binary"
+	"bufio"
 	"io"
 
 	"github.com/ajzaff/lisp"
 )
 
-const magic = "\x41blisp\n"
-
 type Encoder struct {
-	io.Writer
+	w *bufio.Writer
 }
 
 func NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w}
+	return &Encoder{bufio.NewWriter(w)}
 }
 
-func (e *Encoder) Encode(v lisp.Val) error {
-	b := make([]byte, EncodedLen(v))
-	encode(v, b)
-	_, err := e.Writer.Write(b)
-	return err
+func (e *Encoder) EncodeMagic() int {
+	e.w.Write([]byte(Magic))
+	return len(Magic)
 }
 
-func encode(v lisp.Val, b []byte) int {
+func (e *Encoder) Encode(v lisp.Val) {
+	defer e.w.Flush()
+	e.encode(v)
+}
+
+func (e *Encoder) encode(root lisp.Val) {
+	if root == nil {
+		return
+	}
+	switch root := root.(type) {
+	case lisp.Lit:
+		e.w.WriteByte(byte(root.Token))
+		e.w.WriteString(root.Text)
+		return
+	case *lisp.Cons:
+		e.EncodeCons(root)
+	default:
+		panic("Unexpected Val type")
+	}
+}
+
+func (e *Encoder) EncodeCons(root *lisp.Cons) {
+	e.encodeCons(root, true)
+}
+
+func (e *Encoder) encodeCons(root *lisp.Cons, first bool) {
+	if root == nil {
+		e.w.WriteByte(byte(lisp.RParen))
+		return
+	}
+	if first {
+		e.w.WriteByte(byte(lisp.LParen))
+	}
+	e.encode(root.Val)
+	e.encodeCons(root.Cons, false)
+}
+
+// EncodedLen returns the encoded length of the node in bytes.
+func EncodedLen(v lisp.Val) int {
 	if v == nil {
 		return 0
 	}
 	switch v := v.(type) {
 	case lisp.Lit:
-		var i int
-		switch v.Token {
-		case lisp.Id:
-			b[0] = byte(lisp.Id)
-		case lisp.Int:
-			b[0] = byte(lisp.Int)
-		}
-		i = copy(b[2:], []byte(v.String()))
-		return 2 + i
+		n := len(v.Text)
+		return 1 + varIntLen(uint64(n)) + n // "{Token}N{text}"
 	case *lisp.Cons:
-		b[0] = byte(lisp.LParen)
-		size := 0
-		for e := v; e != nil; e = e.Cons {
-			size += EncodedLen(e.Val)
-		}
-		i := binary.PutUvarint(b[1:], uint64(size))
-		for e := v; e != nil; e = e.Cons {
-			i += encode(e.Val, b[i:])
-		}
-		return i
+		return EncodedConsLen(v) // "(N{val}...N{val})"
 	default:
 		panic("Unexpected Val type")
 	}
 }
 
-// EncodedLen returns the encoded length of the node in bytes.
-func EncodedLen(n lisp.Val) int {
-	if n == nil {
-		return 0
+// EncodedConsLen returns the encoded length of the Cons in bytes.
+func EncodedConsLen(root *lisp.Cons) int {
+	var size int
+	encodedConsLen(root, true, &size)
+	return size
+}
+
+func encodedConsLen(root *lisp.Cons, first bool, size *int) {
+	if root == nil {
+		*size++ // ")"
+		return
 	}
-	switch x := n.(type) {
-	case lisp.Lit:
-		switch x.Token {
-		case lisp.Id:
-			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-		case lisp.Int:
-			return 1 + varIntLen(uint64(len(x.String()))) + len(x.String())
-		default:
-			panic("unknown Lit token")
-		}
-	case *lisp.Cons:
-		size := 0
-		for e := x; e != nil; e = e.Cons {
-			size += EncodedLen(e.Val)
-		}
-		return 1 + varIntLen(uint64(size)) + size
-	default:
-		panic("Unexpected Val type")
+	if first {
+		*size++ // "("
 	}
+	*size += EncodedLen(root.Val)          // "N{Val}"
+	encodedConsLen(root.Cons, false, size) // "..."
 }
 
 func varIntLen(x uint64) int {

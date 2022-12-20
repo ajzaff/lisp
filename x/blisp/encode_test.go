@@ -42,13 +42,13 @@ func TestEncodedLen(t *testing.T) {
 		input: mustParse(t, "1"),
 		want:  2,
 	}, {
-		name:  "float",
-		input: mustParse(t, "1.125"),
-		want:  10,
-	}, {
 		name:  "cons",
 		input: mustParse(t, "(a)"),
 		want:  5,
+	}, {
+		name:  "nested cons",
+		input: mustParse(t, "(a(b)c)"),
+		want:  7,
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := EncodedLen(tc.input); got != tc.want {
@@ -62,10 +62,9 @@ func TestEncodedLen(t *testing.T) {
 
 func TestEncode(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		input   string
-		want    []byte
-		wantErr bool
+		name  string
+		input string
+		want  []byte
 	}{{
 		name: "empty",
 	}, {
@@ -77,9 +76,7 @@ func TestEncode(t *testing.T) {
 			v := mustParse(t, tc.input)
 			var buf bytes.Buffer
 			e := NewEncoder(&buf)
-			if gotErr := e.Encode(v); (gotErr != nil) != tc.wantErr {
-				t.Fatalf("Encode(%q): got err = %v, want err = %v", tc.name, gotErr, tc.wantErr)
-			}
+			e.Encode(v)
 			got := buf.Bytes()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Encode(%q): got diff (-want, +got):\n%v", tc.name, diff)
