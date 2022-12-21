@@ -28,9 +28,53 @@ func TestValString(t *testing.T) {
 		input: Lit{Token: Id},
 		want:  `lisp.Lit{Token:1, Text:""}`,
 	}, {
+		name:  "Nat as invalid Id uses GoString",
+		input: Lit{Token: Id, Text: "0"},
+		want:  `lisp.Lit{Token:1, Text:"0"}`,
+	}, {
+		name:  "Invalid Id uses GoString",
+		input: Lit{Token: Id, Text: "\x00"},
+		want:  `lisp.Lit{Token:1, Text:"\x00"}`,
+	}, {
+		name:  "Invalid unicode Id uses GoString",
+		input: Lit{Token: Id, Text: "⍟"},
+		want:  `lisp.Lit{Token:1, Text:"⍟"}`,
+	}, {
+		name:  "Invalid Id uses GoString",
+		input: Lit{Token: Id, Text: "abc123"},
+		want:  `lisp.Lit{Token:1, Text:"abc123"}`,
+	}, {
+		name:  "Id a",
+		input: Lit{Token: Id, Text: "a"},
+		want:  "a",
+	}, {
+		name:  "Id abc",
+		input: Lit{Token: Id, Text: "abc"},
+		want:  "abc",
+	}, {
 		name:  "empty Nat uses GoString",
 		input: Lit{Token: Nat},
 		want:  `lisp.Lit{Token:2, Text:""}`,
+	}, {
+		name:  "Id as invalid Nat uses GoString",
+		input: Lit{Token: Nat, Text: "a"},
+		want:  `lisp.Lit{Token:2, Text:"a"}`,
+	}, {
+		name:  "Invalid Nat uses GoString",
+		input: Lit{Token: Nat, Text: "01"},
+		want:  `lisp.Lit{Token:2, Text:"01"}`,
+	}, {
+		name:  "Invalid Nat uses GoString",
+		input: Lit{Token: Nat, Text: "1a"},
+		want:  `lisp.Lit{Token:2, Text:"1a"}`,
+	}, {
+		name:  "Nat 0",
+		input: Lit{Token: Nat, Text: "0"},
+		want:  "0",
+	}, {
+		name:  "Nat 42",
+		input: Lit{Token: Nat, Text: "42"},
+		want:  "42",
 	}, {
 		name:  "nil Cons",
 		input: (*Cons)(nil),

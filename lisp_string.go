@@ -41,7 +41,7 @@ func (x Lit) appendString(sb *strings.Builder) (valid bool) {
 			// We shouldn't print this directly.
 			return false
 		}
-		for _, b := range []byte(x.Text[1:]) {
+		for _, b := range []byte(x.Text) {
 			if b < '0' || '9' < b {
 				// Nat is not valid.
 				// We shouldn't print this directly.
