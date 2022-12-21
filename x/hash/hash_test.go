@@ -1,6 +1,7 @@
 package hash
 
 import (
+	"hash/maphash"
 	"strings"
 	"testing"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/ajzaff/lisp/scan"
 )
 
-func TestDistictHash(t *testing.T) {
+func TestDistictHashes(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
 		input1       string
@@ -42,35 +43,22 @@ func TestDistictHash(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			var v1 lisp.Val
-			var s scan.TokenScanner
-			s.Reset(strings.NewReader(tc.input1))
-			var sc scan.NodeScanner
-			sc.Reset(&s)
-			for sc.Scan() {
-				_, _, v1 = sc.Node()
-				break
+			v1 := mustParse(t, tc.input1)
+			v2 := mustParse(t, tc.input2)
+			seed := maphash.MakeSeed()
+			var h1, h2 uint64
+			{
+				var h MapHash
+				h.SetSeed(seed)
+				h.WriteVal(v1)
+				h1 = h.Sum64()
 			}
-			if err := sc.Err(); err != nil {
-				t.Fatalf("Parse(%q): fails: %v", tc.input1, err)
+			{
+				var h MapHash
+				h.SetSeed(seed)
+				h.WriteVal(v2)
+				h2 = h.Sum64()
 			}
-			var v2 lisp.Val
-			s.Reset(strings.NewReader(tc.input2))
-			sc.Reset(&s)
-			for sc.Scan() {
-				_, _, v2 = sc.Node()
-				break
-			}
-			if err := sc.Err(); err != nil {
-				t.Fatalf("Parse(%q): fails: %v", tc.input2, err)
-			}
-
-			var h MapHash
-			h.WriteVal(v1)
-			h1 := h.Sum64()
-			h.Reset()
-			h.WriteVal(v2)
-			h2 := h.Sum64()
 
 			if tc.wantDistinct && h1 == h2 {
 				t.Errorf("Hash(%q) == Hash(%q) but wanted distinct hashes", tc.input1, tc.input2)
@@ -81,4 +69,17 @@ func TestDistictHash(t *testing.T) {
 			}
 		})
 	}
+}
+
+func mustParse(t *testing.T, input string) lisp.Val {
+	var s scan.NodeScanner
+	var sc scan.TokenScanner
+	sc.Reset(strings.NewReader(input))
+	s.Reset(&sc)
+	for s.Scan() {
+		_, _, v := s.Node()
+		return v
+	}
+	t.Fatalf("mustParse(%q): failed: %v", input, s.Err())
+	return nil
 }
