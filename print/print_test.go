@@ -17,6 +17,10 @@ func TestStdPrint(t *testing.T) {
 		name: "empty",
 		want: "()\n",
 	}, {
+		name:  "nil cons",
+		input: (*lisp.Cons)(nil),
+		want:  "()\n",
+	}, {
 		name:  "empty cons",
 		input: &lisp.Cons{},
 		want:  "()\n",

@@ -19,7 +19,7 @@ func TestVisitor(t *testing.T) {
 		overrides  func(v *Visitor)
 		wantVisits []testVisits
 	}{{
-		name: "empty",
+		name: "nil has no visits",
 	}, {
 		name:  "int",
 		input: lisp.Lit{Token: lisp.Nat, Text: "1"},
@@ -29,6 +29,38 @@ func TestVisitor(t *testing.T) {
 		}, {
 			Visitor: "Lit",
 			Val:     lisp.Lit{Token: lisp.Nat, Text: "1"},
+		}},
+	}, {
+		name:  "nil cons",
+		input: (*lisp.Cons)(nil),
+		wantVisits: []testVisits{{
+			Visitor: "Val",
+			Val:     (*lisp.Cons)(nil),
+		}, {
+			Visitor: "BeforeCons",
+			Val:     (*lisp.Cons)(nil),
+		}, {
+			Visitor: "Cons",
+			Val:     (*lisp.Cons)(nil),
+		}, {
+			Visitor: "AfterCons",
+			Val:     (*lisp.Cons)(nil),
+		}},
+	}, {
+		name:  "nil and empty cons are the same",
+		input: &lisp.Cons{},
+		wantVisits: []testVisits{{
+			Visitor: "Val",
+			Val:     &lisp.Cons{},
+		}, {
+			Visitor: "BeforeCons",
+			Val:     &lisp.Cons{},
+		}, {
+			Visitor: "Cons",
+			Val:     &lisp.Cons{},
+		}, {
+			Visitor: "AfterCons",
+			Val:     &lisp.Cons{},
 		}},
 	}, {
 		name: "cons",

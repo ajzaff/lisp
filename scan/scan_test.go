@@ -163,7 +163,7 @@ func TestTokenizeCons(t *testing.T) {
 		wantTok:     []lisp.Token{lisp.LParen, lisp.RParen},
 		wantText:    []string{"(", ")"},
 		wantNodePos: []lisp.Pos{0, 2},
-		wantNode:    []lisp.Val{&lisp.Cons{}}, // FIXME: Expect canonial empty Cons.
+		wantNode:    []lisp.Val{&lisp.Cons{}},
 	}, {
 		name:        "nested cons",
 		input:       "(())",

@@ -199,7 +199,7 @@ func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (end lisp.
 		return end, v, nil
 	case lisp.LParen: // BEGIN Cons
 		e := &consStackEntry{}
-		cons := &lisp.Cons{} // FIXME: Should a canonical empty cons be nil?
+		cons := &lisp.Cons{}
 		e.Root, e.Last = cons, cons
 		s.stack = append(s.stack, e)
 		// Need more scanning to finish this Cons.

@@ -87,9 +87,6 @@ func (v *Visitor) visitConsNoVal(root *lisp.Cons) {
 	if !callFn(v, v.beforeConsFn, root) {
 		return
 	}
-	if root == nil {
-		return
-	}
 	v.visitCons(root)
 }
 
@@ -98,8 +95,10 @@ func (v *Visitor) visitCons(root *lisp.Cons) {
 	if !callFn(v, v.consFn, root) {
 		return
 	}
-	v.Visit(root.Val)
-	if root.Cons == nil {
+	if root != nil {
+		v.Visit(root.Val)
+	}
+	if root == nil || root.Cons == nil {
 		callFn(v, v.afterConsFn, root)
 		return
 	}
