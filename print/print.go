@@ -23,44 +23,41 @@ type Printer struct {
 type PrinterOptions struct {
 	Nil     string
 	Prefix  string // Prefix added before every line.
-	NewLine string // NewLine added after every top-level expression.
+	NewLine bool   // Whether a new line is added after every top-level expression.
 }
 
 func makeStdPrinterOptions() PrinterOptions {
 	return PrinterOptions{
 		Nil:     "()",
-		NewLine: "\n",
+		NewLine: true,
 	}
 }
 
 func (p *Printer) initVisitor() {
 	var (
-		consDepth       int
-		lastDelimitable delimitable
+		consDepth int
+		delim     bool
 	)
-	p.v.SetBeforeConsVisitor(func(e *lisp.Cons) {
-		p.w.WriteByte('(')
-		lastDelimitable = delimitableNone
-		consDepth++
-	})
-	p.v.SetAfterConsVisitor(func(e *lisp.Cons) {
-		consDepth--
-		p.w.WriteByte(')')
-		if consDepth == 0 {
-			p.w.WriteString(p.NewLine)
-			p.w.WriteString(p.Prefix)
-		}
-		lastDelimitable = delimitableNone
-	})
-	p.v.SetLitVisitor(func(e lisp.Lit) {
-		delim := delimitableLitType(e)
-		if lastDelimitable != delimitableNone && lastDelimitable == delim {
+	p.v.SetLitVisitor(func(x lisp.Lit) {
+		if delim {
 			p.w.WriteByte(' ')
 		}
-		lastDelimitable = delim
-		p.w.WriteString(e.Text)
-		if consDepth == 0 {
-			p.w.WriteString(p.NewLine)
+		p.w.WriteString(x.Text)
+		switch consDepth == 0 && p.NewLine {
+		case true:
+			p.w.WriteByte('\n')
+			p.w.WriteString(p.Prefix)
+			delim = false
+		default:
+			delim = true
+		}
+	})
+	p.v.SetBeforeConsVisitor(func(*lisp.Cons) { p.w.WriteByte('('); delim = false; consDepth++ })
+	p.v.SetAfterConsVisitor(func(*lisp.Cons) {
+		p.w.WriteByte(')')
+		delim = false
+		if consDepth--; consDepth == 0 && p.NewLine {
+			p.w.WriteByte('\n')
 			p.w.WriteString(p.Prefix)
 		}
 	})
@@ -90,28 +87,13 @@ func StdPrinter(w io.Writer) *Printer {
 func (p *Printer) Print(v lisp.Val) {
 	defer p.w.Flush()
 	if v == nil {
-		p.w.Write([]byte(p.Nil))
-		p.w.Write([]byte(p.NewLine))
+		p.w.WriteString(p.Nil)
+		if p.NewLine {
+			p.w.WriteByte('\n')
+		}
 		return
 	}
 	p.once.Do(p.initVisitor)
 	p.w.WriteString(p.Prefix)
 	p.v.Visit(v)
-}
-
-// Lits in the same delimitable class must be spaced out.
-type delimitable int
-
-const (
-	delimitableNone   delimitable = iota
-	delimitableClass1             // Id, Number
-)
-
-func delimitableLitType(e lisp.Lit) delimitable {
-	switch e.Token {
-	case lisp.Id, lisp.Nat:
-		return delimitableClass1
-	default:
-		return delimitableNone
-	}
 }
