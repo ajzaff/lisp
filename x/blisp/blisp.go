@@ -1,8 +1,7 @@
 // Package blisp implements binary Lisp encoding.
-// The blisp encoding currently increases message size,
-// so it should not be generally used over the wire.
+//
+// The blisp uses varint encoding for Nats and a representative form for Cons and Ids.
+// This can improve the compactness of Nat as well as minimizing use of delimiters.
 package blisp
 
-const Magic = "\x41blisp\n"
-
-const MagicLen = len(Magic)
+const Magic = "blisp1\n"

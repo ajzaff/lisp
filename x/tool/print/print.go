@@ -151,8 +151,11 @@ func main() {
 			fmt.Println()
 		}
 	case "bin":
+		var e blisp.Encoder
+		e.Reset(os.Stdout)
+		e.EncodeMagic()
 		for _, n := range ns {
-			blisp.NewEncoder(os.Stdout).Encode(n.Val)
+			e.Encode(n.Val)
 		}
 	case "json":
 		for _, n := range ns {

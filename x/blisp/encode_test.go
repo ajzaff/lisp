@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/scan"
 	"github.com/google/go-cmp/cmp"
 )
@@ -28,40 +27,6 @@ func mustParse(t *testing.T, src string) lisp.Val {
 	return n.Val
 }
 
-func TestEncodedLen(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		input lisp.Val
-		want  int
-	}{{
-		name: "empty",
-	}, {
-		name:  "id",
-		input: mustParse(t, "main"),
-		want:  6,
-	}, {
-		name:  "int",
-		input: mustParse(t, "1"),
-		want:  2,
-	}, {
-		name:  "cons",
-		input: mustParse(t, "(a)"),
-		want:  5,
-	}, {
-		name:  "nested cons",
-		input: mustParse(t, "(a(b)c)"),
-		want:  7,
-	}} {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := EncodedLen(tc.input); got != tc.want {
-				var buf bytes.Buffer
-				print.StdPrinter(&buf).Print(tc.input)
-				t.Errorf("EncodedLen(%v): got %d, want %d", buf.String(), got, tc.want)
-			}
-		})
-	}
-}
-
 func TestEncode(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
@@ -70,14 +35,108 @@ func TestEncode(t *testing.T) {
 	}{{
 		name: "empty",
 	}, {
-		name:  "complex nested cons",
-		input: "(1 (2 (3 4)))",
-		want:  []byte{0x05, 0x02, 0x00, 0x31, 0x05, 0x02, 0x00, 0x32, 0x05, 0x02, 0x00, 0x33, 0x02, 0x00},
+		name:  "Id",
+		input: "a",
+		want: []byte{
+			'a',
+		},
+	}, {
+		name:  "Nat",
+		input: "1",
+		want: []byte{
+			byte(lisp.Nat),
+			1,
+		},
+	}, {
+		name:  "empty Cons",
+		input: "()",
+		want: []byte{
+			byte(lisp.LParen),
+			byte(lisp.RParen),
+		},
+	}, {
+		name:  "Nats are self-delimiting",
+		input: "(1 2 3)",
+		want: []byte{
+			byte(lisp.LParen),
+			byte(lisp.Nat),
+			1,
+			byte(lisp.Nat),
+			2,
+			byte(lisp.Nat),
+			3,
+			byte(lisp.RParen),
+		},
+	}, {
+		name:  "Ids use delimiters",
+		input: "(a b c)",
+		want: []byte{
+			byte(lisp.LParen),
+			'a',
+			' ',
+			'b',
+			' ',
+			'c',
+			byte(lisp.RParen),
+		},
+	}, {
+		name:  "mixed Nat and Id minimizes delimiters",
+		input: "(1 a 2 b 3 c)",
+		want: []byte{
+			byte(lisp.LParen),
+			byte(lisp.Nat),
+			1,
+			'a',
+			byte(lisp.Nat),
+			2,
+			'b',
+			byte(lisp.Nat),
+			3,
+			'c',
+			byte(lisp.RParen),
+		},
+	}, {
+		name:  "cons id",
+		input: "(abc)",
+		want: []byte{
+			byte(lisp.LParen),
+			'a',
+			'b',
+			'c',
+			byte(lisp.RParen),
+		},
+	}, {
+		name:  "nested nats",
+		input: "(1 (2 (3 4000)) abc)",
+		want: []byte{
+			byte(lisp.LParen),
+			byte(lisp.Nat),
+			1,
+			byte(lisp.LParen),
+			byte(lisp.Nat),
+			2,
+			byte(lisp.LParen),
+			byte(lisp.Nat),
+			3,
+			byte(lisp.Nat),
+			0xa0,
+			0x1f,
+			byte(lisp.RParen),
+			byte(lisp.RParen),
+			'a',
+			'b',
+			'c',
+			byte(lisp.RParen),
+		},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			v := mustParse(t, tc.input)
+			if gotLen, wantLen := Len(v), len(tc.want); gotLen != wantLen {
+				t.Errorf("EncodedLen(%q): got %d, want %d", tc.name, gotLen, wantLen)
+			}
 			var buf bytes.Buffer
-			e := NewEncoder(&buf)
+			var e Encoder
+			e.Reset(&buf)
 			e.Encode(v)
 			got := buf.Bytes()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
