@@ -33,44 +33,56 @@ func TestVisitor(t *testing.T) {
 	}, {
 		name: "cons",
 		// (a b(c))
-		input: &lisp.Cons{Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "a"}}, Cons: &lisp.Cons{
-			Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
+		input: &lisp.Cons{
+			Val: lisp.Lit{Token: lisp.Id, Text: "a"},
 			Cons: &lisp.Cons{
-				Node: lisp.Node{Val: &lisp.Cons{
-					Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-				}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
+				Cons: &lisp.Cons{
+					Val: &lisp.Cons{
+						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+					},
+				},
 			},
-		}},
+		},
 		wantVisits: []testVisits{{
 			Visitor: "Val",
-			Val: &lisp.Cons{Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "a"}}, Cons: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
+			Val: &lisp.Cons{
+				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Val: &lisp.Cons{
-						Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-					}},
+					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
+					Cons: &lisp.Cons{
+						Val: &lisp.Cons{
+							Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+						},
+					},
 				},
-			}},
+			},
 		}, {
 			Visitor: "BeforeCons",
-			Val: &lisp.Cons{Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "a"}}, Cons: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
+			Val: &lisp.Cons{
+				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Val: &lisp.Cons{
-						Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-					}},
+					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
+					Cons: &lisp.Cons{
+						Val: &lisp.Cons{
+							Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+						},
+					},
 				},
-			}},
+			},
 		}, {
 			Visitor: "Cons",
-			Val: &lisp.Cons{Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "a"}}, Cons: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
+			Val: &lisp.Cons{
+				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Val: &lisp.Cons{
-						Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-					}},
+					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
+					Cons: &lisp.Cons{
+						Val: &lisp.Cons{
+							Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+						},
+					},
 				},
-			}},
+			},
 		}, {
 			Visitor: "Val",
 			Val:     lisp.Lit{Token: lisp.Id, Text: "a"},
@@ -80,21 +92,21 @@ func TestVisitor(t *testing.T) {
 		}, {
 			Visitor: "Val",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Val: &lisp.Cons{
-						Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-					}},
+					Val: &lisp.Cons{
+						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+					},
 				},
 			},
 		}, {
 			Visitor: "Cons",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
 				Cons: &lisp.Cons{
-					Node: lisp.Node{Val: &lisp.Cons{
-						Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-					}},
+					Val: &lisp.Cons{
+						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+					},
 				},
 			},
 		}, {
@@ -106,31 +118,31 @@ func TestVisitor(t *testing.T) {
 		}, {
 			Visitor: "Val",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: &lisp.Cons{
-					Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-				}},
+				Val: &lisp.Cons{
+					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+				},
 			},
 		}, {
 			Visitor: "Cons",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: &lisp.Cons{
-					Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-				}},
+				Val: &lisp.Cons{
+					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+				},
 			},
 		}, {
 			Visitor: "Val",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
 			Visitor: "BeforeCons",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
 			Visitor: "Cons",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
 			Visitor: "Val",
@@ -141,14 +153,14 @@ func TestVisitor(t *testing.T) {
 		}, {
 			Visitor: "AfterCons",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
+				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
 			Visitor: "AfterCons",
 			Val: &lisp.Cons{
-				Node: lisp.Node{Val: &lisp.Cons{
-					Node: lisp.Node{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
-				}},
+				Val: &lisp.Cons{
+					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+				},
 			},
 		}},
 	}} {

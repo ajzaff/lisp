@@ -92,7 +92,7 @@ type encodeLen struct {
 	delim bool
 }
 
-// Len returns the encoded length of the node in bytes.
+// Len returns the encoded length of the Val in bytes.
 func Len(v lisp.Val) int {
 	var e encodeLen
 	e.Len(v)

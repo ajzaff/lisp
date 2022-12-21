@@ -25,24 +25,13 @@ type Val interface {
 	val()
 }
 
-// Node represents an AST node in context with source file indices.
-//
-// See the Val interface for allowed AST types.
-type Node struct {
-	Pos Pos
-	Val
-	End Pos
-}
-
 // Cons is a construct used to build linked lists.
 //
 // It maintains pointers to a Val and the next Cons in the list.
 type Cons struct {
-	Node
+	Val
 	*Cons
 }
-
-func (*Cons) val() {}
 
 // Lit is a basic literal type.
 //

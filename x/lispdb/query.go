@@ -22,24 +22,25 @@ func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
 	if v.Token != lisp.Invalid {
 		return v, w
 	}
-	n, w := queryOneNode(db, id)
-	return n.Val, w
+	return queryOneVal(db, id)
 }
 
-func queryOneNode(db QueryInterface, id ID) (lisp.Node, float64) {
+func queryOneVal(db QueryInterface, id ID) (lisp.Val, float64) {
 	v, w := db.Load(id)
 	if v.Token != lisp.Invalid {
-		return lisp.Node{Val: v}, w
+		return v, w
 	}
 	x := &lisp.Cons{}
 	db.EachRef(id, func(i ID) bool {
-		e, _ := queryOneNode(db, i)
-		x.Node = e
+		e, _ := queryOneVal(db, i)
+		x.Val = e
+		// FIXME: This produces an incorrect Cons.
+		// FIXME: Use Cons Builder.
 		x.Cons = &lisp.Cons{}
 		x = x.Cons
 		return true
 	})
-	return lisp.Node{Val: x}, w
+	return x, w
 }
 
 func EachTransRef(db QueryInterface, root ID, fn func(ID) bool) {
@@ -107,31 +108,32 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 //	// []ID{834583485} // "who"
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
-	var qn []lisp.Val
+	var qv []lisp.Val
 	var s scan.TokenScanner
 	s.Reset(strings.NewReader(q))
 	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
-		qn = append(qn, sc.Node().Val)
+		_, _, v := sc.Node()
+		qv = append(qv, v)
 	}
 	if err := sc.Err(); err != nil {
 		r.err = err
 		return &r
 	}
-	if len(qn) != 1 {
+	if len(qv) != 1 {
 		panic("union of multiple query expressions is not yet supported")
 	}
 	var h hash.MapHash
 	h.SetSeed(db.Seed())
 	qh := h.Sum64()
-	h.WriteVal(qn[0])
+	h.WriteVal(qv[0])
 	if _, w := db.Load(qh); w > 0 {
 		// Exact match.
 		r.matches = [][]ID{{qh}}
 		return &r
 	}
-	r.elems = queryElements(qn[0])
+	r.elems = queryElements(qv[0])
 	panic("not implemented")
 }
 

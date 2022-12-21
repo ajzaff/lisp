@@ -2,13 +2,13 @@ package lisp
 
 import "github.com/ajzaff/lisp"
 
-// Cons constructs a cons by linking the nodes together.
-func Cons(ns ...lisp.Node) *lisp.Cons {
+// Cons constructs a cons by linking the values together.
+func Cons(vs ...lisp.Val) *lisp.Cons {
 	root := &lisp.Cons{}
 	e := root
-	for i, n := range ns {
-		e.Node = n
-		if i+1 < len(ns) {
+	for i, v := range vs {
+		e.Val = v
+		if i+1 < len(vs) {
 			e.Cons = &lisp.Cons{}
 			e = e.Cons
 		}

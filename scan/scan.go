@@ -126,16 +126,20 @@ type TokenScannerInterface interface {
 }
 
 type consStackEntry struct {
-	*lisp.Node            // Node for the cons.
-	Root       *lisp.Cons // Root cons.
-	Last       *lisp.Cons // Link to the last node, for fast insertion.
+	Pos, End lisp.Pos
+
+	Root *lisp.Cons // Root cons.
+	Last *lisp.Cons // Link to the last Cons, for fast insertion.
 }
 
 type NodeScanner struct {
 	sc    TokenScannerInterface
 	stack []*consStackEntry // FIXME: allow user-supplied buffer.
 	err   error
-	node  lisp.Node
+
+	pos lisp.Pos
+	end lisp.Pos
+	val lisp.Val
 }
 
 func (s *NodeScanner) Reset(sc TokenScannerInterface) {
@@ -144,18 +148,25 @@ func (s *NodeScanner) Reset(sc TokenScannerInterface) {
 }
 
 func (s *NodeScanner) Scan() bool {
-	var n lisp.Node
+	var end lisp.Pos
+	var v lisp.Val
 
-	// Scan until a full Node is constructed.
-	for s.sc.Scan() {
+	// Scan until a full Val is constructed.
+	for first := true; s.sc.Scan(); first = false {
 		var err error
-		n, err = s.scan(s.sc.Token())
+		var tok lisp.Token
+		var text string
+		pos, tok, text := s.sc.Token()
+		if first {
+			s.pos = pos
+		}
+		end, v, err = s.scan(pos, tok, text)
 		if err != nil {
 			s.err = err
 			return false
 		}
-		// If the Node has valid indices, we're done.
-		if n.Pos < n.End {
+		// A Val is emitted, maybe return it.
+		if v != nil {
 			break
 		}
 	}
@@ -163,48 +174,46 @@ func (s *NodeScanner) Scan() bool {
 		s.err = err
 		return false
 	}
-	s.node = n
-	// Return true when valid Node scanned.
+	s.end = end
+	s.val = v
+	// Return true when valid Val scanned.
 	// The final Scan call will be empty.
-	return n.Pos < n.End
+	return s.val != nil
 }
 
-func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (lisp.Node, error) {
+func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (end lisp.Pos, v lisp.Val, err error) {
 	switch tok {
 	case lisp.Id, lisp.Nat: // Id, Nat
-		n := lisp.Node{
-			Pos: pos,
-			Val: lisp.Lit{Token: tok, Text: text},
-			End: pos + lisp.Pos(len(text)),
-		}
+		end = pos + lisp.Pos(len(text))
+		v = lisp.Lit{Token: tok, Text: text}
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
 			if e.Last.Val != nil {
 				e.Last.Cons = &lisp.Cons{}
 				e.Last = e.Last.Cons
 			}
-			e.Last.Node = n
+			e.Last.Val = v
 			// Need more scanning to finish this Cons.
-			return lisp.Node{}, nil
+			return 0, nil, nil
 		}
-		return n, nil
+		return end, v, nil
 	case lisp.LParen: // BEGIN Cons
 		e := &consStackEntry{}
-		cons := &lisp.Cons{}
-		e.Node = &lisp.Node{Pos: pos, Val: cons}
+		cons := &lisp.Cons{} // FIXME: Should a canonical empty cons be nil?
 		e.Root, e.Last = cons, cons
 		s.stack = append(s.stack, e)
 		// Need more scanning to finish this Cons.
-		return lisp.Node{}, nil
+		return 0, nil, nil
 	case lisp.RParen: // END Cons
 		if len(s.stack) == 0 {
 			// FIXME: Use  *lisp.NodeError.
-			return lisp.Node{}, fmt.Errorf("unexpected ')'")
+			return 0, nil, fmt.Errorf("unexpected ')'")
 		}
 		i := len(s.stack)
 		x := s.stack[i-1]
 		x.End = pos + 1
 		s.stack = s.stack[:i-1]
+		// Append to previous Cons.
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
 			if e.Last.Val != nil {
@@ -212,22 +221,22 @@ func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (lisp.Node
 				e.Last = e.Last.Cons
 			}
 			// Append the cons to the prev cons.
-			e.Last.Node = *x.Node
+			e.Last.Val = x.Root
 			// Need more scanning to finish this Cons.
-			return lisp.Node{}, nil
+			return 0, nil, nil
 		}
-		return *x.Node, nil
+		return x.End, x.Root, nil
 	default: // Unknown lisp.Token
 		// FIXME: Use  *lisp.NodeError.
-		return lisp.Node{}, fmt.Errorf("unexpected lisp.Token")
+		return 0, nil, fmt.Errorf("unexpected lisp.Token")
 	}
 }
 
-// Node returns the last Node scanned.
+// Node returns the last indices and Val scanned.
 //
-// Valid scanned nodes always have indices set, i.e. lisp.Pos < End.
-func (s *NodeScanner) Node() lisp.Node {
-	return s.node
+// When Scan returned true v will always be non-nil, and pos < end.
+func (s *NodeScanner) Node() (pos, end lisp.Pos, v lisp.Val) {
+	return s.pos, s.end, s.val
 }
 
 // Err returns the NodeScanner error.

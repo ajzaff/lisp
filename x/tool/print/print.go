@@ -44,13 +44,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var ns []lisp.Node
+	var vs []lisp.Val
 	var s scan.TokenScanner
 	s.Reset(bytes.NewReader(src))
 	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
-		ns = append(ns, sc.Node())
+		_, _, v := sc.Node()
+		vs = append(vs, v)
 	}
 	if err := sc.Err(); err != nil {
 		log.Fatal(err)
@@ -58,8 +59,8 @@ func main() {
 
 	switch *mode {
 	case "": // std
-		for _, n := range ns {
-			print.StdPrinter(os.Stdout).Print(n.Val)
+		for _, v := range vs {
+			print.StdPrinter(os.Stdout).Print(v)
 		}
 	case "tok":
 		var sc scan.TokenScanner
@@ -86,15 +87,11 @@ func main() {
 		v.SetLitVisitor(func(e lisp.Lit) {
 			fmt.Println("LIT\t", e.String())
 		})
-		for _, n := range ns {
-			v.Visit(n.Val)
+		for _, x := range vs {
+			v.Visit(x)
 		}
 	case "db":
 		db := lispdb.NewInMemory()
-		var vs []lisp.Val
-		for _, n := range ns {
-			vs = append(vs, n.Val)
-		}
 		lispdb.Store(db, vs, 1)
 		refs := make(map[lispdb.ID]struct {
 			lisp.Val
@@ -104,9 +101,9 @@ func main() {
 		})
 		var h hash.MapHash
 		h.SetSeed(db.Seed())
-		for _, n := range ns {
+		for _, v := range vs {
 			h.Reset()
-			h.WriteVal(n.Val)
+			h.WriteVal(v)
 			root := h.Sum64()
 			lispdb.EachTransRef(db, root, func(i lispdb.ID) bool {
 				v, w := lispdb.QueryOneID(db, i)
@@ -154,12 +151,12 @@ func main() {
 		var e blisp.Encoder
 		e.Reset(os.Stdout)
 		e.EncodeMagic()
-		for _, n := range ns {
-			e.Encode(n.Val)
+		for _, v := range vs {
+			e.Encode(v)
 		}
 	case "json":
-		for _, n := range ns {
-			lispjson.NewEncoder(os.Stdout).Encode(n.Val)
+		for _, v := range vs {
+			lispjson.NewEncoder(os.Stdout).Encode(v)
 			println()
 		}
 	case "idtab":

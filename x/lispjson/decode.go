@@ -50,5 +50,6 @@ func (d *Decoder) Decode() (lisp.Val, error) {
 	if err := d.sc.Err(); err != nil {
 		return nil, err
 	}
-	return d.sc.Node().Val, nil
+	_, _, v := d.sc.Node()
+	return v, nil
 }

@@ -39,17 +39,18 @@ func main() {
 		case sb.Len() > 0 && input == "":
 			ts.Reset(strings.NewReader(sb.String()))
 			s.Reset(&ts)
-			var nodes []lisp.Node
+			var vs []lisp.Val
 			for s.Scan() {
-				nodes = append(nodes, s.Node())
+				_, _, v := s.Node()
+				vs = append(vs, v)
 			}
 			if err := s.Err(); err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				sb.Reset()
 				continue
 			}
-			for _, n := range nodes {
-				print.StdPrinter(os.Stdout).Print(n.Val)
+			for _, v := range vs {
+				print.StdPrinter(os.Stdout).Print(v)
 			}
 			sb.Reset()
 		case input == "quit":

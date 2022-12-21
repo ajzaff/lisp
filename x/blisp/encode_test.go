@@ -12,19 +12,19 @@ import (
 )
 
 func mustParse(t *testing.T, src string) lisp.Val {
-	var n lisp.Node
+	var v lisp.Val
 	var s scan.TokenScanner
 	s.Reset(strings.NewReader(src))
 	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
-		n = sc.Node()
+		_, _, v = sc.Node()
 		break
 	}
 	if err := sc.Err(); err != nil {
 		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))
 	}
-	return n.Val
+	return v
 }
 
 func TestEncode(t *testing.T) {

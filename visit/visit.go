@@ -39,12 +39,12 @@ func (v *Visitor) SetConsVisitor(fn func(*lisp.Cons)) { v.consFn = fn }
 // SetAfterConsVisitor sets the visitor called on the last Cons.
 func (v *Visitor) SetAfterConsVisitor(fn func(*lisp.Cons)) { v.afterConsFn = fn }
 
-// Stop the visitor and return as soon as possible.
+// Stop stops the visitor and returns as soon as possible.
 func (v *Visitor) Stop() {
 	v.err = errStop
 }
 
-// Skip visiting the node recursively for compound nodes.
+// Skip skips descending the next Val of a Cons.
 func (v *Visitor) Skip() {
 	v.err = errSkip
 }

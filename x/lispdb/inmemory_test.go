@@ -10,18 +10,19 @@ import (
 )
 
 func mustParseMultiple(t *testing.T, src string) []lisp.Val {
-	var ns []lisp.Val
+	var vs []lisp.Val
 	var s scan.TokenScanner
 	s.Reset(strings.NewReader(src))
 	var sc scan.NodeScanner
 	sc.Reset(&s)
 	for sc.Scan() {
-		ns = append(ns, sc.Node().Val)
+		_, _, v := sc.Node()
+		vs = append(vs, v)
 	}
 	if err := sc.Err(); err != nil {
 		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))
 	}
-	return ns
+	return vs
 }
 
 func TestGenericStoreMultipleInMemory(t *testing.T) {

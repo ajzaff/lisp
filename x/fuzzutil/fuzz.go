@@ -151,10 +151,12 @@ func (g *Generator) nextConsDepth(depth int) lisp.Val {
 	n := g.termFn()
 	head := &lisp.Cons{}
 	e := head
+	// FIXME: Use the Cons Builder.
 	for i := 0; i < n; i++ {
-		e.Node = lisp.Node{Val: g.nextDepth(depth + 1)}
-		e.Cons = &lisp.Cons{}
-		e = e.Cons
+		if e.Val = g.nextDepth(depth + 1); i+1 < n {
+			e.Cons = &lisp.Cons{}
+			e = e.Cons
+		}
 	}
 	return head
 }

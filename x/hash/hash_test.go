@@ -42,23 +42,23 @@ func TestDistictHash(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			var n1 lisp.Node
+			var v1 lisp.Val
 			var s scan.TokenScanner
 			s.Reset(strings.NewReader(tc.input1))
 			var sc scan.NodeScanner
 			sc.Reset(&s)
 			for sc.Scan() {
-				n1 = sc.Node()
+				_, _, v1 = sc.Node()
 				break
 			}
 			if err := sc.Err(); err != nil {
 				t.Fatalf("Parse(%q): fails: %v", tc.input1, err)
 			}
-			var n2 lisp.Node
+			var v2 lisp.Val
 			s.Reset(strings.NewReader(tc.input2))
 			sc.Reset(&s)
 			for sc.Scan() {
-				n2 = sc.Node()
+				_, _, v2 = sc.Node()
 				break
 			}
 			if err := sc.Err(); err != nil {
@@ -66,10 +66,10 @@ func TestDistictHash(t *testing.T) {
 			}
 
 			var h MapHash
-			h.WriteVal(n1.Val)
+			h.WriteVal(v1)
 			h1 := h.Sum64()
 			h.Reset()
-			h.WriteVal(n2.Val)
+			h.WriteVal(v2)
 			h2 := h.Sum64()
 
 			if tc.wantDistinct && h1 == h2 {

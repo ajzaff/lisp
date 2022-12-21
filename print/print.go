@@ -86,17 +86,17 @@ func StdPrinter(w io.Writer) *Printer {
 	return &p
 }
 
-// Print the Node n.
-func (p *Printer) Print(n lisp.Val) {
+// Print the Val v.
+func (p *Printer) Print(v lisp.Val) {
 	defer p.w.Flush()
-	if n == nil {
+	if v == nil {
 		p.w.Write([]byte(p.Nil))
 		p.w.Write([]byte(p.NewLine))
 		return
 	}
 	p.once.Do(p.initVisitor)
 	p.w.WriteString(p.Prefix)
-	p.v.Visit(n)
+	p.v.Visit(v)
 }
 
 // Lits in the same delimitable class must be spaced out.

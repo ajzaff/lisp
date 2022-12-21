@@ -2,20 +2,18 @@ package decoder
 
 import "github.com/ajzaff/lisp"
 
-func DecodeNum(b []byte) (lisp.Node, error) {
+func DecodeNat(b []byte) (lisp.Val, error) {
 	n, err := decodeNum(b)
 	if err != nil {
-		return lisp.Node{}, err
+		return nil, err
 	}
-	return lisp.Node{
-		Val: lisp.Lit{
-			Token: lisp.Nat,
-			Text:  string(b[:n]),
-		},
-		End: lisp.Pos(n),
+	return lisp.Lit{
+		Token: lisp.Nat,
+		Text:  string(b[:n]),
 	}, nil
 }
 
+// FIXME: Implement this!
 func decodeNum(b []byte) (n int, err error) {
 	return 0, nil
 }
