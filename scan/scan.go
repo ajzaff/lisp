@@ -13,11 +13,17 @@ import (
 
 var errRune = errors.New("unexpected rune")
 
+// Pos represents a byte position in a source file.
+type Pos int
+
+// NoPos is the canonical value for no position defined.
+const NoPos Pos = -1
+
 // Scanner scans the Lisp source for lisp.Tokens.
 type TokenScanner struct {
 	sc        *bufio.Scanner
-	prev, off lisp.Pos   // absolute offsets
-	pos       lisp.Pos   // relative lisp.Token lisp.Position
+	prev, off Pos        // absolute offsets
+	pos       Pos        // relative lisp.Token Position
 	tok       lisp.Token // last lisp.Token scanned
 }
 
@@ -43,7 +49,7 @@ func (s *TokenScanner) Text() string {
 	return s.sc.Text()
 }
 
-func (s *TokenScanner) Token() (pos lisp.Pos, tok lisp.Token, text string) {
+func (s *TokenScanner) Token() (pos Pos, tok lisp.Token, text string) {
 	return s.prev + s.pos, s.tok, s.Text()
 }
 
@@ -52,9 +58,9 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		return 0, nil, nil
 	}
 	defer func() {
-		// Maintain absolute lisp.Positions into the scanner.
+		// Maintain absolute Positions into the scanner.
 		s.prev = s.off
-		s.off += lisp.Pos(advance)
+		s.off += Pos(advance)
 	}()
 	// Skip leading spaces.
 	for size := 0; advance < len(src); advance += size {
@@ -71,15 +77,15 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 	// Decode length-1 lisp.Tokens.
 	switch src[advance] {
 	case '(': // LParen
-		s.pos = lisp.Pos(advance)
+		s.pos = Pos(advance)
 		s.tok = lisp.LParen
 		return advance + 1, src[advance : advance+1], nil
 	case ')': // RParen
-		s.pos = lisp.Pos(advance)
+		s.pos = Pos(advance)
 		s.tok = lisp.RParen
 		return advance + 1, src[advance : advance+1], nil
 	case '0': // Nat(0)
-		s.pos = lisp.Pos(advance)
+		s.pos = Pos(advance)
 		s.tok = lisp.Nat
 		return advance + 1, src[advance : advance+1], nil
 	}
@@ -87,7 +93,7 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 	r, size := utf8.DecodeRune(src[advance:])
 	switch {
 	case '1' <= r && r <= '9': // Nat
-		s.pos = lisp.Pos(advance)
+		s.pos = Pos(advance)
 		// Nat parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
 		for advance++; advance < len(src); advance++ {
 			b := src[advance]
@@ -98,7 +104,7 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		s.tok = lisp.Nat
 		return advance, src[s.pos:advance], nil
 	case unicode.IsLetter(r): // Id
-		s.pos = lisp.Pos(advance)
+		s.pos = Pos(advance)
 		advance += size
 		for size := 0; advance < len(src); advance += size {
 			var r rune
@@ -112,7 +118,7 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 	}
 	// Rune error.
 	return advance, nil, &TokenError{
-		Pos:   lisp.Pos(advance),
+		Pos:   Pos(advance),
 		Cause: fmt.Errorf("%w: %#q", errRune, r),
 		Src:   src,
 	}
@@ -121,12 +127,12 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 type TokenScannerInterface interface {
 	Reset(io.Reader)
 	Scan() bool
-	Token() (lisp.Pos, lisp.Token, string)
+	Token() (Pos, lisp.Token, string)
 	Err() error
 }
 
 type consStackEntry struct {
-	Pos, End lisp.Pos
+	Pos, End Pos
 
 	Root *lisp.Cons // Root cons.
 	Last *lisp.Cons // Link to the last Cons, for fast insertion.
@@ -137,8 +143,8 @@ type NodeScanner struct {
 	stack []*consStackEntry // FIXME: allow user-supplied buffer.
 	err   error
 
-	pos lisp.Pos
-	end lisp.Pos
+	pos Pos
+	end Pos
 	val lisp.Val
 }
 
@@ -148,7 +154,7 @@ func (s *NodeScanner) Reset(sc TokenScannerInterface) {
 }
 
 func (s *NodeScanner) Scan() bool {
-	var end lisp.Pos
+	var end Pos
 	var v lisp.Val
 
 	// Scan until a full Val is constructed.
@@ -181,10 +187,10 @@ func (s *NodeScanner) Scan() bool {
 	return s.val != nil
 }
 
-func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (end lisp.Pos, v lisp.Val, err error) {
+func (s *NodeScanner) scan(pos Pos, tok lisp.Token, text string) (end Pos, v lisp.Val, err error) {
 	switch tok {
 	case lisp.Id, lisp.Nat: // Id, Nat
-		end = pos + lisp.Pos(len(text))
+		end = pos + Pos(len(text))
 		v = lisp.Lit{Token: tok, Text: text}
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
@@ -235,7 +241,7 @@ func (s *NodeScanner) scan(pos lisp.Pos, tok lisp.Token, text string) (end lisp.
 // Node returns the last indices and Val scanned.
 //
 // When Scan returned true v will always be non-nil, and pos < end.
-func (s *NodeScanner) Node() (pos, end lisp.Pos, v lisp.Val) {
+func (s *NodeScanner) Node() (pos, end Pos, v lisp.Val) {
 	return s.pos, s.end, s.val
 }
 

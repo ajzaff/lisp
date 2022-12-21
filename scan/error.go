@@ -3,21 +3,19 @@ package scan
 import (
 	"fmt"
 	"unicode"
-
-	"github.com/ajzaff/lisp"
 )
 
 // TokenError implements an error at a specified line and column.
 type TokenError struct {
 	Cause error
-	Pos   lisp.Pos
+	Pos   Pos
 	Src   []byte
 }
 
 // LineCol returns a human readable line and column number based on a Pos and Src.
 //
 // Do not use these to index into Src.
-func (t *TokenError) LineCol() (line, col lisp.Pos) {
+func (t *TokenError) LineCol() (line, col Pos) {
 	n := t.Pos
 	line, col = 1, 1
 	if n == 0 {

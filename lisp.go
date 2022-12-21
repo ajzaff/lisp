@@ -12,12 +12,6 @@ const (
 	RParen        // )
 )
 
-// Pos represents a byte position in a source file.
-type Pos int
-
-// NoPos is the canonical value for no position defined.
-const NoPos Pos = -1
-
 // Val is an interface for Lisp Values.
 //
 // Only allowed types are Lit and *Cons.

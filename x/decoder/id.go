@@ -5,7 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/scan"
 	"golang.org/x/text/unicode/rangetable"
 )
 
@@ -24,7 +24,7 @@ func (*IdDecoder) Decode(data []byte, atEOF bool) (advance int, token []byte, er
 		return 0, nil, nil
 	}
 	i := 0
-	start := lisp.Pos(i)
+	start := scan.Pos(i)
 	i += size
 	for {
 		r, size := utf8.DecodeRune(data[i:])
@@ -36,6 +36,6 @@ func (*IdDecoder) Decode(data []byte, atEOF bool) (advance int, token []byte, er
 			break
 		}
 	}
-	end := lisp.Pos(i)
+	end := scan.Pos(i)
 	return i, data[start:end], nil
 }
