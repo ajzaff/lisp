@@ -2,6 +2,7 @@ package hash
 
 import (
 	"bytes"
+	"hash/maphash"
 	"math/rand"
 	"testing"
 
@@ -29,17 +30,18 @@ func BenchmarkMapHashMap(b *testing.B) {
 	res = i
 }
 
-func BenchmarkVisitedMapHashMap(b *testing.B) {
+func BenchmarkPrintedMapHashMap(b *testing.B) {
 	g := fuzzutil.NewGenerator(rand.New(rand.NewSource(1337)))
-	var h MapHash
+	var h maphash.Hash
 	maphashDB := make(map[uint64]struct{})
+	printer := print.StdPrinter(&h)
 
 	i := 0
 	for i = 0; i < b.N; i++ {
 		for j := 0; j < 256; j++ {
 			v := g.Next()
 			h.Reset()
-			h.WriteVisitedVal(v)
+			printer.Print(v)
 			maphashDB[h.Sum64()] = struct{}{}
 		}
 	}

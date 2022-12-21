@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/visit"
 )
 
@@ -17,20 +16,21 @@ type MapHash struct {
 	once sync.Once
 }
 
+func (h *MapHash) initVisitor() {
+	var delim bool
+	h.v.SetLitVisitor(func(x lisp.Lit) {
+		if delim {
+			h.WriteByte(' ')
+		}
+		h.WriteString(x.Text)
+		delim = true
+	})
+	h.v.SetBeforeConsVisitor(func(*lisp.Cons) { h.WriteByte('('); delim = false })
+	h.v.SetAfterConsVisitor(func(*lisp.Cons) { h.WriteByte(')'); delim = false })
+}
+
 // WriteValue hashes the Val into the MapHash.
 func (h *MapHash) WriteVal(v lisp.Val) {
-	print.StdPrinter(&h.Hash).Print(v)
-}
-
-var mapHashVisitor visit.Visitor
-
-func (h *MapHash) initVisitor() {
-	mapHashVisitor.SetLitVisitor(func(x lisp.Lit) { h.WriteString(x.Text) })
-	mapHashVisitor.SetBeforeConsVisitor(func(*lisp.Cons) { h.WriteByte('(') })
-	mapHashVisitor.SetAfterConsVisitor(func(*lisp.Cons) { h.WriteByte(')') })
-}
-
-func (h *MapHash) WriteVisitedVal(root lisp.Val) {
 	h.once.Do(h.initVisitor)
-	h.v.Visit(root)
+	h.v.Visit(v)
 }
