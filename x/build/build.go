@@ -8,22 +8,22 @@ import (
 
 // Builder provides a convenient type to build Cons.
 //
-// The zero Builder is usable.
-// BeginFrame must be called before using Append* methods.
+// The zero Builder is useable.
 type Builder struct {
 	*builderFrame
 }
 
 // Reset clears the Builder to an initial state and drops all frames.
 func (b *Builder) Reset() {
-	b.builderFrame = new(builderFrame)
+	b.builderFrame = nil
+	b.BeginFrame()
 }
 
 // BeginFrame adds a new frame to the Builder, used to create nested Cons.
 // Call EndFrame to append the Cons to the parent frame.
 func (b *Builder) BeginFrame() {
 	e := new(builderFrame)
-	e.prev = b.builderFrame
+	e.Reset(b)
 	b.builderFrame = e
 }
 
@@ -36,13 +36,13 @@ func (b *Builder) DropFrame() {
 }
 
 // EndFrame unrolls the current frame into the previous frame.
-// If no previous builder frame exists, it's equivalent to calling Reset.
+// If no previous builder frame exists, EndFrame has no effect.
 func (b *Builder) EndFrame() {
 	prev := b.prev
 	head := b.head
-	*b.builderFrame = builderFrame{} // GC hint.
 	if prev != nil {
-		b.builderFrame = prev // Revert frame in Builder.
+		*b.builderFrame = builderFrame{} // GC hint.
+		b.builderFrame = prev            // Revert frame in Builder.
 		prev.appendVal(head)
 	}
 }
@@ -50,7 +50,7 @@ func (b *Builder) EndFrame() {
 // AppendId appends the Id Lit to the Cons.
 func (b *Builder) AppendId(text string) {
 	if b.builderFrame == nil {
-		b.Reset()
+		b.BeginFrame()
 	}
 	b.builderFrame.appendVal(lisp.Lit{Token: lisp.Id, Text: text})
 }
@@ -58,7 +58,7 @@ func (b *Builder) AppendId(text string) {
 // AppendNat appends the unsigned integer n to the Cons.
 func (b *Builder) AppendNat(n uint64) {
 	if b.builderFrame == nil {
-		b.Reset()
+		b.BeginFrame()
 	}
 	b.builderFrame.appendVal(lisp.Lit{Token: lisp.Nat, Text: strconv.FormatUint(n, 10)})
 }
@@ -66,7 +66,7 @@ func (b *Builder) AppendNat(n uint64) {
 // AppendRaw appends an raw text Lit with Token Invalid to the Cons.
 func (b *Builder) AppendText(text string) {
 	if b.builderFrame == nil {
-		b.Reset()
+		b.BeginFrame()
 	}
 	b.builderFrame.appendVal(lisp.Lit{Text: text})
 }
@@ -74,7 +74,7 @@ func (b *Builder) AppendText(text string) {
 // AppendVal appends a Val v to the Cons.
 func (b *Builder) AppendVal(v lisp.Val) {
 	if b.builderFrame == nil {
-		b.Reset()
+		b.BeginFrame()
 	}
 	b.builderFrame.appendVal(v)
 }
@@ -98,16 +98,19 @@ type builderFrame struct {
 	last *lisp.Cons
 }
 
+func (b *builderFrame) Reset(e *Builder) {
+	b.prev = e.builderFrame
+	b.head = new(lisp.Cons)
+	b.last = b.head
+}
+
 // precondition: b != nil.
+// precondition: b.head != nil.
 func (b *builderFrame) appendVal(v lisp.Val) {
-	if b.head == nil {
-		b.head = new(lisp.Cons)
-		b.last = b.head
-		b.last.Val = v
-		return
+	if b.last.Val != nil {
+		b.last.Cons = new(lisp.Cons)
+		b.last = b.last.Cons
 	}
-	b.last.Cons = new(lisp.Cons)
-	b.last = b.last.Cons
 	b.last.Val = v
 }
 
