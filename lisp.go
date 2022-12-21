@@ -41,5 +41,4 @@ type Lit struct {
 	Text  string
 }
 
-func (Lit) val()             {}
-func (x Lit) String() string { return x.Text }
+func (Lit) val() {}
