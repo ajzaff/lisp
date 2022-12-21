@@ -12,11 +12,11 @@ const (
 	RParen        // )
 )
 
-// Pos defines a position in the slice of code runes.
+// Pos represents a byte position in a source file.
 type Pos int
 
-// NoPos is the flag value when no position is defined.
-const NoPos = -1
+// NoPos is the canonical value for no position defined.
+const NoPos Pos = -1
 
 // Val is an interface for Lisp Values.
 //
