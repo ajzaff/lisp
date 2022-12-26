@@ -80,7 +80,7 @@ func (x *Cons) appendString(sb *strings.Builder, first, delim bool) (valid bool)
 		return true
 	}
 	if x.Val == nil {
-		if x.Cons != nil {
+		if !first || x.Cons != nil {
 			// Cons is missing the Val element.
 			// We shouldn't print this directly.
 			return false

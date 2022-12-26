@@ -92,9 +92,17 @@ func TestValString(t *testing.T) {
 		input: &Cons{Cons: &Cons{Val: &Cons{}}},
 		want:  "&lisp.Cons{Val:(lisp.Val)(nil), Cons:&lisp.Cons{Val:&lisp.Cons{Val:(lisp.Val)(nil), Cons:(*lisp.Cons)(nil)}, Cons:(*lisp.Cons)(nil)}}",
 	}, {
+		name:  "empty value in linked cons uses GoString",
+		input: &Cons{Val: Lit{Token: Id, Text: "a"}, Cons: &Cons{}},
+		want:  `&lisp.Cons{Val:lisp.Lit{Token:1, Text:"a"}, Cons:&lisp.Cons{Val:(lisp.Val)(nil), Cons:(*lisp.Cons)(nil)}}`,
+	}, {
 		name:  "cons with invalid Lit uses GoString",
 		input: &Cons{Val: Lit{}},
 		want:  `&lisp.Cons{Val:lisp.Lit{Token:0, Text:""}, Cons:(*lisp.Cons)(nil)}`,
+	}, {
+		name:  "nested cons",
+		input: &Cons{Val: (*Cons)(nil), Cons: &Cons{Val: &Cons{}}},
+		want:  "(()())",
 	}, {
 		name: "valid Cons with some Lits",
 		input: &Cons{
