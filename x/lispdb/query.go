@@ -8,6 +8,7 @@ import (
 	"github.com/ajzaff/lisp/scan"
 	"github.com/ajzaff/lisp/visit"
 	"github.com/ajzaff/lisp/x/hash"
+	"github.com/ajzaff/lisp/x/stringer"
 )
 
 type QueryInterface interface {
@@ -145,7 +146,7 @@ func queryElements(q lisp.Val) (elems []string) {
 				name := lisputil.Head(e.Cons)
 				if name != nil {
 					if x, ok := name.(lisp.Lit); ok {
-						elems = append(elems, x.String())
+						elems = append(elems, stringer.Lit(x))
 					}
 				}
 			}

@@ -1,33 +1,53 @@
-package lisp
+package stringer
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/ajzaff/lisp"
 )
 
-// String returns Lisp string representation of the Lit.
+// Val returns Lisp string representation of the Val.
 //
-// String falls back to GoString if the Lit is not valid to avoid conflating it with valid representations.
-func (x Lit) String() string {
+// Val falls back to GoString when not valid to avoid conflating it with valid representations.
+func Val(x lisp.Val) string {
+	switch x := x.(type) {
+	case lisp.Lit:
+		return Lit(x)
+	case *lisp.Cons:
+		return Cons(x)
+	case nil:
+		return "<nil>"
+	default:
+		// Value Unknown type.
+		return fmt.Sprintf("<Vunk>(%#v)", x)
+	}
+}
+
+// Lit returns Lisp string representation of the Lit.
+//
+// Lit falls back to GoString if the Lit is not valid to avoid conflating it with valid representations.
+func Lit(x lisp.Lit) string {
 	var sb strings.Builder
-	if !x.appendString(&sb) {
+	if !appendLit(x, &sb) {
 		// The Lit appears to be invalid.
 		// Fall back to GoString instead.
 		sb.Reset()
-		x.appendGoString(&sb)
+		appendGoLit(x, &sb)
 	}
 	return sb.String()
 }
 
-func (x Lit) appendString(sb *strings.Builder) (valid bool) {
+func appendLit(x lisp.Lit, sb *strings.Builder) (valid bool) {
 	if len(x.Text) == 0 {
 		// Text is empty.
 		// We shouldn't print this directly.
 		return false
 	}
 	switch x.Token {
-	case Id:
+	case lisp.Id:
 		for _, r := range x.Text {
 			if !unicode.IsLetter(r) {
 				// Lit is not valid.
@@ -35,7 +55,7 @@ func (x Lit) appendString(sb *strings.Builder) (valid bool) {
 				return false
 			}
 		}
-	case Nat:
+	case lisp.Nat:
 		if x.Text[0] == '0' && len(x.Text) > 1 {
 			// Nat is not valid.
 			// We shouldn't print this directly.
@@ -57,21 +77,21 @@ func (x Lit) appendString(sb *strings.Builder) (valid bool) {
 	return true
 }
 
-// String returns the Lisp string representation of this Cons.
+// Cons returns the Lisp string representation of this Cons.
 //
-// String falls back to GoString if the Cons is not valid to avoid conflating it with valid representations.
-func (x *Cons) String() string {
+// Cons falls back to GoString if the Cons is not valid to avoid conflating it with valid representations.
+func Cons(x *lisp.Cons) string {
 	var sb strings.Builder
-	if valid := x.appendString(&sb, true, false); !valid {
+	if valid := appendCons(x, &sb, true, false); !valid {
 		// The Cons appears to be invalid.
 		// Fall back to GoString instead.
 		sb.Reset()
-		x.appendGoString(&sb)
+		appendGoCons(x, &sb)
 	}
 	return sb.String()
 }
 
-func (x *Cons) appendString(sb *strings.Builder, first, delim bool) (valid bool) {
+func appendCons(x *lisp.Cons, sb *strings.Builder, first, delim bool) (valid bool) {
 	if first {
 		sb.WriteByte('(')
 	}
@@ -85,31 +105,24 @@ func (x *Cons) appendString(sb *strings.Builder, first, delim bool) (valid bool)
 			// We shouldn't print this directly.
 			return false
 		}
-	} else if cons, ok := x.Val.(*Cons); ok {
-		cons.appendString(sb, true, false)
+	} else if cons, ok := x.Val.(*lisp.Cons); ok {
+		appendCons(cons, sb, true, false)
 		delim = false
 	} else if x != nil {
 		if delim {
 			sb.WriteByte(' ')
 		}
-		if !x.Val.(Lit).appendString(sb) {
+		if !appendLit(x.Val.(lisp.Lit), sb) {
 			// The Lit in this Cons is invalid.
 			// We shouldn't print this directly.
 			return false
 		}
 		delim = true
 	}
-	return x.Cons.appendString(sb, false, delim)
+	return appendCons(x.Cons, sb, false, delim)
 }
 
-// GoString returns the formatted GoString for this Lit.
-func (x Lit) GoString() string {
-	var sb strings.Builder
-	x.appendGoString(&sb)
-	return sb.String()
-}
-
-func (x Lit) appendGoString(sb *strings.Builder) {
+func appendGoLit(x lisp.Lit, sb *strings.Builder) {
 	sb.WriteString("lisp.Lit{Token:")
 	sb.WriteString(strconv.Itoa(int(x.Token)))
 	sb.WriteString(", Text:")
@@ -117,13 +130,7 @@ func (x Lit) appendGoString(sb *strings.Builder) {
 	sb.WriteByte('}')
 }
 
-func (x *Cons) GoString() string {
-	var sb strings.Builder
-	x.appendGoString(&sb)
-	return sb.String()
-}
-
-func (x *Cons) appendGoString(sb *strings.Builder) {
+func appendGoCons(x *lisp.Cons, sb *strings.Builder) {
 	if x == nil {
 		sb.WriteString("(*lisp.Cons)(nil)")
 		return
@@ -131,13 +138,13 @@ func (x *Cons) appendGoString(sb *strings.Builder) {
 	sb.WriteString("&lisp.Cons{Val:")
 	if x.Val == nil {
 		sb.WriteString("(lisp.Val)(nil), Cons:")
-	} else if cons, ok := x.Val.(*Cons); ok {
-		cons.appendGoString(sb)
+	} else if cons, ok := x.Val.(*lisp.Cons); ok {
+		appendGoCons(cons, sb)
 		sb.WriteString(", Cons:")
 	} else {
-		x.Val.(Lit).appendGoString(sb)
+		appendGoLit(x.Val.(lisp.Lit), sb)
 		sb.WriteString(", Cons:")
 	}
-	x.Cons.appendGoString(sb)
+	appendGoCons(x.Cons, sb)
 	sb.WriteByte('}')
 }

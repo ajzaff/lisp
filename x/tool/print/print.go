@@ -20,6 +20,7 @@ import (
 	"github.com/ajzaff/lisp/x/hash"
 	"github.com/ajzaff/lisp/x/lispdb"
 	"github.com/ajzaff/lisp/x/lispjson"
+	"github.com/ajzaff/lisp/x/stringer"
 	"golang.org/x/text/unicode/rangetable"
 )
 
@@ -85,7 +86,7 @@ func main() {
 			log.Fatalf("unexpected -order mode: %v", *order)
 		}
 		v.SetLitVisitor(func(e lisp.Lit) {
-			fmt.Println("LIT\t", e.String())
+			fmt.Println("LIT\t", stringer.Lit(e))
 		})
 		for _, x := range vs {
 			v.Visit(x)

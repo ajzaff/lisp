@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/ajzaff/lisp"
+	"github.com/ajzaff/lisp/x/stringer"
 )
 
 type Encoder struct{ w io.Writer }
@@ -17,7 +18,7 @@ func (e *Encoder) Encode(v lisp.Val) {
 	case lisp.Lit:
 		// FIXME: No need to Quote the Id if its valid.
 		// (Number | Letter) & ~Print = {}.
-		e.w.Write([]byte(v.String()))
+		e.w.Write([]byte(stringer.Lit(v)))
 	case *lisp.Cons:
 		e.w.Write([]byte{'['})
 		i := 0
