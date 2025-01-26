@@ -1,3 +1,4 @@
+// Package visit provides Visitor which implements an efficient node visitor algorithm.
 package visit
 
 import (

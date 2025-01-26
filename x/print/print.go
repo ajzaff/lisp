@@ -1,3 +1,4 @@
+// Package print implements a canonical Lisp node printer.
 package print
 
 import (

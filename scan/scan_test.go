@@ -135,6 +135,36 @@ func TestTokenizeLit(t *testing.T) {
 			lisp.Lit{Token: lisp.Nat, Text: "1"},
 			lisp.Lit{Token: lisp.Nat, Text: "2"},
 		},
+	}, {
+		name:        "zero sequence",
+		input:       "00000",
+		wantPos:     []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
+		wantTok:     []lisp.Token{lisp.Nat, lisp.Nat, lisp.Nat, lisp.Nat, lisp.Nat},
+		wantText:    []string{"0", "0", "0", "0", "0"},
+		wantNodePos: []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
+		wantNode: []lisp.Val{
+			lisp.Lit{Token: lisp.Nat, Text: "0"},
+			lisp.Lit{Token: lisp.Nat, Text: "0"},
+			lisp.Lit{Token: lisp.Nat, Text: "0"},
+			lisp.Lit{Token: lisp.Nat, Text: "0"},
+			lisp.Lit{Token: lisp.Nat, Text: "0"},
+		},
+	}, {
+		name:        "token zero",
+		input:       "token0",
+		wantPos:     []Pos{0, 5, 5, 6},
+		wantTok:     []lisp.Token{lisp.Id, lisp.Nat},
+		wantText:    []string{"token", "0"},
+		wantNodePos: []Pos{0, 5, 5, 6},
+		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Id, Text: "token"}, lisp.Lit{Token: lisp.Nat, Text: "0"}},
+	}, {
+		name:        "zero token",
+		input:       "0token",
+		wantPos:     []Pos{0, 1, 1, 6},
+		wantTok:     []lisp.Token{lisp.Nat, lisp.Id},
+		wantText:    []string{"0", "token"},
+		wantNodePos: []Pos{0, 1, 1, 6},
+		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Nat, Text: "0"}, lisp.Lit{Token: lisp.Id, Text: "token"}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)

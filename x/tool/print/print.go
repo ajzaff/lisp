@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -40,7 +39,7 @@ func main() {
 		return
 	}
 
-	src, err := ioutil.ReadFile(*file)
+	src, err := os.ReadFile(*file)
 	if err != nil {
 		log.Fatal(err)
 	}
