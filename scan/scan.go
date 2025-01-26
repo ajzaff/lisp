@@ -1,3 +1,4 @@
+// Package scan provides a tokenizer and scanner implementation for Lisp.
 package scan
 
 import (
