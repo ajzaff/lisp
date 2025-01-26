@@ -10,6 +10,7 @@ import (
 )
 
 func mustParseMultiple(t *testing.T, src string) []lisp.Val {
+	t.Helper()
 	var vs []lisp.Val
 	var s scan.TokenScanner
 	s.Reset(strings.NewReader(src))

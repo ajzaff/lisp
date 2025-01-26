@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/ajzaff/lisp"
-	lisputil "github.com/ajzaff/lisp/lisp"
 	"github.com/ajzaff/lisp/scan"
 	"github.com/ajzaff/lisp/visit"
 	"github.com/ajzaff/lisp/x/hash"
+	xlisp "github.com/ajzaff/lisp/x/lisp"
 	"github.com/ajzaff/lisp/x/stringer"
 )
 
@@ -141,9 +141,9 @@ func Query(db QueryInterface, q string) *QueryResult {
 func queryElements(q lisp.Val) (elems []string) {
 	var v visit.Visitor
 	v.SetBeforeConsVisitor(func(e *lisp.Cons) {
-		if x := lisputil.Head(e); x != nil {
-			if lisputil.Equal(x, lisp.Lit{Token: lisp.Id, Text: "q"}) {
-				name := lisputil.Head(e.Cons)
+		if x := xlisp.Head(e); x != nil {
+			if xlisp.Equal(x, lisp.Lit{Token: lisp.Id, Text: "q"}) {
+				name := xlisp.Head(e.Cons)
 				if name != nil {
 					if x, ok := name.(lisp.Lit); ok {
 						elems = append(elems, stringer.Lit(x))

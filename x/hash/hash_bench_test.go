@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/x/fuzzutil"
+	"github.com/ajzaff/lisp/x/print"
 )
 
 var res int

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ajzaff/lisp/print"
+	"github.com/ajzaff/lisp/x/print"
 )
 
 func TestFuzzExample(t *testing.T) {

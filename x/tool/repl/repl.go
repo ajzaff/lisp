@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	"github.com/ajzaff/lisp"
-	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/scan"
+	"github.com/ajzaff/lisp/x/print"
 )
 
 const (

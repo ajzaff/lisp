@@ -1,9 +1,6 @@
 package lisp
 
-import (
-	"github.com/ajzaff/lisp"
-	lisputil "github.com/ajzaff/lisp/lisp"
-)
+import "github.com/ajzaff/lisp"
 
 func FromId(v lisp.Val) string {
 	return string(v.(lisp.Lit).Text)
@@ -24,7 +21,7 @@ func IdSet(v lisp.Val) map[string]struct{} {
 		panic("IdSet: set should have Val marker")
 	}
 	m := map[string]struct{}{}
-	for e := lisputil.Tail(cons); e != nil; e = e.Cons {
+	for e := Tail(cons); e != nil; e = e.Cons {
 		m[FromId(e.Val)] = struct{}{}
 	}
 	return m

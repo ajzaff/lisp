@@ -10,8 +10,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ajzaff/lisp/print"
 	"github.com/ajzaff/lisp/x/fuzzutil"
+	"github.com/ajzaff/lisp/x/print"
 )
 
 type CompressWriter interface {
