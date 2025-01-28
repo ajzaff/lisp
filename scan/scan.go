@@ -54,6 +54,33 @@ func (s *TokenScanner) Token() (pos Pos, tok lisp.Token, text string) {
 	return s.prev + s.pos, s.tok, s.Text()
 }
 
+func isSpace(b byte) bool {
+	switch b {
+	case ' ', '\t', '\r', '\n':
+		return true
+	default:
+		return false
+	}
+}
+
+func isWb(b byte) bool {
+	if isSpace(b) {
+		return true
+	}
+	switch b {
+	case '(', ')':
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *TokenScanner) skipSpaces(src []byte) (advance int) {
+	for ; advance < len(src) && isSpace(src[advance]); advance++ {
+	}
+	return advance
+}
+
 func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(src) == 0 {
 		return 0, nil, nil
@@ -64,13 +91,7 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		s.off += Pos(advance)
 	}()
 	// Skip leading spaces.
-	for size := 0; advance < len(src); advance += size {
-		var r rune
-		r, size = utf8.DecodeRune(src[advance:])
-		if !unicode.IsSpace(r) {
-			break
-		}
-	}
+	advance += s.skipSpaces(src)
 	if len(src) <= advance {
 		// Request more data, if any.
 		return len(src), nil, nil
