@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	fmt.Println(`ws = { " " | "\t" | "\n" | "\r" }.`)
-	fmt.Println(`nat = "0" | "1" … "9" { "0" … "9" }.`)
+	fmt.Println(`ws = { " " | "\t" | "\r" | "\n" }.`)
+	fmt.Println(`nat = "0" … "9" { "0" … "9" }.`)
 	outputIdProds()
 	fmt.Println(`expr = nat | id | "(" { ws expr ws } ")".`)
 	fmt.Println("lisp = { ws expr ws }.")
@@ -21,10 +21,10 @@ func outputIdProds() {
 
 	for _, r16 := range unicode.Letter.R16 {
 		if r16.Stride == 1 {
-			fmt.Printf("id%d = %q … %q.\n", prod, r16.Lo, r16.Hi)
+			fmt.Printf("u%d = %q … %q.\n", prod, r16.Lo, r16.Hi)
 			prod++
 		} else {
-			fmt.Printf("id%d = %q", prod, r16.Lo)
+			fmt.Printf("u%d = %q", prod, r16.Lo)
 			for r := r16.Lo + r16.Stride; r <= r16.Hi; r += r16.Stride {
 				fmt.Printf(" | %q", r)
 			}
@@ -35,10 +35,10 @@ func outputIdProds() {
 
 	for _, r32 := range unicode.Letter.R32 {
 		if r32.Stride == 1 {
-			fmt.Printf("id%d = %q … %q.\n", prod, r32.Lo, r32.Hi)
+			fmt.Printf("u%d = %q … %q.\n", prod, r32.Lo, r32.Hi)
 			prod++
 		} else {
-			fmt.Printf("id%d = %q", prod, r32.Lo)
+			fmt.Printf("u%d = %q", prod, r32.Lo)
 			for r := r32.Lo + r32.Stride; r <= r32.Hi; r += r32.Stride {
 				fmt.Printf(" | %q", r)
 			}
@@ -47,9 +47,10 @@ func outputIdProds() {
 		}
 	}
 
-	fmt.Print("id = id0")
+	fmt.Print("unicode_letter = u0")
 	for i := 1; i < prod; i++ {
-		fmt.Printf(" | id%d", i)
+		fmt.Printf(" | u%d", i)
 	}
 	fmt.Println(".")
+	fmt.Println("id = unicode_letter { unicode_letter }.")
 }
