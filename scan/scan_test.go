@@ -21,6 +21,7 @@ type scanTestCase struct {
 }
 
 func (tc scanTestCase) scanTokenTest(t *testing.T) {
+	t.Helper()
 	if !tc.wantTokenErr && len(tc.wantPos)%2 != 0 {
 		t.Fatalf("Tokenize(%q) wants invalid result (cannot have odd length when wantErr=true): %v", tc.name, tc.wantPos)
 	}
@@ -47,8 +48,8 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 	if diff := cmp.Diff(tc.wantText, gotText); diff != "" {
 		t.Errorf("Token(%q) got text diff (-want, +got):\n%s", tc.name, diff)
 	}
-	if (gotTokenErr != nil) != tc.wantTokenErr {
-		t.Errorf("Token(%q) got err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
+	if gotErr := gotTokenErr != nil; gotErr != tc.wantTokenErr {
+		t.Errorf("Token(%q) got token err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
 	}
 
 	// TODO: Split this to another test case.
@@ -69,8 +70,8 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 	if diff := cmp.Diff(tc.wantNode, gotVal); diff != "" {
 		t.Errorf("Node(%q) got Val diff (-want, +got):\n%s", tc.name, diff)
 	}
-	if (gotNodeErr != nil) != tc.wantNodeErr {
-		t.Errorf("Node(%q) got err: %v, want err? %v", tc.name, gotNodeErr, tc.wantNodeErr)
+	if gotErr := gotNodeErr != nil; gotErr != tc.wantNodeErr {
+		t.Errorf("Node(%q) got node err: %v, want err? %v", tc.name, gotNodeErr, tc.wantNodeErr)
 	}
 }
 
@@ -146,30 +147,21 @@ func TestTokenizeLit(t *testing.T) {
 			lisp.Lit{Token: lisp.Nat, Text: "00000"},
 		},
 	}, {
-		name:        "token zero",
-		input:       "token0",
-		wantPos:     []Pos{0, 5, 5, 6},
-		wantTok:     []lisp.Token{lisp.Id, lisp.Nat},
-		wantText:    []string{"token", "0"},
-		wantNodePos: []Pos{0, 5, 5, 6},
-		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Id, Text: "token"}, lisp.Lit{Token: lisp.Nat, Text: "0"}},
+		name:         "token nat",
+		input:        "token0",
+		wantTokenErr: true,
+		wantNodeErr:  true,
 	}, {
-		name:        "zero token",
-		input:       "0token",
-		wantPos:     []Pos{0, 1, 1, 6},
-		wantTok:     []lisp.Token{lisp.Nat, lisp.Id},
-		wantText:    []string{"0", "token"},
-		wantNodePos: []Pos{0, 1, 1, 6},
-		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Nat, Text: "0"}, lisp.Lit{Token: lisp.Id, Text: "token"}},
+		name:         "nat token",
+		input:        "0token",
+		wantTokenErr: true,
+		wantNodeErr:  true,
+	}, {
+		name:         "nat in token",
+		input:        "tok0tok",
+		wantTokenErr: true,
+		wantNodeErr:  true,
 	}} {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.scanTokenTest(t)
-		})
-	}
-}
-
-func TestTokenizeLitErrors(t *testing.T) {
-	for _, tc := range []scanTestCase{} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
 		})

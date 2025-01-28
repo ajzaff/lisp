@@ -120,6 +120,13 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 			}
 		}
 		s.tok = lisp.Nat
+		if advance < len(src) && !isWb(src[advance]) {
+			return advance, nil, &TokenError{
+				Cause: fmt.Errorf("%w: %#q", errRune, r),
+				Pos:   Pos(advance),
+				Src:   src,
+			}
+		}
 		return advance, src[s.pos:advance], nil
 	case unicode.IsLetter(r): // Id
 		s.pos = Pos(advance)
@@ -132,6 +139,13 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 			}
 		}
 		s.tok = lisp.Id
+		if advance < len(src) && !isWb(src[advance]) {
+			return advance, nil, &TokenError{
+				Cause: fmt.Errorf("%w: %#q", errRune, r),
+				Pos:   Pos(advance),
+				Src:   src,
+			}
+		}
 		return advance, src[s.pos:advance], nil
 	}
 	// Rune error.
