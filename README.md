@@ -11,7 +11,8 @@ It features:
 ## Syntax
 
 ```
-id          => \p{Letter}+
-number      => 0 | [1-9]\d*
-cons        => '(' (id | number | cons)* ')'
+id   = unicode_letter { unicode_letter }.
+nat  = "0" … "9" { "0" … "9" }.
+cons = "(" { expr } ")"
+expr = id | nat | cons.
 ```
