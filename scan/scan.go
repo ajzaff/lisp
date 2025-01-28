@@ -106,15 +106,11 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		s.pos = Pos(advance)
 		s.tok = lisp.RParen
 		return advance + 1, src[advance : advance+1], nil
-	case '0': // Nat(0)
-		s.pos = Pos(advance)
-		s.tok = lisp.Nat
-		return advance + 1, src[advance : advance+1], nil
 	}
 	// Decode longer lisp.Tokens.
 	r, size := utf8.DecodeRune(src[advance:])
 	switch {
-	case '1' <= r && r <= '9': // Nat
+	case '0' <= r && r <= '9': // Nat
 		s.pos = Pos(advance)
 		// Nat parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
 		for advance++; advance < len(src); advance++ {

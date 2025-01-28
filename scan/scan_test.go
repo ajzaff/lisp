@@ -138,16 +138,12 @@ func TestTokenizeLit(t *testing.T) {
 	}, {
 		name:        "zero sequence",
 		input:       "00000",
-		wantPos:     []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
-		wantTok:     []lisp.Token{lisp.Nat, lisp.Nat, lisp.Nat, lisp.Nat, lisp.Nat},
-		wantText:    []string{"0", "0", "0", "0", "0"},
-		wantNodePos: []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
+		wantPos:     []Pos{0, 5},
+		wantTok:     []lisp.Token{lisp.Nat},
+		wantText:    []string{"00000"},
+		wantNodePos: []Pos{0, 5},
 		wantNode: []lisp.Val{
-			lisp.Lit{Token: lisp.Nat, Text: "0"},
-			lisp.Lit{Token: lisp.Nat, Text: "0"},
-			lisp.Lit{Token: lisp.Nat, Text: "0"},
-			lisp.Lit{Token: lisp.Nat, Text: "0"},
-			lisp.Lit{Token: lisp.Nat, Text: "0"},
+			lisp.Lit{Token: lisp.Nat, Text: "00000"},
 		},
 	}, {
 		name:        "token zero",
