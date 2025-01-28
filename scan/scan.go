@@ -107,27 +107,24 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 		s.tok = lisp.RParen
 		return advance + 1, src[advance : advance+1], nil
 	}
-	// Decode longer lisp.Tokens.
-	r, size := utf8.DecodeRune(src[advance:])
-	switch {
-	case '0' <= r && r <= '9': // Nat
+	// Decode Nats.
+	if b := src[advance]; '0' <= b && b <= '9' {
 		s.pos = Pos(advance)
 		// Nat parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
-		for advance++; advance < len(src); advance++ {
-			b := src[advance]
-			if b < '0' || '9' < b {
-				break
-			}
+		for advance++; advance < len(src) && '0' <= src[advance] && src[advance] <= '9'; advance++ {
 		}
-		s.tok = lisp.Nat
 		if advance < len(src) && !isWb(src[advance]) {
 			return advance, nil, &TokenError{
-				Cause: fmt.Errorf("%w: %#q", errRune, r),
+				Cause: fmt.Errorf("unexpected byte after Nat: %#q", b),
 				Pos:   Pos(advance),
 				Src:   src,
 			}
 		}
+		s.tok = lisp.Nat
 		return advance, src[s.pos:advance], nil
+	}
+	// Decode longer lisp.Tokens.
+	switch r, size := utf8.DecodeRune(src[advance:]); {
 	case unicode.IsLetter(r): // Id
 		s.pos = Pos(advance)
 		advance += size
@@ -138,21 +135,22 @@ func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []
 				break
 			}
 		}
-		s.tok = lisp.Id
 		if advance < len(src) && !isWb(src[advance]) {
 			return advance, nil, &TokenError{
-				Cause: fmt.Errorf("%w: %#q", errRune, r),
+				Cause: fmt.Errorf("unexpected byte after Id: %v", src[advance]),
 				Pos:   Pos(advance),
 				Src:   src,
 			}
 		}
+		s.tok = lisp.Id
 		return advance, src[s.pos:advance], nil
-	}
-	// Rune error.
-	return advance, nil, &TokenError{
-		Pos:   Pos(advance),
-		Cause: fmt.Errorf("%w: %#q", errRune, r),
-		Src:   src,
+	default:
+		// Rune error.
+		return advance, nil, &TokenError{
+			Pos:   Pos(advance),
+			Cause: fmt.Errorf("%w: %#q", errRune, r),
+			Src:   src,
+		}
 	}
 }
 
