@@ -39,6 +39,7 @@ func (s *TokenScanner) Buffer(buf []byte, max int) {
 }
 
 func (s *TokenScanner) Scan() bool {
+	s.clearToken()
 	return s.sc.Scan()
 }
 
@@ -50,9 +51,18 @@ func (s *TokenScanner) Text() string {
 	return s.sc.Text()
 }
 
+func (s *TokenScanner) clearToken() { s.setToken(NoPos, lisp.Invalid) }
+
+func (s *TokenScanner) setToken(pos Pos, tok lisp.Token) {
+	s.pos = pos
+	s.tok = tok
+}
+
 func (s *TokenScanner) Token() (pos Pos, tok lisp.Token, text string) {
 	return s.prev + s.pos, s.tok, s.Text()
 }
+
+func isDigit(b byte) bool { return '0' <= b && b <= '9' }
 
 func isSpace(b byte) bool {
 	switch b {
@@ -63,10 +73,7 @@ func isSpace(b byte) bool {
 	}
 }
 
-func isWb(b byte) bool {
-	if isSpace(b) {
-		return true
-	}
+func isPunct(b byte) bool {
 	switch b {
 	case '(', ')':
 		return true
@@ -75,83 +82,124 @@ func isWb(b byte) bool {
 	}
 }
 
+func isTokenBound(b byte) bool { return isSpace(b) || isPunct(b) }
+
 func (s *TokenScanner) skipSpaces(src []byte) (advance int) {
 	for ; advance < len(src) && isSpace(src[advance]); advance++ {
 	}
 	return advance
 }
 
-func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(src) == 0 {
-		return 0, nil, nil
-	}
-	defer func() {
-		// Maintain absolute Positions into the scanner.
-		s.prev = s.off
-		s.off += Pos(advance)
-	}()
-	// Skip leading spaces.
-	advance += s.skipSpaces(src)
-	if len(src) <= advance {
-		// Request more data, if any.
-		return len(src), nil, nil
-	}
-	// Decode length-1 lisp.Tokens.
-	switch src[advance] {
-	case '(': // LParen
-		s.pos = Pos(advance)
-		s.tok = lisp.LParen
-		return advance + 1, src[advance : advance+1], nil
-	case ')': // RParen
-		s.pos = Pos(advance)
-		s.tok = lisp.RParen
-		return advance + 1, src[advance : advance+1], nil
-	}
-	// Decode Nats.
-	if b := src[advance]; '0' <= b && b <= '9' {
-		s.pos = Pos(advance)
-		// Nat parsing may proceed byte-at-a-time since [0-9] <= RuneSelf.
-		for advance++; advance < len(src) && '0' <= src[advance] && src[advance] <= '9'; advance++ {
+func (s *TokenScanner) scanTokenBound(src []byte, advance int, atEOF bool) (token bool, err error) {
+	if advance == len(src) {
+		// If we reached the end, but EOF is not set, we may have token data yet to process.
+		// Request more data.
+		if !atEOF {
+			return false, nil
 		}
-		if advance < len(src) && !isWb(src[advance]) {
-			return advance, nil, &TokenError{
-				Cause: fmt.Errorf("unexpected byte after Nat: %#q", b),
-				Pos:   Pos(advance),
-				Src:   src,
-			}
-		}
-		s.tok = lisp.Nat
-		return advance, src[s.pos:advance], nil
-	}
-	// Decode longer lisp.Tokens.
-	switch r, size := utf8.DecodeRune(src[advance:]); {
-	case unicode.IsLetter(r): // Id
-		s.pos = Pos(advance)
-		advance += size
-		for size := 0; advance < len(src); advance += size {
-			var r rune
-			r, size = utf8.DecodeRune(src[advance:])
-			if !unicode.IsLetter(r) {
-				break
-			}
-		}
-		if advance < len(src) && !isWb(src[advance]) {
-			return advance, nil, &TokenError{
-				Cause: fmt.Errorf("unexpected byte after Id: %v", src[advance]),
-				Pos:   Pos(advance),
-				Src:   src,
-			}
-		}
-		s.tok = lisp.Id
-		return advance, src[s.pos:advance], nil
-	default:
-		// Rune error.
-		return advance, nil, &TokenError{
+	} else if !isTokenBound(src[advance]) {
+		// If something caused us to end scanning early, make sure its a token boundary.
+		// If not, that's a scan error.
+		return false, &TokenError{
+			Cause: fmt.Errorf("unexpected byte at token boundary: %#q", src[advance]),
 			Pos:   Pos(advance),
-			Cause: fmt.Errorf("%w: %#q", errRune, r),
 			Src:   src,
 		}
 	}
+	// We found either EOF or a valid token bound.
+	// Either way the token is valid to emit.
+	return true, nil
+}
+
+func (s *TokenScanner) scanNat(src []byte, atEOF bool) (advance int, token bool, err error) {
+	for advance++; advance < len(src) && 0 <= src[advance] && src[advance] <= '9'; advance++ {
+	}
+	if valid, err := s.scanTokenBound(src, advance, atEOF); err != nil {
+		return advance, false, err
+	} else if !valid {
+		return advance, false, nil
+	}
+	return advance, true, nil
+}
+
+func (s *TokenScanner) scanId(src []byte, atEOF bool) (advance int, token bool, err error) {
+	for size := 0; advance < len(src); advance += size {
+		var r rune
+		r, size = utf8.DecodeRune(src[advance:])
+		if !unicode.IsLetter(r) {
+			break
+		}
+	}
+	if valid, err := s.scanTokenBound(src, advance, atEOF); err != nil {
+		return advance, false, err
+	} else if !valid {
+		return advance, false, nil
+	}
+	return advance, true, nil
+}
+
+func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
+	defer func() {
+		// Maintain absolute Positions into the scanner.
+		if token != nil {
+			s.prev = s.off
+		}
+		s.off += Pos(advance)
+	}()
+
+	// Check in-progress token if any and fast-forward to new data.
+	tok := s.tok
+	switch s.tok {
+	case lisp.Invalid: // No in-progress token; start a new token.
+		// Skip leading spaces.
+		if advance += s.skipSpaces(src); len(src) <= advance {
+			return advance, nil, nil
+		}
+		// Decode cons operators directly, since they are only one byte.
+		switch src[advance] {
+		case '(': // LParen
+			s.setToken(Pos(advance), lisp.LParen)
+			return advance + 1, src[advance : advance+1], nil
+		case ')': // RParen
+			s.setToken(Pos(advance), lisp.RParen)
+			return advance + 1, src[advance : advance+1], nil
+		}
+		switch {
+		case isDigit(src[advance]): // Start a new Nat.
+			tok = lisp.Nat
+		default: // Start a new Id.
+			tok = lisp.Id
+		}
+
+		s.setToken(Pos(advance), tok) // Mark new token start and position.
+	default: // In progress token is set, fast-forward to new data.
+		advance = int(s.pos)
+	}
+
+	var (
+		n        int
+		complete bool
+	)
+
+	switch tok {
+	case lisp.Nat: // Nat
+		n, complete, err = s.scanNat(src[advance:], atEOF)
+	default: // lisp.Id
+		n, complete, err = s.scanId(src[advance:], atEOF)
+	}
+
+	// Check error and request more data if the token is incomplete.
+	advance += n
+	if err != nil {
+		return advance, nil, err
+	}
+	if !complete {
+		// Request more data.
+		return 0, nil, err
+	}
+	// Construct the complete token.
+	token = src[s.pos : s.pos+Pos(advance)]
+	return advance, token, err
 }
 
 type TokenScannerInterface interface {
