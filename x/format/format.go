@@ -12,7 +12,7 @@ func Source(src []byte) []byte {
 		class := delimByte(src[j])
 		src[i] = src[j]
 		switch src[j] {
-		case '\t', '\n', ' ':
+		case '\t', '\r', '\n', ' ':
 			space++
 			if space < 2 && class != delimClass && class != delimNone {
 				i++
