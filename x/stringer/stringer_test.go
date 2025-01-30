@@ -100,82 +100,56 @@ func TestLit(t *testing.T) {
 	}
 }
 
-func TestCons(t *testing.T) {
+func TestGroup(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
-		input *lisp.Cons
+		input lisp.Group
 		want  string
 	}{{
 		name: "Go nil",
 		want: "()",
 	}, {
-		name:  "nil Cons",
-		input: (*lisp.Cons)(nil),
+		name:  "nil Group",
+		input: (lisp.Group)(nil),
 		want:  "()",
 	}, {
-		name:  "empty Cons",
-		input: &lisp.Cons{},
+		name:  "empty Group",
+		input: lisp.Group{},
 		want:  "()",
 	}, {
-		name:  "invalid Cons struct uses GoString",
-		input: &lisp.Cons{Cons: &lisp.Cons{}},
-		want:  "&lisp.Cons{Val:(lisp.Val)(nil), Cons:&lisp.Cons{Val:(lisp.Val)(nil), Cons:(*lisp.Cons)(nil)}}",
+		name:  "group with invalid Lit uses GoString",
+		input: lisp.Group{lisp.Lit{}},
+		want:  `lisp.Group{lisp.Lit{Token:0, Text:""}}`,
 	}, {
-		name:  "nested invalid Cons struct uses GoString",
-		input: &lisp.Cons{Cons: &lisp.Cons{Val: &lisp.Cons{}}},
-		want:  "&lisp.Cons{Val:(lisp.Val)(nil), Cons:&lisp.Cons{Val:&lisp.Cons{Val:(lisp.Val)(nil), Cons:(*lisp.Cons)(nil)}, Cons:(*lisp.Cons)(nil)}}",
-	}, {
-		name:  "empty value in linked cons uses GoString",
-		input: &lisp.Cons{Val: lisp.Lit{Token: lisp.Id, Text: "a"}, Cons: &lisp.Cons{}},
-		want:  `&lisp.Cons{Val:lisp.Lit{Token:1, Text:"a"}, Cons:&lisp.Cons{Val:(lisp.Val)(nil), Cons:(*lisp.Cons)(nil)}}`,
-	}, {
-		name:  "cons with invalid Lit uses GoString",
-		input: &lisp.Cons{Val: lisp.Lit{}},
-		want:  `&lisp.Cons{Val:lisp.Lit{Token:0, Text:""}, Cons:(*lisp.Cons)(nil)}`,
-	}, {
-		name:  "nested cons",
-		input: &lisp.Cons{Val: (*lisp.Cons)(nil), Cons: &lisp.Cons{Val: &lisp.Cons{}}},
+		name:  "nested group",
+		input: lisp.Group{(lisp.Group)(nil), lisp.Group{}},
 		want:  "(()())",
 	}, {
-		name: "valid Cons with some Lits",
-		input: &lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-			Cons: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-				},
-			},
+		name: "valid Group with some Lits",
+		input: lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "a"},
+			lisp.Lit{Token: lisp.Id, Text: "b"},
+			lisp.Lit{Token: lisp.Id, Text: "c"},
 		},
 		want: "(a b c)",
 	}, {
-		name: "valid nested Cons with some mixed Lits",
-		input: &lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-			Cons: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-				Cons: &lisp.Cons{
-					Val: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Nat, Text: "1"},
-						Cons: &lisp.Cons{
-							Val: lisp.Lit{Token: lisp.Nat, Text: "2"},
-							Cons: &lisp.Cons{
-								Val: lisp.Lit{Token: lisp.Nat, Text: "3"},
-							},
-						},
-					},
-					Cons: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-					},
-				},
+		name: "valid nested Group with some mixed Lits",
+		input: lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "a"},
+			lisp.Lit{Token: lisp.Id, Text: "b"},
+			lisp.Group{
+				lisp.Lit{Token: lisp.Nat, Text: "1"},
+				lisp.Lit{Token: lisp.Nat, Text: "2"},
+				lisp.Lit{Token: lisp.Nat, Text: "3"},
 			},
+			lisp.Lit{Token: lisp.Id, Text: "c"},
 		},
 		want: "(a b(1 2 3)c)",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := Cons(tc.input)
+			got := Group(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Cons(%q): got diff:\n%s", tc.name, diff)
+				t.Errorf("Group(%q): got diff:\n%s", tc.name, diff)
 			}
 		})
 	}

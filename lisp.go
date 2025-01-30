@@ -1,4 +1,4 @@
-// Package lisp implements minimal LISP-like expressions.
+// Package lisp implements minimal LISP expressions.
 package lisp
 
 // Token is an enumeration which specifies a kind of AST token.
@@ -14,25 +14,37 @@ const (
 
 // Val is an interface for Lisp Values.
 //
-// Only allowed types are Lit and *Cons.
+// Only allowed types are Lit, Group, and Seq.
+// Examples:
+//
+//	abc
+//	123
+//	abc 123
+//	( abc 123 () )
 type Val interface {
 	val()
-}
-
-// Cons is a construct used to build linked lists.
-//
-// It maintains pointers to a Val and the next Cons in the list.
-type Cons struct {
-	Val
-	*Cons
 }
 
 // Lit is a basic literal type.
 //
 // Allowed Token types are Id, Number.
+// Examples:
+//
+//	abc
+//	123
 type Lit struct {
 	Token Token
 	Text  string
 }
 
 func (Lit) val() {}
+
+// Group is a construct which groups a sequence of Vals together
+// between parens.
+//
+// Example:
+//
+//	( abc 123 () )
+type Group []Val
+
+func (Group) val() {}

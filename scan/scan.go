@@ -161,16 +161,14 @@ type TokenScannerInterface interface {
 	Err() error
 }
 
-type consStackEntry struct {
+type groupStackEntry struct {
 	Pos, End Pos
-
-	Root *lisp.Cons // Root cons.
-	Last *lisp.Cons // Link to the last Cons, for fast insertion.
+	Group    lisp.Group
 }
 
 type NodeScanner struct {
 	sc    TokenScannerInterface
-	stack []*consStackEntry // FIXME: allow user-supplied buffer.
+	stack []*groupStackEntry // FIXME: allow user-supplied buffer.
 	err   error
 
 	pos Pos
@@ -224,44 +222,35 @@ func (s *NodeScanner) scan(pos Pos, tok lisp.Token, text string) (end Pos, v lis
 		v = lisp.Lit{Token: tok, Text: text}
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
-			if e.Last.Val != nil {
-				e.Last.Cons = &lisp.Cons{}
-				e.Last = e.Last.Cons
-			}
-			e.Last.Val = v
-			// Need more scanning to finish this Cons.
+			e.Group = append(e.Group, v)
+			// Need more scanning to finish this Group.
 			return 0, nil, nil
 		}
 		return end, v, nil
-	case lisp.LParen: // BEGIN Cons
-		e := &consStackEntry{}
-		cons := &lisp.Cons{}
-		e.Root, e.Last = cons, cons
+	case lisp.LParen: // BEGIN Group
+		e := &groupStackEntry{Group: lisp.Group{}}
 		s.stack = append(s.stack, e)
-		// Need more scanning to finish this Cons.
+		// Need more scanning to finish this Group.
 		return 0, nil, nil
-	case lisp.RParen: // END Cons
+	case lisp.RParen: // END Group
 		if len(s.stack) == 0 {
-			// FIXME: Use  *lisp.NodeError.
+			// FIXME: Use NodeError.
 			return 0, nil, fmt.Errorf("unexpected ')'")
 		}
 		i := len(s.stack)
 		x := s.stack[i-1]
 		x.End = pos + 1
 		s.stack = s.stack[:i-1]
-		// Append to previous Cons.
+		// Append to previous Group.
 		if i := len(s.stack); i > 0 {
 			e := s.stack[i-1]
-			if e.Last.Val != nil {
-				e.Last.Cons = &lisp.Cons{}
-				e.Last = e.Last.Cons
-			}
-			// Append the cons to the prev cons.
-			e.Last.Val = x.Root
-			// Need more scanning to finish this Cons.
+			// Append the group to the prev group.
+			e.Group = append(e.Group, x.Group)
+			// Need more scanning to finish this Group.
 			return 0, nil, nil
 		}
-		return x.End, x.Root, nil
+		// Yield the completed group.
+		return x.End, x.Group, nil
 	default: // Unknown lisp.Token
 		// FIXME: Use  *lisp.NodeError.
 		return 0, nil, fmt.Errorf("unexpected lisp.Token")

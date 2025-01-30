@@ -24,7 +24,7 @@ func TestDistictHashes(t *testing.T) {
 		input1: "12",
 		input2: "   12",
 	}, {
-		name:         "id and cons are distinct",
+		name:         "id and group are distinct",
 		input1:       "a",
 		input2:       "(a)",
 		wantDistinct: true,
@@ -34,7 +34,7 @@ func TestDistictHashes(t *testing.T) {
 		input2:       "abc",
 		wantDistinct: true,
 	}, {
-		name:         "spaces inserted between id lits in cons",
+		name:         "spaces inserted between id lits in group",
 		input1:       "(a b c)",
 		input2:       "(abc)",
 		wantDistinct: true,

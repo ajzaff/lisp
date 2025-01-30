@@ -7,22 +7,22 @@ func FromId(v lisp.Val) string {
 }
 
 func IdTuple(v lisp.Val) []string {
-	e := v.(*lisp.Cons)
+	group := v.(lisp.Group)
 	var res []string
-	for e := e; e != nil; e = e.Cons {
-		res = append(res, FromId(e.Val))
+	for _, e := range group {
+		res = append(res, FromId(e))
 	}
 	return res
 }
 
 func IdSet(v lisp.Val) map[string]struct{} {
-	cons := v.(*lisp.Cons)
-	if FromId(cons.Val) != "set" {
+	group := v.(lisp.Group)
+	if FromId(group[0]) != "set" {
 		panic("IdSet: set should have Val marker")
 	}
 	m := map[string]struct{}{}
-	for e := Tail(cons); e != nil; e = e.Cons {
-		m[FromId(e.Val)] = struct{}{}
+	for _, e := range group[1:] {
+		m[FromId(e)] = struct{}{}
 	}
 	return m
 }

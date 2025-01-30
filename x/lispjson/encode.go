@@ -19,15 +19,13 @@ func (e *Encoder) Encode(v lisp.Val) {
 		// FIXME: No need to Quote the Id if its valid.
 		// (Number | Letter) & ~Print = {}.
 		e.w.Write([]byte(stringer.Lit(v)))
-	case *lisp.Cons:
+	case lisp.Group:
 		e.w.Write([]byte{'['})
-		i := 0
-		for v := v; v != nil; v = v.Cons {
+		for i, x := range v {
 			if i > 0 {
 				e.w.Write([]byte{','})
 			}
-			e.Encode(v.Val)
-			i++
+			e.Encode(x)
 		}
 		e.w.Write([]byte{']'})
 	}

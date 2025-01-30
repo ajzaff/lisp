@@ -17,55 +17,43 @@ func TestStdPrint(t *testing.T) {
 		name: "empty",
 		want: "()\n",
 	}, {
-		name:  "nil cons",
-		input: (*lisp.Cons)(nil),
+		name:  "nil group",
+		input: (lisp.Group)(nil),
 		want:  "()\n",
 	}, {
-		name:  "empty cons",
-		input: &lisp.Cons{},
+		name:  "empty group",
+		input: lisp.Group{},
 		want:  "()\n",
 	}, {
 		name:  "lit",
 		input: lisp.Lit{Token: lisp.Id, Text: "hello"},
 		want:  "hello\n",
 	}, {
-		name:  "cons",
-		input: &lisp.Cons{Val: lisp.Lit{Token: lisp.Id, Text: "x"}},
+		name:  "group",
+		input: lisp.Group{lisp.Lit{Token: lisp.Id, Text: "x"}},
 		want:  "(x)\n",
 	}, {
 		name: "cons3",
-		input: &lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "x"},
-			Cons: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "y"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "z"},
-				},
-			},
+		input: lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "x"},
+			lisp.Lit{Token: lisp.Id, Text: "y"},
+			lisp.Lit{Token: lisp.Id, Text: "z"},
 		},
 		want: "(x y z)\n",
 	}, {
-		name: "nested cons",
-		input: &lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "x"},
-			Cons: &lisp.Cons{
-				Val: &lisp.Cons{Val: lisp.Lit{Token: lisp.Id, Text: "y"}},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "z"},
-				},
-			},
+		name: "nested group",
+		input: lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "x"},
+			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "y"}},
+			lisp.Lit{Token: lisp.Id, Text: "z"},
 		},
 		want: "(x(y)z)\n",
 	}, {
 		name: "numbers andlisp.Ids are delimitable",
-		input: &lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "add"},
-			Cons: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Nat, Text: "1"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Nat, Text: "2"},
-				},
-			},
+		input: lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "add"},
+			lisp.Lit{Token: lisp.Nat, Text: "1"},
+			lisp.Lit{Token: lisp.Nat, Text: "2"},
 		},
 		want: "(add 1 2)\n",
 	}} {

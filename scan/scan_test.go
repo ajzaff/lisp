@@ -168,138 +168,116 @@ func TestTokenizeLit(t *testing.T) {
 	}
 }
 
-func TestTokenizeCons(t *testing.T) {
+func TestTokenizeGroup(t *testing.T) {
 	for _, tc := range []scanTestCase{{
 		name: "empty",
 	}, {
 		name:  "whitespace",
 		input: "  \t\r\n",
 	}, {
-		name:        "empty cons",
+		name:        "empty group",
 		input:       "()",
 		wantPos:     []Pos{0, 1, 1, 2},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.RParen},
 		wantText:    []string{"(", ")"},
 		wantNodePos: []Pos{0, 2},
-		wantNode:    []lisp.Val{&lisp.Cons{}},
+		wantNode:    []lisp.Val{lisp.Group{}},
 	}, {
-		name:        "nested cons",
+		name:        "nested group",
 		input:       "(())",
 		wantPos:     []Pos{0, 1, 1, 2, 2, 3, 3, 4},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.LParen, lisp.RParen, lisp.RParen},
 		wantText:    []string{"(", "(", ")", ")"},
 		wantNodePos: []Pos{0, 4},
-		wantNode:    []lisp.Val{&lisp.Cons{Val: &lisp.Cons{}}},
+		wantNode:    []lisp.Val{lisp.Group{lisp.Group{}}},
 	}, {
-		name:        "cons",
+		name:        "group",
 		input:       "(abc)",
 		wantPos:     []Pos{0, 1, 1, 4, 4, 5},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.RParen},
 		wantText:    []string{"(", "abc", ")"},
 		wantNodePos: []Pos{0, 5},
-		wantNode: []lisp.Val{&lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "abc"},
+		wantNode: []lisp.Val{lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "abc"},
 		}},
 	}, {
-		name:        "cons 2",
+		name:        "group 2",
 		input:       "(add 1 2)",
 		wantPos:     []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.Nat, lisp.Nat, lisp.RParen},
 		wantText:    []string{"(", "add", "1", "2", ")"},
 		wantNodePos: []Pos{0, 9},
-		wantNode: []lisp.Val{&lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "add"},
-			Cons: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Nat, Text: "1"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Nat, Text: "2"},
-				},
-			},
+		wantNode: []lisp.Val{lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "add"},
+			lisp.Lit{Token: lisp.Nat, Text: "1"},
+			lisp.Lit{Token: lisp.Nat, Text: "2"},
 		}},
 	}, {
-		name:        "cons 3",
+		name:        "group 3",
 		input:       "(add (sub 3 2) 2)",
 		wantPos:     []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.LParen, lisp.Id, lisp.Nat, lisp.Nat, lisp.RParen, lisp.Nat, lisp.RParen},
 		wantText:    []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
 		wantNodePos: []Pos{0, 17},
-		wantNode: []lisp.Val{&lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "add"},
-			Cons: &lisp.Cons{
-				Val: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "sub"},
-					Cons: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Nat, Text: "3"},
-						Cons: &lisp.Cons{
-							Val: lisp.Lit{Token: lisp.Nat, Text: "2"},
-						},
-					},
-				},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Nat, Text: "2"},
-				},
+		wantNode: []lisp.Val{lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "add"},
+			lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "sub"},
+				lisp.Lit{Token: lisp.Nat, Text: "3"},
+				lisp.Lit{Token: lisp.Nat, Text: "2"},
 			},
+			lisp.Lit{Token: lisp.Nat, Text: "2"},
 		}},
 	}, {
-		name:        "cons 4",
+		name:        "group 4",
 		input:       "((a))",
 		wantPos:     []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.LParen, lisp.Id, lisp.RParen, lisp.RParen},
 		wantText:    []string{"(", "(", "a", ")", ")"},
 		wantNodePos: []Pos{0, 5},
-		wantNode: []lisp.Val{&lisp.Cons{
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
+		wantNode: []lisp.Val{lisp.Group{
+			lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "a"},
 			},
 		}},
 	}, {
-		name:        "cons 5",
+		name:        "group 5",
 		input:       "(a)(b) (c)",
 		wantPos:     []Pos{0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.RParen, lisp.LParen, lisp.Id, lisp.RParen, lisp.LParen, lisp.Id, lisp.RParen},
 		wantText:    []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
 		wantNodePos: []Pos{0, 3, 3, 6, 7, 10},
 		wantNode: []lisp.Val{
-			&lisp.Cons{Val: lisp.Lit{Token: lisp.Id, Text: "a"}},
-			&lisp.Cons{Val: lisp.Lit{Token: lisp.Id, Text: "b"}},
-			&lisp.Cons{Val: lisp.Lit{Token: lisp.Id, Text: "c"}},
+			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "a"}},
+			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "b"}},
+			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "c"}},
 		},
 	}, {
-		name:        "cons 6",
+		name:        "group 6",
 		input:       "(div (q x) y)\n",
 		wantPos:     []Pos{0, 1, 1, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.LParen, lisp.Id, lisp.Id, lisp.RParen, lisp.Id, lisp.RParen},
 		wantText:    []string{"(", "div", "(", "q", "x", ")", "y", ")"},
 		wantNodePos: []Pos{0, 13},
-		wantNode: []lisp.Val{&lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "div"},
-			Cons: &lisp.Cons{
-				Val: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "q"},
-					Cons: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Id, Text: "x"},
-					},
-				},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "y"},
-				},
+		wantNode: []lisp.Val{lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "div"},
+			lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "q"},
+				lisp.Lit{Token: lisp.Id, Text: "x"},
 			},
+			lisp.Lit{Token: lisp.Id, Text: "y"},
 		}},
 	}, {
-		name:        "cons 7",
+		name:        "group 7",
 		input:       "((a b))\n",
 		wantPos:     []Pos{0, 1, 1, 2, 2, 3, 4, 5, 5, 6, 6, 7},
 		wantTok:     []lisp.Token{lisp.LParen, lisp.LParen, lisp.Id, lisp.Id, lisp.RParen, lisp.RParen},
 		wantText:    []string{"(", "(", "a", "b", ")", ")"},
 		wantNodePos: []Pos{0, 7},
-		wantNode: []lisp.Val{&lisp.Cons{
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-				},
-			},
-		}},
+		wantNode: []lisp.Val{lisp.Group{lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "a"},
+			lisp.Lit{Token: lisp.Id, Text: "b"},
+		}}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)

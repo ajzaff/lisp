@@ -25,8 +25,8 @@ func (h *MapHash) initVisitor() {
 		h.WriteString(x.Text)
 		delim = true
 	})
-	h.v.SetBeforeConsVisitor(func(*lisp.Cons) { h.WriteByte('('); delim = false })
-	h.v.SetAfterConsVisitor(func(*lisp.Cons) { h.WriteByte(')'); delim = false })
+	h.v.SetBeforeGroupVisitor(func(lisp.Group) { h.WriteByte('('); delim = false })
+	h.v.SetAfterGroupVisitor(func(lisp.Group) { h.WriteByte(')'); delim = false })
 }
 
 // WriteValue hashes the Val into the MapHash.

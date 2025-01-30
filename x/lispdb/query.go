@@ -31,14 +31,10 @@ func queryOneVal(db QueryInterface, id ID) (lisp.Val, float64) {
 	if v.Token != lisp.Invalid {
 		return v, w
 	}
-	x := &lisp.Cons{}
+	x := lisp.Group{}
 	db.EachRef(id, func(i ID) bool {
 		e, _ := queryOneVal(db, i)
-		x.Val = e
-		// FIXME: This produces an incorrect Cons.
-		// FIXME: Use Cons Builder.
-		x.Cons = &lisp.Cons{}
-		x = x.Cons
+		x = append(x, e)
 		return true
 	})
 	return x, w
@@ -140,10 +136,10 @@ func Query(db QueryInterface, q string) *QueryResult {
 
 func queryElements(q lisp.Val) (elems []string) {
 	var v visit.Visitor
-	v.SetBeforeConsVisitor(func(e *lisp.Cons) {
+	v.SetBeforeGroupVisitor(func(e lisp.Group) {
 		if x := xlisp.Head(e); x != nil {
 			if xlisp.Equal(x, lisp.Lit{Token: lisp.Id, Text: "q"}) {
-				name := xlisp.Head(e.Cons)
+				name := xlisp.Head(e[1:])
 				if name != nil {
 					if x, ok := name.(lisp.Lit); ok {
 						elems = append(elems, stringer.Lit(x))

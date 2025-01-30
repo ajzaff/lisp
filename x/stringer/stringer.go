@@ -16,8 +16,8 @@ func Val(x lisp.Val) string {
 	switch x := x.(type) {
 	case lisp.Lit:
 		return Lit(x)
-	case *lisp.Cons:
-		return Cons(x)
+	case lisp.Group:
+		return Group(x)
 	case nil:
 		return "<nil>"
 	default:
@@ -26,12 +26,28 @@ func Val(x lisp.Val) string {
 	}
 }
 
+func appendVal(x lisp.Val, sb *strings.Builder, delim bool) (valid bool) {
+	switch x := x.(type) {
+	case lisp.Lit:
+		return appendLit(x, sb, delim)
+	case lisp.Group:
+		return appendGroup(x, sb)
+	case nil:
+		sb.WriteString("<nil>")
+		return true
+	default:
+		// Value Unknown type.
+		fmt.Fprintf(sb, "<Vunk>(%#v)", x)
+		return true
+	}
+}
+
 // Lit returns Lisp string representation of the Lit.
 //
 // Lit falls back to GoString if the Lit is not valid to avoid conflating it with valid representations.
 func Lit(x lisp.Lit) string {
 	var sb strings.Builder
-	if !appendLit(x, &sb) {
+	if !appendLit(x, &sb, true) {
 		// The Lit appears to be invalid.
 		// Fall back to GoString instead.
 		sb.Reset()
@@ -40,11 +56,14 @@ func Lit(x lisp.Lit) string {
 	return sb.String()
 }
 
-func appendLit(x lisp.Lit, sb *strings.Builder) (valid bool) {
+func appendLit(x lisp.Lit, sb *strings.Builder, delim bool) (valid bool) {
 	if len(x.Text) == 0 {
 		// Text is empty.
 		// We shouldn't print this directly.
 		return false
+	}
+	if !delim {
+		sb.WriteByte(' ')
 	}
 	switch x.Token {
 	case lisp.Id:
@@ -77,49 +96,50 @@ func appendLit(x lisp.Lit, sb *strings.Builder) (valid bool) {
 	return true
 }
 
-// Cons returns the Lisp string representation of this Cons.
+// Group returns the Lisp string representation of this Group.
 //
-// Cons falls back to GoString if the Cons is not valid to avoid conflating it with valid representations.
-func Cons(x *lisp.Cons) string {
+// Group falls back to GoString if theGroups is not valid to avoid conflating it with valid representations.
+func Group(x lisp.Group) string {
 	var sb strings.Builder
-	if valid := appendCons(x, &sb, true, false); !valid {
-		// The Cons appears to be invalid.
+	if valid := appendGroup(x, &sb); !valid {
+		// The Group appears to be invalid.
 		// Fall back to GoString instead.
 		sb.Reset()
-		appendGoCons(x, &sb)
+		appendGoGroup(x, &sb)
 	}
 	return sb.String()
 }
 
-func appendCons(x *lisp.Cons, sb *strings.Builder, first, delim bool) (valid bool) {
-	if first {
-		sb.WriteByte('(')
-	}
-	if x == nil {
-		sb.WriteByte(')')
-		return true
-	}
-	if x.Val == nil {
-		if !first || x.Cons != nil {
-			// Cons is missing the Val element.
-			// We shouldn't print this directly.
+func appendGroup(x lisp.Group, sb *strings.Builder) (valid bool) {
+	sb.WriteByte('(')
+	delim := true
+	for _, e := range x {
+		if !appendVal(e, sb, delim) {
 			return false
 		}
-	} else if cons, ok := x.Val.(*lisp.Cons); ok {
-		appendCons(cons, sb, true, false)
-		delim = false
-	} else if x != nil {
-		if delim {
-			sb.WriteByte(' ')
+		switch e.(type) {
+		case lisp.Lit:
+			delim = false
+		case lisp.Group:
+			delim = true
 		}
-		if !appendLit(x.Val.(lisp.Lit), sb) {
-			// The Lit in this Cons is invalid.
-			// We shouldn't print this directly.
-			return false
-		}
-		delim = true
 	}
-	return appendCons(x.Cons, sb, false, delim)
+	sb.WriteByte(')')
+	return true
+}
+
+func appendGoVal(x lisp.Val, sb *strings.Builder) {
+	switch x := x.(type) {
+	case lisp.Lit:
+		appendGoLit(x, sb)
+	case lisp.Group:
+		appendGoGroup(x, sb)
+	case nil:
+		sb.WriteString("<nil>")
+	default:
+		// Value Unknown type.
+		fmt.Fprintf(sb, "<Vunk>(%#v)", x)
+	}
 }
 
 func appendGoLit(x lisp.Lit, sb *strings.Builder) {
@@ -130,21 +150,14 @@ func appendGoLit(x lisp.Lit, sb *strings.Builder) {
 	sb.WriteByte('}')
 }
 
-func appendGoCons(x *lisp.Cons, sb *strings.Builder) {
+func appendGoGroup(x lisp.Group, sb *strings.Builder) {
 	if x == nil {
-		sb.WriteString("(*lisp.Cons)(nil)")
+		sb.WriteString("(lisp.Group)(nil)")
 		return
 	}
-	sb.WriteString("&lisp.Cons{Val:")
-	if x.Val == nil {
-		sb.WriteString("(lisp.Val)(nil), Cons:")
-	} else if cons, ok := x.Val.(*lisp.Cons); ok {
-		appendGoCons(cons, sb)
-		sb.WriteString(", Cons:")
-	} else {
-		appendGoLit(x.Val.(lisp.Lit), sb)
-		sb.WriteString(", Cons:")
+	sb.WriteString("lisp.Group{")
+	for _, e := range x {
+		appendGoVal(e, sb)
 	}
-	appendGoCons(x.Cons, sb)
 	sb.WriteByte('}')
 }
