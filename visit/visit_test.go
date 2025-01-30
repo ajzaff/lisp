@@ -19,9 +19,9 @@ func TestVisitor(t *testing.T) {
 		overrides  func(v *Visitor)
 		wantVisits []testVisits
 	}{{
-		name: "nil has no visits",
+		name: "nil node has no visits",
 	}, {
-		name:  "int",
+		name:  "nat",
 		input: lisp.Lit{Token: lisp.Nat, Text: "1"},
 		wantVisits: []testVisits{{
 			Visitor: "Val",
@@ -31,88 +31,57 @@ func TestVisitor(t *testing.T) {
 			Val:     lisp.Lit{Token: lisp.Nat, Text: "1"},
 		}},
 	}, {
-		name:  "nil cons",
-		input: (*lisp.Cons)(nil),
+		name:  "nil group",
+		input: (lisp.Group)(nil),
 		wantVisits: []testVisits{{
 			Visitor: "Val",
-			Val:     (*lisp.Cons)(nil),
+			Val:     (lisp.Group)(nil),
 		}, {
-			Visitor: "BeforeCons",
-			Val:     (*lisp.Cons)(nil),
+			Visitor: "BeforeGroup",
+			Val:     (lisp.Group)(nil),
 		}, {
-			Visitor: "Cons",
-			Val:     (*lisp.Cons)(nil),
-		}, {
-			Visitor: "AfterCons",
-			Val:     (*lisp.Cons)(nil),
+			Visitor: "AfterGroup",
+			Val:     (lisp.Group)(nil),
 		}},
 	}, {
-		name:  "nil and empty cons are the same",
-		input: &lisp.Cons{},
+		name:  "empty group",
+		input: lisp.Group{},
 		wantVisits: []testVisits{{
 			Visitor: "Val",
-			Val:     &lisp.Cons{},
+			Val:     lisp.Group{},
 		}, {
-			Visitor: "BeforeCons",
-			Val:     &lisp.Cons{},
+			Visitor: "BeforeGroup",
+			Val:     lisp.Group{},
 		}, {
-			Visitor: "Cons",
-			Val:     &lisp.Cons{},
-		}, {
-			Visitor: "AfterCons",
-			Val:     &lisp.Cons{},
+			Visitor: "AfterGroup",
+			Val:     lisp.Group{},
 		}},
 	}, {
-		name: "cons",
+		name: "simple nested group",
 		// (a b(c))
-		input: &lisp.Cons{
-			Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-			Cons: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-				Cons: &lisp.Cons{
-					Val: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-					},
-				},
+		input: lisp.Group{
+			lisp.Lit{Token: lisp.Id, Text: "a"},
+			lisp.Lit{Token: lisp.Id, Text: "b"},
+			lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		},
 		wantVisits: []testVisits{{
 			Visitor: "Val",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-					Cons: &lisp.Cons{
-						Val: &lisp.Cons{
-							Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-						},
-					},
+			Val: lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "a"},
+				lisp.Lit{Token: lisp.Id, Text: "b"},
+				lisp.Group{
+					lisp.Lit{Token: lisp.Id, Text: "c"},
 				},
 			},
 		}, {
-			Visitor: "BeforeCons",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-					Cons: &lisp.Cons{
-						Val: &lisp.Cons{
-							Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-						},
-					},
-				},
-			},
-		}, {
-			Visitor: "Cons",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "a"},
-				Cons: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-					Cons: &lisp.Cons{
-						Val: &lisp.Cons{
-							Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-						},
-					},
+			Visitor: "BeforeGroup",
+			Val: lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "a"},
+				lisp.Lit{Token: lisp.Id, Text: "b"},
+				lisp.Group{
+					lisp.Lit{Token: lisp.Id, Text: "c"},
 				},
 			},
 		}, {
@@ -123,58 +92,19 @@ func TestVisitor(t *testing.T) {
 			Val:     lisp.Lit{Token: lisp.Id, Text: "a"},
 		}, {
 			Visitor: "Val",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-				Cons: &lisp.Cons{
-					Val: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-					},
-				},
-			},
-		}, {
-			Visitor: "Cons",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "b"},
-				Cons: &lisp.Cons{
-					Val: &lisp.Cons{
-						Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-					},
-				},
-			},
-		}, {
-			Visitor: "Val",
 			Val:     lisp.Lit{Token: lisp.Id, Text: "b"},
 		}, {
 			Visitor: "Lit",
 			Val:     lisp.Lit{Token: lisp.Id, Text: "b"},
 		}, {
 			Visitor: "Val",
-			Val: &lisp.Cons{
-				Val: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-				},
+			Val: lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
-			Visitor: "Cons",
-			Val: &lisp.Cons{
-				Val: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-				},
-			},
-		}, {
-			Visitor: "Val",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-			},
-		}, {
-			Visitor: "BeforeCons",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
-			},
-		}, {
-			Visitor: "Cons",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+			Visitor: "BeforeGroup",
+			Val: lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
 			Visitor: "Val",
@@ -183,15 +113,17 @@ func TestVisitor(t *testing.T) {
 			Visitor: "Lit",
 			Val:     lisp.Lit{Token: lisp.Id, Text: "c"},
 		}, {
-			Visitor: "AfterCons",
-			Val: &lisp.Cons{
-				Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+			Visitor: "AfterGroup",
+			Val: lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "c"},
 			},
 		}, {
-			Visitor: "AfterCons",
-			Val: &lisp.Cons{
-				Val: &lisp.Cons{
-					Val: lisp.Lit{Token: lisp.Id, Text: "c"},
+			Visitor: "AfterGroup",
+			Val: lisp.Group{
+				lisp.Lit{Token: lisp.Id, Text: "a"},
+				lisp.Lit{Token: lisp.Id, Text: "b"},
+				lisp.Group{
+					lisp.Lit{Token: lisp.Id, Text: "c"},
 				},
 			},
 		}},
@@ -211,21 +143,15 @@ func TestVisitor(t *testing.T) {
 					Val:     e,
 				})
 			})
-			v.SetBeforeConsVisitor(func(e *lisp.Cons) {
+			v.SetBeforeGroupVisitor(func(e lisp.Group) {
 				gotVisits = append(gotVisits, testVisits{
-					Visitor: "BeforeCons",
+					Visitor: "BeforeGroup",
 					Val:     e,
 				})
 			})
-			v.SetConsVisitor(func(e *lisp.Cons) {
+			v.SetAfterGroupVisitor(func(e lisp.Group) {
 				gotVisits = append(gotVisits, testVisits{
-					Visitor: "Cons",
-					Val:     e,
-				})
-			})
-			v.SetAfterConsVisitor(func(e *lisp.Cons) {
-				gotVisits = append(gotVisits, testVisits{
-					Visitor: "AfterCons",
+					Visitor: "AfterGroup",
 					Val:     e,
 				})
 			})

@@ -20,13 +20,13 @@ type Rand interface {
 }
 
 type Generator struct {
-	IdWeight     int
-	IntWeight    int
-	ConsWeight   int
-	ConsMeanLen  int
-	ConsMaxDepth int
+	IdWeight      int
+	IntWeight     int
+	GroupWeight   int
+	GroupMeanLen  int
+	GroupMaxDepth int
 
-	// Generates number of links in Cons.
+	// Generates number of links in Group.
 	termFn func() int
 
 	// Generates lengths of Ids.
@@ -37,12 +37,12 @@ type Generator struct {
 
 func NewGenerator(r Rand) *Generator {
 	g := &Generator{
-		IdWeight:     1,
-		IntWeight:    1,
-		ConsWeight:   1,
-		ConsMeanLen:  3,
-		ConsMaxDepth: 3,
-		r:            r,
+		IdWeight:      1,
+		IntWeight:     1,
+		GroupWeight:   1,
+		GroupMeanLen:  3,
+		GroupMaxDepth: 3,
+		r:             r,
 	}
 	g.termFn = g.expTermFn
 	g.idFn = g.expIdFn
@@ -50,7 +50,7 @@ func NewGenerator(r Rand) *Generator {
 }
 
 func (g *Generator) expTermFn() int {
-	return int(float64(g.ConsMeanLen) * g.r.ExpFloat64())
+	return int(float64(g.GroupMeanLen) * g.r.ExpFloat64())
 }
 
 func (g *Generator) expIdFn() int {
@@ -63,7 +63,7 @@ func (g *Generator) Seed(seed int64) {
 }
 
 func (g *Generator) weight() int {
-	return g.IdWeight + g.IntWeight + g.ConsWeight
+	return g.IdWeight + g.IntWeight + g.GroupWeight
 }
 
 func (g *Generator) Token() lisp.Token {
@@ -72,13 +72,13 @@ func (g *Generator) Token() lisp.Token {
 
 func (g *Generator) tokenDepth(depth int) lisp.Token {
 	tok := []lisp.Token{lisp.Id, lisp.Nat, lisp.LParen}
-	w := []int{g.IdWeight, g.IntWeight, g.ConsWeight}
+	w := []int{g.IdWeight, g.IntWeight, g.GroupWeight}
 	weightMax := g.weight()
-	if g.ConsMaxDepth <= depth {
-		// No more Cons.
+	if g.GroupMaxDepth <= depth {
+		// No more Group.
 		tok = tok[:2]
 		w = w[:2]
-		weightMax -= g.ConsWeight
+		weightMax -= g.GroupWeight
 	} else {
 		// Swap once.
 		i := g.r.Intn(3)
@@ -95,7 +95,7 @@ func (g *Generator) tokenDepth(depth int) lisp.Token {
 		return tok[0]
 	}
 	if len(tok) == 2 {
-		// When no Cons we can return early.
+		// When no Group we can return early.
 		return tok[1]
 	}
 	v -= w[0]
@@ -115,8 +115,8 @@ func (g *Generator) nextDepth(depth int) lisp.Val {
 		return g.NextId()
 	case lisp.Nat:
 		return g.NextInt()
-	default: // Cons
-		return g.nextConsDepth(depth)
+	default: // Group
+		return g.nextGroupDepth(depth)
 	}
 }
 
@@ -143,20 +143,15 @@ func (g *Generator) NextInt() lisp.Val {
 	return lisp.Lit{Token: lisp.Nat, Text: strconv.FormatUint(g.r.Uint64(), 10)}
 }
 
-func (g *Generator) NextCons() lisp.Val {
-	return g.nextConsDepth(0)
+func (g *Generator) NextGroup() lisp.Val {
+	return g.nextGroupDepth(0)
 }
 
-func (g *Generator) nextConsDepth(depth int) lisp.Val {
+func (g *Generator) nextGroupDepth(depth int) lisp.Val {
 	n := g.termFn()
-	head := &lisp.Cons{}
-	e := head
-	// FIXME: Use the Cons Builder.
+	group := lisp.Group{}
 	for i := 0; i < n; i++ {
-		if e.Val = g.nextDepth(depth + 1); i+1 < n {
-			e.Cons = &lisp.Cons{}
-			e = e.Cons
-		}
+		group = append(group, g.nextDepth(depth+1))
 	}
-	return head
+	return group
 }

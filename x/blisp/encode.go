@@ -63,28 +63,20 @@ func (e *Encoder) encode(root lisp.Val) {
 		}
 		e.w.WriteString(root.Text)
 		e.delim = true // Set delim.
-	case *lisp.Cons:
-		e.EncodeCons(root)
+	case lisp.Group:
+		e.EncodeGroup(root)
 		e.delim = false // Clear delim.
 	default:
 		panic("Unexpected Val type")
 	}
 }
 
-func (e *Encoder) EncodeCons(root *lisp.Cons) {
-	e.encodeCons(root, true)
-}
-
-func (e *Encoder) encodeCons(root *lisp.Cons, first bool) {
-	if root == nil {
-		e.w.WriteByte(byte(lisp.RParen))
-		return
+func (e *Encoder) EncodeGroup(root lisp.Group) {
+	e.w.WriteByte(byte(lisp.LParen))
+	for _, x := range root {
+		e.encode(x)
 	}
-	if first {
-		e.w.WriteByte(byte(lisp.LParen))
-	}
-	e.encode(root.Val)
-	e.encodeCons(root.Cons, false)
+	e.w.WriteByte(byte(lisp.RParen))
 }
 
 type encodeLen struct {
@@ -116,31 +108,27 @@ func (e *encodeLen) Len(v lisp.Val) {
 		}
 		e.n += len(v.Text) // {text}
 		e.delim = true
-	case *lisp.Cons:
-		e.ConsLen(v, true) // ({Val}...{Val})
+	case lisp.Group:
+		e.GroupLen(v) // ({Val}...{Val})
 		e.delim = false
 	default:
 		panic("Unexpected Val type")
 	}
 }
 
-// ConsLen returns the encoded length of the Cons in bytes.
-func ConsLen(root *lisp.Cons) int {
+// GroupLen returns the encoded length of the Group in bytes.
+func GroupLen(root lisp.Group) int {
 	var e encodeLen
-	e.ConsLen(root, true)
+	e.GroupLen(root)
 	return e.n
 }
 
-func (e *encodeLen) ConsLen(root *lisp.Cons, first bool) {
-	if root == nil {
-		e.n++ // ")"
-		return
+func (e *encodeLen) GroupLen(root lisp.Group) {
+	e.n++ // "("
+	for _, x := range root {
+		e.Len(x) // {val}
 	}
-	if first {
-		e.n++ // "("
-	}
-	e.Len(root.Val)             // "{Val}"
-	e.ConsLen(root.Cons, false) // "..."
+	e.n++ // ")"
 }
 
 func varUintLen(x uint64) int {

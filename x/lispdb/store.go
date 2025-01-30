@@ -30,7 +30,7 @@ func Store(s StoreInterface, vals []lisp.Val, w float64) error {
 	)
 	h.SetSeed(s.Seed())
 
-	v.SetBeforeConsVisitor(func(e *lisp.Cons) {
+	v.SetBeforeGroupVisitor(func(e lisp.Group) {
 		h.Reset()
 		h.WriteVal(e)
 		id := h.Sum64()
@@ -41,7 +41,7 @@ func Store(s StoreInterface, vals []lisp.Val, w float64) error {
 		}
 		stack = append(stack, entry)
 	})
-	v.SetAfterConsVisitor(func(e *lisp.Cons) {
+	v.SetAfterGroupVisitor(func(e lisp.Group) {
 		entry := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		t = append(t, entry)

@@ -7,8 +7,8 @@ func Compare(a, b lisp.Val) int {
 	switch a := a.(type) {
 	case lisp.Lit:
 		return compareLitOther(a, b)
-	case *lisp.Cons:
-		return compareConsOther(a, b)
+	case lisp.Group:
+		return compareGroupOther(a, b)
 	default:
 		return 1 // not reachable
 	}
@@ -18,8 +18,8 @@ func compareLitOther(a lisp.Lit, b lisp.Val) int {
 	switch b := b.(type) {
 	case lisp.Lit:
 		return CompareLit(a, b)
-	case *lisp.Cons:
-		return -1 // Lit < Cons
+	case lisp.Group:
+		return -1 // Lit < Group
 	default:
 		return 1 // not reachable
 	}
@@ -42,33 +42,32 @@ func CompareLit(a, b lisp.Lit) int {
 	return 0
 }
 
-func compareConsOther(a *lisp.Cons, b lisp.Val) int {
+func compareGroupOther(a lisp.Group, b lisp.Val) int {
 	switch other := b.(type) {
 	case lisp.Lit:
-		return 1 // Lit < Cons
-	case *lisp.Cons:
-		return CompareCons(a, other)
+		return 1 // Lit < Group
+	case lisp.Group:
+		return CompareGroup(a, other)
 	default:
 		return 1 // not reachable
 	}
 }
 
-// CompareCons compares expressions recursively.
-func CompareCons(a, b *lisp.Cons) int {
+// CompareGroup compares expressions recursively.
+func CompareGroup(a, b lisp.Group) int {
 	// Check for boundary conditions.
+	// This equates nil and {}.
 	switch {
-	case a == nil && b == nil:
+	case len(a) == 0 && len(b) == 0:
 		return 0
-	case a == nil:
+	case len(a) == 0:
 		return -1 // len(a) < len(b)
-	case b == nil:
+	case len(b) == 0:
 		return 1 // len(b) < len(a)
+	default:
+		if cmp := Compare(a[0], b[0]); cmp != 0 {
+			return cmp
+		}
+		return CompareGroup(a[1:], b[1:])
 	}
-	// a != nil && b != nil:
-	// Compare Vals.
-	if w := Compare(a.Val, b.Val); w != 0 {
-		return w
-	}
-	// Compare Cons recursively.
-	return CompareCons(a.Cons, b.Cons)
 }

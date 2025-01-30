@@ -71,16 +71,16 @@ func main() {
 		}
 	case "ast":
 		var v visit.Visitor
-		consVisitor := func(e *lisp.Cons) {
+		consVisitor := func(e lisp.Group) {
 			var sb strings.Builder
 			print.StdPrinter(&sb).Print(e)
 			fmt.Print("EXPR\t", sb.String())
 		}
 		switch *order {
 		case "": // in-order
-			v.SetBeforeConsVisitor(consVisitor)
+			v.SetBeforeGroupVisitor(consVisitor)
 		case "reverse":
-			v.SetAfterConsVisitor(consVisitor)
+			v.SetAfterGroupVisitor(consVisitor)
 		default:
 			log.Fatalf("unexpected -order mode: %v", *order)
 		}

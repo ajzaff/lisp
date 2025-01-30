@@ -17,11 +17,11 @@ type builderTestCase struct {
 }
 
 var builderTestCases = []builderTestCase{{
-	name:  "nil Builder returns empty Cons",
+	name:  "nil Builder returns empty Group",
 	input: func() *Builder { return nil },
 	want:  mustParseFunc("()"),
 }, {
-	name:  "new empty Builder returns empty Cons",
+	name:  "new empty Builder returns empty Group",
 	input: func() *Builder { return new(Builder) },
 	want:  mustParseFunc("()"),
 }, {
@@ -49,7 +49,7 @@ var builderTestCases = []builderTestCase{{
 	},
 	wantPanic: true,
 }, {
-	name: "BeginFrame on new empty Builder returns empty Cons",
+	name: "BeginFrame on new empty Builder returns empty Group",
 	input: func() *Builder {
 		var b Builder
 		b.BeginFrame()
@@ -85,7 +85,7 @@ var builderTestCases = []builderTestCase{{
 	},
 	want: mustParseFunc("(a)"),
 }, {
-	name: "Nested Cons",
+	name: "Nested Group",
 	input: func() *Builder {
 		var b Builder
 		b.BeginFrame()
@@ -94,7 +94,7 @@ var builderTestCases = []builderTestCase{{
 	},
 	want: mustParseFunc("(())"),
 }, {
-	name: "multiple Nested Cons",
+	name: "multiple Nested Group",
 	input: func() *Builder {
 		var b Builder
 		b.BeginFrame()
@@ -131,7 +131,7 @@ var builderTestCases = []builderTestCase{{
 		b.AppendText("a")
 		return &b
 	},
-	want: func(t *testing.T) lisp.Val { return &lisp.Cons{Val: lisp.Lit{Text: "a"}} },
+	want: func(t *testing.T) lisp.Val { return lisp.Group{lisp.Lit{Text: "a"}} },
 }}
 
 func TestBuilder(t *testing.T) {

@@ -13,6 +13,6 @@ It features:
 ```
 id   = unicode_letter { unicode_letter }.
 nat  = "0" … "9" { "0" … "9" }.
-cons = "(" { expr } ")"
-expr = id | nat | cons.
+group = "(" { expr } ")"
+expr = id | nat | group.
 ```

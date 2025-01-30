@@ -53,8 +53,12 @@ func (p *Printer) initVisitor() {
 			delim = true
 		}
 	})
-	p.v.SetBeforeConsVisitor(func(*lisp.Cons) { p.w.WriteByte('('); delim = false; consDepth++ })
-	p.v.SetAfterConsVisitor(func(*lisp.Cons) {
+	p.v.SetBeforeGroupVisitor(func(lisp.Group) {
+		p.w.WriteByte('(')
+		delim = false
+		consDepth++
+	})
+	p.v.SetAfterGroupVisitor(func(lisp.Group) {
 		p.w.WriteByte(')')
 		delim = false
 		if consDepth--; consDepth == 0 && p.NewLine {

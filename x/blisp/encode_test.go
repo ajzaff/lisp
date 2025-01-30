@@ -12,6 +12,7 @@ import (
 )
 
 func mustParse(t *testing.T, src string) lisp.Val {
+	t.Helper()
 	var v lisp.Val
 	var s scan.TokenScanner
 	s.Reset(strings.NewReader(src))
@@ -48,7 +49,7 @@ func TestEncode(t *testing.T) {
 			1,
 		},
 	}, {
-		name:  "empty Cons",
+		name:  "empty Group",
 		input: "()",
 		want: []byte{
 			byte(lisp.LParen),
@@ -96,7 +97,7 @@ func TestEncode(t *testing.T) {
 			byte(lisp.RParen),
 		},
 	}, {
-		name:  "cons id",
+		name:  "group id",
 		input: "(abc)",
 		want: []byte{
 			byte(lisp.LParen),

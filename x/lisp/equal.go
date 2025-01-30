@@ -7,8 +7,8 @@ func Equal(a, b lisp.Val) bool {
 	switch first := a.(type) {
 	case lisp.Lit:
 		return equalLitOther(first, b)
-	case *lisp.Cons:
-		return equalConsOther(first, b)
+	case lisp.Group:
+		return equalGroupOther(first, b)
 	default:
 		return false // not reachable
 	}
@@ -28,30 +28,26 @@ func EqualLit(a, b lisp.Lit) bool {
 	return a.Token == b.Token && a.Text == b.Text
 }
 
-func equalConsOther(a *lisp.Cons, b lisp.Val) bool {
+func equalGroupOther(a lisp.Group, b lisp.Val) bool {
 	switch second := b.(type) {
-	case *lisp.Cons:
-		return EqualCons(a, second)
+	case lisp.Group:
+		return EqualGroup(a, second)
 	default:
 		return false
 	}
 }
 
-// EqualCons returns whether two expressions are syntactically equivalent by equating elements recursively.
-func EqualCons(a, b *lisp.Cons) bool {
-	// Check for boundary conditions.
-	if a == nil {
-		return b == nil
-	}
-	// a != nil.
-	if b == nil {
+// EqualGroup returns whether two expressions are syntactically equivalent by equating elements recursively.
+func EqualGroup(a, b lisp.Group) bool {
+	switch {
+	case len(a) == len(b):
+		for i := range a {
+			if !Equal(a[i], b[i]) {
+				return false
+			}
+		}
+		return true
+	default:
 		return false
 	}
-	// a != nil && b != nil:
-	// Compare Vals.
-	if !Equal(a.Val, b.Val) {
-		return false
-	}
-	// Equate Cons recursively.
-	return EqualCons(a.Cons, b.Cons)
 }
