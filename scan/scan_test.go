@@ -30,10 +30,10 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 		gotTok  []lisp.Token
 		gotText []string
 	)
-	var sc TokenScanner
+	var sc Scanner
 	sc.Reset(strings.NewReader(tc.input))
-	for sc.Scan() {
-		pos, tok, text := sc.Token()
+	for tok := range sc.Tokens() {
+		pos, tok, text := tok.Pos, tok.Tok, tok.Text
 		gotPos = append(gotPos, pos, pos+Pos(len(text)))
 		gotTok = append(gotTok, tok)
 		gotText = append(gotText, text)
@@ -52,18 +52,15 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 		t.Errorf("Token(%q) got token err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
 	}
 
-	// TODO: Split this to another test case.
 	sc.Reset(strings.NewReader(tc.input))
-	var s NodeScanner
-	s.Reset(&sc)
 	var gotNodePos []Pos
 	var gotVal []lisp.Val
-	for s.Scan() {
-		pos, end, v := s.Node()
+	for n := range sc.Nodes() {
+		pos, v, end := n.Pos, n.Val, n.End
 		gotNodePos = append(gotNodePos, pos, end)
 		gotVal = append(gotVal, v)
 	}
-	gotNodeErr := s.Err()
+	gotNodeErr := sc.Err()
 	if diff := cmp.Diff(tc.wantNodePos, gotNodePos); diff != "" {
 		t.Errorf("Node(%q) got pos diff (-want, +got):\n%s", tc.name, diff)
 	}

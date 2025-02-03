@@ -14,7 +14,7 @@ import (
 func mustParse(t *testing.T, src string) lisp.Val {
 	t.Helper()
 	var v lisp.Val
-	var s scan.TokenScanner
+	var s scan.Scanner
 	s.Reset(strings.NewReader(src))
 	var sc scan.NodeScanner
 	sc.Reset(&s)

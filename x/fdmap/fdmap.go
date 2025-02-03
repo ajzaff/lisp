@@ -9,13 +9,13 @@ import (
 )
 
 type FreqMap struct {
-	sc   *scan.TokenScanner
+	sc   *scan.Scanner
 	err  error
 	data map[lisp.Lit]int
 }
 
 func NewFreqMap() *FreqMap {
-	var sc scan.TokenScanner
+	var sc scan.Scanner
 	return &FreqMap{sc: &sc, data: make(map[lisp.Lit]int)}
 }
 

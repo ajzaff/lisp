@@ -38,7 +38,7 @@ func (d *Decoder) decodeSrc(r io.Reader) {
 		}
 	}
 	// Tokenize and parse normally.
-	var s scan.TokenScanner
+	var s scan.Scanner
 	s.Reset(bytes.NewReader(src))
 	var sc scan.NodeScanner
 	sc.Reset(&s)

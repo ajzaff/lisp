@@ -45,7 +45,7 @@ func main() {
 	}
 
 	var vs []lisp.Val
-	var s scan.TokenScanner
+	var s scan.Scanner
 	s.Reset(bytes.NewReader(src))
 	var sc scan.NodeScanner
 	sc.Reset(&s)
@@ -63,7 +63,7 @@ func main() {
 			print.StdPrinter(os.Stdout).Print(v)
 		}
 	case "tok":
-		var sc scan.TokenScanner
+		var sc scan.Scanner
 		sc.Reset(bytes.NewReader(src))
 		for sc.Scan() {
 			pos, tok, text := sc.Token()

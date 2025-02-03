@@ -3,10 +3,12 @@ package scan
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"unicode/utf8"
+	"iter"
+	"unicode"
 
 	"github.com/ajzaff/lisp"
 )
@@ -19,41 +21,111 @@ type Pos int
 // NoPos is the canonical value for no position defined.
 const NoPos Pos = -1
 
-// Scanner scans the Lisp source for lisp.Tokens.
-type TokenScanner struct {
-	sc        *bufio.Scanner
-	prev, off Pos        // absolute offsets
-	pos       Pos        // relative lisp.Token Position
-	tok       lisp.Token // last lisp.Token scanned
+// Token emitted from TokenScanner.
+type Token struct {
+	Pos  Pos
+	Tok  lisp.Token
+	Text string
 }
 
-func (s *TokenScanner) Reset(r io.Reader) {
-	*s = TokenScanner{}
-	s.sc = bufio.NewScanner(r)
-	s.sc.Split(s.scanTokens)
+// Scanner scans the Lisp source for Lisp tokens and values.
+type Scanner struct {
+	r            bufio.Reader
+	tb           bytes.Buffer
+	pos          Pos
+	err          error
+	lastRuneSize int
+	tokenFunc    func(Token) bool
+	nodeFunc     func(Node) bool
 }
 
-func (s *TokenScanner) Buffer(buf []byte, max int) {
-	s.sc.Buffer(buf, max)
+func (s *Scanner) peekByte() (byte, error) {
+	bs, err := s.r.Peek(1)
+	if err != nil {
+		return 0, err
+	}
+	return bs[0], nil
 }
 
-func (s *TokenScanner) Scan() bool {
-	return s.sc.Scan()
+func (s *Scanner) readByte() (byte, error) {
+	b, err := s.r.ReadByte()
+	if err != nil {
+		return 0, err
+	}
+	s.pos++
+	return b, nil
 }
 
-func (s *TokenScanner) Err() error {
-	return s.sc.Err()
+func (s *Scanner) unreadByte() error {
+	err := s.r.UnreadByte()
+	if err != nil {
+		return err
+	}
+	s.pos--
+	return nil
 }
 
-func (s *TokenScanner) Text() string {
-	return s.sc.Text()
+func (s *Scanner) readRune() (rune, int, error) {
+	r, size, err := s.r.ReadRune()
+	if err != nil {
+		return r, size, err
+	}
+	s.lastRuneSize = size
+	s.pos += Pos(size)
+	return r, size, nil
 }
 
-func (s *TokenScanner) Token() (pos Pos, tok lisp.Token, text string) {
-	return s.prev + s.pos, s.tok, s.Text()
+func (s *Scanner) unreadRune() error {
+	err := s.r.UnreadRune()
+	if err != nil {
+		return err
+	}
+	s.pos -= Pos(s.lastRuneSize)
+	s.lastRuneSize = -1
+	return nil
 }
 
-func isSpace(b byte) bool {
+func (s *Scanner) discardByte() error {
+	_, err := s.r.Discard(1)
+	if err == nil {
+		s.pos++
+	}
+	return err
+}
+
+func (s *Scanner) setErr(err error) {
+	if s.err == nil && err != io.EOF {
+		s.err = err
+	}
+}
+
+func (s *Scanner) hasErr() bool { return s.err != nil }
+
+func (s *Scanner) Err() error { return s.err }
+
+func (s *Scanner) resetToken() { s.tb.Reset() }
+
+func (s *Scanner) Reset(r io.Reader) {
+	s.r.Reset(r)
+	s.lastRuneSize = -1
+	s.pos = 0
+	s.err = nil
+	s.tokenFunc = nil
+}
+
+func (s *Scanner) yieldToken(tok Token) bool {
+	if s.tokenFunc == nil {
+		return true
+	}
+	return s.tokenFunc(tok)
+}
+
+func (s *Scanner) peekSpace0() bool {
+	b, err := s.peekByte()
+	if err != nil {
+		s.setErr(err)
+		return false
+	}
 	switch b {
 	case ' ', '\t', '\r', '\n':
 		return true
@@ -62,195 +134,203 @@ func isSpace(b byte) bool {
 	}
 }
 
-func isWb(b byte) bool {
-	if isSpace(b) {
-		return true
+func (s *Scanner) scanSpace0() bool {
+	if !s.peekSpace0() {
+		s.setErr(fmt.Errorf("expected space"))
+		return false
 	}
-	switch b {
-	case '(', ')':
+	s.discardByte()
+	return true
+}
+
+func (s *Scanner) scanSpace1() {
+	for s.peekSpace0() {
+		s.discardByte()
+	}
+}
+
+func (s *Scanner) scanSpace2() bool {
+	if !s.scanSpace0() {
+		return false
+	}
+	s.scanSpace1()
+	return true
+}
+
+func (s *Scanner) scanLit0() bool {
+	r, _, err := s.readRune()
+	if err != nil {
+		s.setErr(err)
+		return false
+	}
+	if !unicode.IsLetter(r) {
+		s.unreadRune()
+		s.setErr(fmt.Errorf("expected letter"))
+		return false
+	}
+	s.tb.WriteRune(r)
+	return true
+}
+
+func (s *Scanner) peekDigit0() bool {
+	b, err := s.peekByte()
+	if err != nil {
+		s.setErr(err)
+		return false
+	}
+	switch {
+	case '0' <= b && b <= '9':
+		s.tb.WriteByte(b)
 		return true
 	default:
 		return false
 	}
 }
 
-func (s *TokenScanner) skipSpaces(src []byte) (advance int) {
-	for ; advance < len(src) && isSpace(src[advance]); advance++ {
+func (s *Scanner) peekLit1() bool { return s.peekDigit0() || !s.peekGroup0() }
+
+func (s *Scanner) scanLit1() bool {
+	switch {
+	case s.peekDigit0():
+		s.discardByte()
+		return true
+	case s.peekGroup0():
+		return false
 	}
-	return advance
+	return s.scanLit0()
 }
 
-func (s *TokenScanner) scanTokens(src []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(src) == 0 {
-		return 0, nil, nil
+func (s *Scanner) scanLit2() bool {
+	tok := Token{
+		Pos: s.pos,
+		Tok: lisp.Id,
 	}
-	defer func() {
-		// Maintain absolute Positions into the scanner.
-		s.prev = s.off
-		s.off += Pos(advance)
-	}()
-	// Skip leading spaces.
-	advance += s.skipSpaces(src)
-	if len(src) <= advance {
-		// Request more data, if any.
-		return len(src), nil, nil
+	s.resetToken()
+	if !s.scanLit1() {
+		return false
 	}
-	// Decode length-1 lisp.Tokens.
-	switch src[advance] {
-	case '(': // LParen
-		s.pos = Pos(advance)
-		s.tok = lisp.LParen
-		return advance + 1, src[advance : advance+1], nil
-	case ')': // RParen
-		s.pos = Pos(advance)
-		s.tok = lisp.RParen
-		return advance + 1, src[advance : advance+1], nil
+	for s.peekLit1() && s.scanLit1() {
 	}
-	// Decode Lit.
-	switch r, size := utf8.DecodeRune(src[advance:]); {
-	case isLit(r): // Id
-		s.pos = Pos(advance)
-		advance += size
-		for size := 0; advance < len(src); advance += size {
-			var r rune
-			r, size = utf8.DecodeRune(src[advance:])
-			if !isLit(r) {
-				break
-			}
+	tok.Text = s.tb.String()
+	s.yieldToken(tok)
+	return true
+}
+
+func (s *Scanner) scanLit3() {
+	if !s.scanLit2() {
+		return
+	}
+	for s.peekSpace0() {
+		s.scanSpace2()
+		if !s.peekLit1() {
+			break
 		}
-		if advance < len(src) && !isWb(src[advance]) {
-			return advance, nil, &TokenError{
-				Cause: fmt.Errorf("unexpected byte after Id: %v", src[advance]),
-				Pos:   Pos(advance),
-				Src:   src,
-			}
-		}
-		s.tok = lisp.Id
-		return advance, src[s.pos:advance], nil
-	default:
-		// Rune error.
-		return advance, nil, &TokenError{
-			Pos:   Pos(advance),
-			Cause: fmt.Errorf("%w: %#q", errRune, r),
-			Src:   src,
-		}
+		s.scanLit2()
 	}
 }
 
-type TokenScannerInterface interface {
-	Reset(io.Reader)
-	Scan() bool
-	Token() (Pos, lisp.Token, string)
-	Err() error
+func (s *Scanner) peekGroup0() bool {
+	b, err := s.peekByte()
+	if err != nil {
+		s.setErr(err)
+		return false
+	}
+	return b == '('
 }
 
-type groupStackEntry struct {
-	Pos, End Pos
-	Group    lisp.Group
+func (s *Scanner) scanGroup0() bool {
+	if !s.peekGroup0() {
+		return false
+	}
+	s.yieldToken(Token{Pos: s.pos, Tok: lisp.LParen, Text: "("})
+	s.discardByte()
+	s.scanSpace1()
+	s.scanExpr2()
+	s.scanSpace1()
+	if !s.peekGroup0() {
+		return false
+	}
+	s.yieldToken(Token{Pos: s.pos, Tok: lisp.RParen, Text: ")"})
+	s.discardByte()
+	return true
 }
 
-type NodeScanner struct {
-	sc    TokenScannerInterface
-	stack []*groupStackEntry // FIXME: allow user-supplied buffer.
-	err   error
-
-	pos Pos
-	end Pos
-	val lisp.Val
-}
-
-func (s *NodeScanner) Reset(sc TokenScannerInterface) {
-	*s = NodeScanner{}
-	s.sc = sc
-}
-
-func (s *NodeScanner) Scan() bool {
-	var end Pos
-	var v lisp.Val
-
-	// Scan until a full Val is constructed.
-	for first := true; s.sc.Scan(); first = false {
-		var err error
-		var tok lisp.Token
-		var text string
-		pos, tok, text := s.sc.Token()
-		if first {
-			s.pos = pos
-		}
-		end, v, err = s.scan(pos, tok, text)
-		if err != nil {
-			s.err = err
-			return false
-		}
-		// A Val is emitted, maybe return it.
-		if v != nil {
+func (s *Scanner) scanGroup1() bool {
+	if !s.scanGroup0() {
+		return false
+	}
+	for {
+		s.scanSpace1()
+		if !s.peekGroup0() {
 			break
 		}
 	}
-	if err := s.sc.Err(); err != nil {
-		s.err = err
+	return true
+}
+
+func (s *Scanner) peekExpr0() bool { return s.peekGroup0() || s.peekLit1() }
+
+func (s *Scanner) scanExpr0() bool { return s.peekGroup0() && s.scanGroup0() || s.scanLit2() }
+
+func (s *Scanner) scanExpr1() bool {
+	if !s.scanExpr0() {
 		return false
 	}
-	s.end = end
-	s.val = v
-	// Return true when valid Val scanned.
-	// The final Scan call will be empty.
-	return s.val != nil
+	for s.peekExpr0() && s.scanExpr0() {
+	}
+	return true
 }
 
-func (s *NodeScanner) scan(pos Pos, tok lisp.Token, text string) (end Pos, v lisp.Val, err error) {
-	switch tok {
-	case lisp.Id: // Id
-		end = pos + Pos(len(text))
-		v = lisp.Lit(text)
-		if i := len(s.stack); i > 0 {
-			e := s.stack[i-1]
-			e.Group = append(e.Group, v)
-			// Need more scanning to finish this Group.
-			return 0, nil, nil
+func (s *Scanner) scanExpr2() bool {
+	if s.peekExpr0() {
+		return s.scanExpr1()
+	}
+	return true
+}
+
+func (s *Scanner) scanExpr3() {
+	s.scanSpace1()
+	if !s.scanExpr2() {
+		return
+	}
+	s.scanSpace1()
+}
+
+// Tokens returns a iteration over tokens without respect for correct syntax.
+func (s *Scanner) Tokens() iter.Seq[Token] {
+	return func(yield func(Token) bool) {
+		s.tokenFunc = yield
+		defer func() { s.tokenFunc = nil }()
+		for {
+			s.scanSpace1()
+			switch {
+			case s.peekGroup0():
+				s.yieldToken(Token{Pos: s.pos, Tok: lisp.LParen, Text: "("})
+				s.discardByte()
+			default:
+				if b, err := s.peekByte(); err != nil {
+					s.setErr(err)
+					return
+				} else if b == ')' {
+					s.yieldToken(Token{Pos: s.pos, Tok: lisp.RParen, Text: ")"})
+				} else if !s.scanLit2() {
+					return
+				}
+			}
 		}
-		return end, v, nil
-	case lisp.LParen: // BEGIN Group
-		e := &groupStackEntry{Group: lisp.Group{}}
-		s.stack = append(s.stack, e)
-		// Need more scanning to finish this Group.
-		return 0, nil, nil
-	case lisp.RParen: // END Group
-		if len(s.stack) == 0 {
-			// FIXME: Use NodeError.
-			return 0, nil, fmt.Errorf("unexpected ')'")
-		}
-		i := len(s.stack)
-		x := s.stack[i-1]
-		x.End = pos + 1
-		s.stack = s.stack[:i-1]
-		// Append to previous Group.
-		if i := len(s.stack); i > 0 {
-			e := s.stack[i-1]
-			// Append the group to the prev group.
-			e.Group = append(e.Group, x.Group)
-			// Need more scanning to finish this Group.
-			return 0, nil, nil
-		}
-		// Yield the completed group.
-		return x.End, x.Group, nil
-	default: // Unknown lisp.Token
-		// FIXME: Use  *lisp.NodeError.
-		return 0, nil, fmt.Errorf("unexpected lisp.Token")
 	}
 }
 
-// Node returns the last indices and Val scanned.
-//
-// When Scan returned true v will always be non-nil, and pos < end.
-func (s *NodeScanner) Node() (pos, end Pos, v lisp.Val) {
-	return s.pos, s.end, s.val
+type Node struct {
+	Pos Pos
+	Val lisp.Val
+	End Pos
 }
 
-// Err returns the NodeScanner error.
-func (s *NodeScanner) Err() error {
-	if s.err != nil {
-		return s.err
+func (s *Scanner) Nodes() iter.Seq[Node] {
+	return func(yield func(Node) bool) {
+		s.nodeFunc = yield
+		s.scanExpr3()
+		s.nodeFunc = nil
 	}
-	return s.sc.Err()
 }

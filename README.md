@@ -17,8 +17,8 @@ s1 = {s0}.
 s2 = s0 s1.
 
 // Literals.
-l0    = ... // Definition of "unicode Letter" omitted.
 d0 = "0" … "9".
+l0    = ... // Definition of "unicode Letter" omitted.
 l1 = d0 | l0.
 l2 = l1 { l1 }.
 l3 = l2 {s2 l2}.
@@ -28,7 +28,7 @@ g0 = "(" s1 e2 s1 ")".
 g1 = g0 {s1 g0}. 
 
 // Expression.
-e0  = g1 | l3.
+e0  = g0 | l2.
 e1 = e0 {s1 e0}.
 e2 = "" | e1.
 e3 = s1 e2 s1.

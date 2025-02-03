@@ -106,7 +106,7 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
 	var qv []lisp.Val
-	var s scan.TokenScanner
+	var s scan.Scanner
 	s.Reset(strings.NewReader(q))
 	var sc scan.NodeScanner
 	sc.Reset(&s)

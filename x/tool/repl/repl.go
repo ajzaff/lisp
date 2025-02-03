@@ -29,7 +29,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	var ts scan.TokenScanner
+	var ts scan.Scanner
 	var s scan.NodeScanner
 
 	var sb strings.Builder

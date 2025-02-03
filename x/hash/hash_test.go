@@ -73,7 +73,7 @@ func TestDistictHashes(t *testing.T) {
 
 func mustParse(t *testing.T, input string) lisp.Val {
 	var s scan.NodeScanner
-	var sc scan.TokenScanner
+	var sc scan.Scanner
 	sc.Reset(strings.NewReader(input))
 	s.Reset(&sc)
 	for s.Scan() {

@@ -187,7 +187,7 @@ type rule struct {
 
 // {lhs, rhs}
 var nonterminalRules = []rule{
-	{"(e0)", "(a g1 l3)"},
+	{"(e0)", "(a g0 l2)"},
 	{"(e1)", "(e0)(r s1 e0)"},
 	{"(e2)", "(a ε e1)"},
 	{"(e3)", "(s1)(e2)(s1)"},
@@ -222,8 +222,8 @@ var alternateRules = []rule{
 	// Expr.
 	{"(a ε e1)", "(ε)"},
 	{"(a ε e1)", "(e1)"},
-	{"(a g1 l3)", "(g1)"},
-	{"(a g1 l3)", "(l3)"},
+	{"(a g0 l2)", "(g0)"},
+	{"(a g0 l2)", "(l2)"},
 	// Id.
 	{"(a d0 l0)", "(d0)"},
 	{"(a d0 l0)", "(l0)"},
