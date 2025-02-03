@@ -43,7 +43,7 @@ func (p *Printer) initVisitor() {
 		if delim {
 			p.w.WriteByte(' ')
 		}
-		p.w.WriteString(x.Text)
+		p.w.WriteString(string(x))
 		switch consDepth == 0 && p.NewLine {
 		case true:
 			p.w.WriteByte('\n')

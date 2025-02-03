@@ -49,19 +49,15 @@ func (b *Builder) EndFrame() {
 }
 
 // AppendId appends the Id Lit to the Group.
-func (b *Builder) AppendId(text string) {
-	if b.builderFrame == nil {
-		b.BeginFrame()
-	}
-	b.builderFrame.appendVal(lisp.Lit{Token: lisp.Id, Text: text})
-}
+func (b *Builder) AppendId(text string) { b.AppendText(text) }
 
 // AppendNat appends the unsigned integer n to the Group.
 func (b *Builder) AppendNat(n uint64) {
 	if b.builderFrame == nil {
 		b.BeginFrame()
 	}
-	b.builderFrame.appendVal(lisp.Lit{Token: lisp.Nat, Text: strconv.FormatUint(n, 10)})
+	s := strconv.FormatUint(n, 10)
+	b.AppendText(s)
 }
 
 // AppendRaw appends an raw text Lit with Token Invalid to the Group.
@@ -69,7 +65,7 @@ func (b *Builder) AppendText(text string) {
 	if b.builderFrame == nil {
 		b.BeginFrame()
 	}
-	b.builderFrame.appendVal(lisp.Lit{Text: text})
+	b.builderFrame.appendVal(lisp.Lit(text))
 }
 
 // AppendVal appends a Val v to the Group.

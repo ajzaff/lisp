@@ -26,13 +26,7 @@ func (m *FreqMap) Init(r io.Reader) {
 func (m *FreqMap) Scan() bool {
 	res := m.sc.Scan()
 	if _, t, text := m.sc.Token(); t != lisp.Invalid {
-		var lit lisp.Lit
-		switch t {
-		case lisp.Id:
-			lit = lisp.Lit{Token: lisp.Id, Text: text}
-		case lisp.Nat:
-			lit = lisp.Lit{Token: lisp.Nat, Text: text}
-		}
+		lit := lisp.Lit(text)
 		m.data[lit]++
 	}
 	return res

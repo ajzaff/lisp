@@ -22,7 +22,7 @@ func (h *MapHash) initVisitor() {
 		if delim {
 			h.WriteByte(' ')
 		}
-		h.WriteString(x.Text)
+		h.WriteString(string(x))
 		delim = true
 	})
 	h.v.SetBeforeGroupVisitor(func(lisp.Group) { h.WriteByte('('); delim = false })

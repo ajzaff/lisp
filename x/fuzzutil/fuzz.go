@@ -2,7 +2,6 @@ package fuzzutil
 
 import (
 	"math"
-	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -71,7 +70,7 @@ func (g *Generator) Token() lisp.Token {
 }
 
 func (g *Generator) tokenDepth(depth int) lisp.Token {
-	tok := []lisp.Token{lisp.Id, lisp.Nat, lisp.LParen}
+	tok := []lisp.Token{lisp.Id, lisp.Id, lisp.LParen}
 	w := []int{g.IdWeight, g.IntWeight, g.GroupWeight}
 	weightMax := g.weight()
 	if g.GroupMaxDepth <= depth {
@@ -113,17 +112,20 @@ func (g *Generator) nextDepth(depth int) lisp.Val {
 	switch g.tokenDepth(depth) {
 	case lisp.Id:
 		return g.NextId()
-	case lisp.Nat:
-		return g.NextInt()
+	// case Nat
+	// return g.NextInt()
 	default: // Group
 		return g.nextGroupDepth(depth)
 	}
 }
 
-var idTab = make([]rune, 0, 131241) // len(unicode.L)
+var idTab = make([]rune, 0, 131251) // len(unicode.Letter) + 10
 
 func init() {
-	rangetable.Visit(unicode.L, func(r rune) { idTab = append(idTab, r) })
+	rangetable.Visit(unicode.Letter, func(r rune) { idTab = append(idTab, r) })
+	for i := rune(0); i < 10; i++ {
+		idTab = append(idTab, rune('0')+i)
+	}
 }
 
 func (g *Generator) NextId() lisp.Val {
@@ -136,12 +138,12 @@ func (g *Generator) NextId() lisp.Val {
 		sb.WriteRune(r)
 		i += size
 	}
-	return lisp.Lit{Token: lisp.Id, Text: sb.String()}
+	return lisp.Lit(sb.String())
 }
 
-func (g *Generator) NextInt() lisp.Val {
-	return lisp.Lit{Token: lisp.Nat, Text: strconv.FormatUint(g.r.Uint64(), 10)}
-}
+// func (g *Generator) NextInt() lisp.Val {
+// 	return lisp.Lit{Token: lisp.Id, Text: strconv.FormatUint(g.r.Uint64(), 10)}
+// }
 
 func (g *Generator) NextGroup() lisp.Val {
 	return g.nextGroupDepth(0)

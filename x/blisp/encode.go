@@ -2,9 +2,7 @@ package blisp
 
 import (
 	"bufio"
-	"encoding/binary"
 	"io"
-	"strconv"
 
 	"github.com/ajzaff/lisp"
 )
@@ -49,19 +47,10 @@ func (e *Encoder) encode(root lisp.Val) {
 	}
 	switch root := root.(type) {
 	case lisp.Lit:
-		if root.Token == lisp.Nat {
-			var b [10]byte
-			i, _ := strconv.ParseUint(root.Text, 10, 64)
-			n := binary.PutUvarint(b[:], i)
-			e.w.WriteByte(byte(lisp.Nat))
-			e.w.Write(b[:n])
-			e.delim = false // Clear delim.
-			return
-		}
 		if e.delim {
 			e.w.WriteByte(' ')
 		}
-		e.w.WriteString(root.Text)
+		e.w.WriteString(string(root))
 		e.delim = true // Set delim.
 	case lisp.Group:
 		e.EncodeGroup(root)
@@ -97,16 +86,10 @@ func (e *encodeLen) Len(v lisp.Val) {
 	}
 	switch v := v.(type) {
 	case lisp.Lit:
-		if v.Token == lisp.Nat {
-			i, _ := strconv.ParseUint(v.Text, 10, 64)
-			e.n += 1 + varUintLen(i) // Nat{i}
-			e.delim = false
-			return
-		}
 		if e.delim {
 			e.n++ // {delim}
 		}
-		e.n += len(v.Text) // {text}
+		e.n += len(v) // {text}
 		e.delim = true
 	case lisp.Group:
 		e.GroupLen(v) // ({Val}...{Val})
@@ -129,29 +112,4 @@ func (e *encodeLen) GroupLen(root lisp.Group) {
 		e.Len(x) // {val}
 	}
 	e.n++ // ")"
-}
-
-func varUintLen(x uint64) int {
-	switch {
-	case x < 1<<7:
-		return 1
-	case x < 1<<14:
-		return 2
-	case x < 1<<21:
-		return 3
-	case x < 1<<28:
-		return 4
-	case x < 1<<35:
-		return 5
-	case x < 1<<42:
-		return 6
-	case x < 1<<49:
-		return 7
-	case x < 1<<56:
-		return 8
-	case x < 1<<63:
-		return 9
-	default:
-		return 10
-	}
 }

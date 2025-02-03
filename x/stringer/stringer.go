@@ -2,11 +2,10 @@ package stringer
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/ajzaff/lisp"
+	xlisp "github.com/ajzaff/lisp/x/lisp"
 )
 
 // Val returns Lisp string representation of the Val.
@@ -57,7 +56,7 @@ func Lit(x lisp.Lit) string {
 }
 
 func appendLit(x lisp.Lit, sb *strings.Builder, delim bool) (valid bool) {
-	if len(x.Text) == 0 {
+	if len(x) == 0 {
 		// Text is empty.
 		// We shouldn't print this directly.
 		return false
@@ -65,34 +64,14 @@ func appendLit(x lisp.Lit, sb *strings.Builder, delim bool) (valid bool) {
 	if !delim {
 		sb.WriteByte(' ')
 	}
-	switch x.Token {
-	case lisp.Id:
-		for _, r := range x.Text {
-			if !unicode.IsLetter(r) {
-				// Lit is not valid.
-				// We shouldn't print this directly.
-				return false
-			}
-		}
-	case lisp.Nat:
-		if x.Text[0] == '0' && len(x.Text) > 1 {
-			// Nat is not valid.
+	for _, r := range x {
+		if !xlisp.IsLit(r) {
+			// Lit is not valid.
 			// We shouldn't print this directly.
 			return false
 		}
-		for _, b := range []byte(x.Text) {
-			if b < '0' || '9' < b {
-				// Nat is not valid.
-				// We shouldn't print this directly.
-				return false
-			}
-		}
-	default:
-		// Token is not obviously valid.
-		// We shouldn't print this directly.
-		return false
 	}
-	sb.WriteString(x.Text)
+	sb.WriteString(string(x))
 	return true
 }
 
@@ -142,13 +121,7 @@ func appendGoVal(x lisp.Val, sb *strings.Builder) {
 	}
 }
 
-func appendGoLit(x lisp.Lit, sb *strings.Builder) {
-	sb.WriteString("lisp.Lit{Token:")
-	sb.WriteString(strconv.Itoa(int(x.Token)))
-	sb.WriteString(", Text:")
-	sb.WriteString(strconv.Quote(x.Text))
-	sb.WriteByte('}')
-}
+func appendGoLit(x lisp.Lit, sb *strings.Builder) { fmt.Fprintf(sb, "lisp.Lit(%q)", x) }
 
 func appendGoGroup(x lisp.Group, sb *strings.Builder) {
 	if x == nil {

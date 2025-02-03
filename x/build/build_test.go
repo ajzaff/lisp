@@ -131,7 +131,7 @@ var builderTestCases = []builderTestCase{{
 		b.AppendText("a")
 		return &b
 	},
-	want: func(t *testing.T) lisp.Val { return lisp.Group{lisp.Lit{Text: "a"}} },
+	want: func(t *testing.T) lisp.Val { return lisp.Group{lisp.Lit("a")} },
 }}
 
 func TestBuilder(t *testing.T) {

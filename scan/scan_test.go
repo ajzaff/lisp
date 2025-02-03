@@ -83,7 +83,7 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:     []lisp.Token{lisp.Id},
 		wantText:    []string{"foo"},
 		wantNodePos: []Pos{0, 3},
-		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Id, Text: "foo"}},
+		wantNode:    []lisp.Val{lisp.Lit("foo")},
 	}, {
 		name:        "space id",
 		input:       "  \t\n x",
@@ -91,7 +91,7 @@ func TestTokenizeLit(t *testing.T) {
 		wantTok:     []lisp.Token{lisp.Id},
 		wantText:    []string{"x"},
 		wantNodePos: []Pos{5, 6},
-		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Id, Text: "x"}},
+		wantNode:    []lisp.Val{lisp.Lit("x")},
 	}, {
 		name:        "id id id",
 		input:       "a b c",
@@ -100,9 +100,9 @@ func TestTokenizeLit(t *testing.T) {
 		wantText:    []string{"a", "b", "c"},
 		wantNodePos: []Pos{0, 1, 2, 3, 4, 5},
 		wantNode: []lisp.Val{
-			lisp.Lit{Token: lisp.Id, Text: "a"},
-			lisp.Lit{Token: lisp.Id, Text: "b"},
-			lisp.Lit{Token: lisp.Id, Text: "c"},
+			lisp.Lit("a"),
+			lisp.Lit("b"),
+			lisp.Lit("c"),
 		},
 	}, {
 		name:        "id id id 2",
@@ -112,55 +112,70 @@ func TestTokenizeLit(t *testing.T) {
 		wantText:    []string{"ab", "cd", "ef"},
 		wantNodePos: []Pos{0, 2, 3, 5, 6, 8},
 		wantNode: []lisp.Val{
-			lisp.Lit{Token: lisp.Id, Text: "ab"},
-			lisp.Lit{Token: lisp.Id, Text: "cd"},
-			lisp.Lit{Token: lisp.Id, Text: "ef"},
+			lisp.Lit("ab"),
+			lisp.Lit("cd"),
+			lisp.Lit("ef"),
 		},
 	}, {
 		name:        "int",
 		input:       "0",
 		wantPos:     []Pos{0, 1},
-		wantTok:     []lisp.Token{lisp.Nat},
+		wantTok:     []lisp.Token{lisp.Id},
 		wantText:    []string{"0"},
 		wantNodePos: []Pos{0, 1},
-		wantNode:    []lisp.Val{lisp.Lit{Token: lisp.Nat, Text: "0"}},
+		wantNode:    []lisp.Val{lisp.Lit("0")},
 	}, {
 		name:        "int 2",
 		input:       "0 1 2",
 		wantPos:     []Pos{0, 1, 2, 3, 4, 5},
-		wantTok:     []lisp.Token{lisp.Nat, lisp.Nat, lisp.Nat},
+		wantTok:     []lisp.Token{lisp.Id, lisp.Id, lisp.Id},
 		wantText:    []string{"0", "1", "2"},
 		wantNodePos: []Pos{0, 1, 2, 3, 4, 5},
 		wantNode: []lisp.Val{
-			lisp.Lit{Token: lisp.Nat, Text: "0"},
-			lisp.Lit{Token: lisp.Nat, Text: "1"},
-			lisp.Lit{Token: lisp.Nat, Text: "2"},
+			lisp.Lit("0"),
+			lisp.Lit("1"),
+			lisp.Lit("2"),
 		},
 	}, {
 		name:        "zero sequence",
 		input:       "00000",
 		wantPos:     []Pos{0, 5},
-		wantTok:     []lisp.Token{lisp.Nat},
+		wantTok:     []lisp.Token{lisp.Id},
 		wantText:    []string{"00000"},
 		wantNodePos: []Pos{0, 5},
 		wantNode: []lisp.Val{
-			lisp.Lit{Token: lisp.Nat, Text: "00000"},
+			lisp.Lit("00000"),
 		},
 	}, {
-		name:         "token nat",
-		input:        "token0",
-		wantTokenErr: true,
-		wantNodeErr:  true,
+		name:        "token nat",
+		input:       "token0",
+		wantPos:     []Pos{0, 6},
+		wantTok:     []lisp.Token{lisp.Id},
+		wantText:    []string{"token0"},
+		wantNodePos: []Pos{0, 6},
+		wantNode: []lisp.Val{
+			lisp.Lit("token0"),
+		},
 	}, {
-		name:         "nat token",
-		input:        "0token",
-		wantTokenErr: true,
-		wantNodeErr:  true,
+		name:        "nat token",
+		input:       "0token",
+		wantPos:     []Pos{0, 6},
+		wantTok:     []lisp.Token{lisp.Id},
+		wantText:    []string{"0token"},
+		wantNodePos: []Pos{0, 6},
+		wantNode: []lisp.Val{
+			lisp.Lit("0token"),
+		},
 	}, {
-		name:         "nat in token",
-		input:        "tok0tok",
-		wantTokenErr: true,
-		wantNodeErr:  true,
+		name:        "nat in token",
+		input:       "tok0tok",
+		wantPos:     []Pos{0, 7},
+		wantTok:     []lisp.Token{lisp.Id},
+		wantText:    []string{"tok0tok"},
+		wantNodePos: []Pos{0, 7},
+		wantNode: []lisp.Val{
+			lisp.Lit("tok0tok"),
+		},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.scanTokenTest(t)
@@ -198,35 +213,35 @@ func TestTokenizeGroup(t *testing.T) {
 		wantText:    []string{"(", "abc", ")"},
 		wantNodePos: []Pos{0, 5},
 		wantNode: []lisp.Val{lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "abc"},
+			lisp.Lit("abc"),
 		}},
 	}, {
 		name:        "group 2",
 		input:       "(add 1 2)",
 		wantPos:     []Pos{0, 1, 1, 4, 5, 6, 7, 8, 8, 9},
-		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.Nat, lisp.Nat, lisp.RParen},
+		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.Id, lisp.Id, lisp.RParen},
 		wantText:    []string{"(", "add", "1", "2", ")"},
 		wantNodePos: []Pos{0, 9},
 		wantNode: []lisp.Val{lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "add"},
-			lisp.Lit{Token: lisp.Nat, Text: "1"},
-			lisp.Lit{Token: lisp.Nat, Text: "2"},
+			lisp.Lit("add"),
+			lisp.Lit("1"),
+			lisp.Lit("2"),
 		}},
 	}, {
 		name:        "group 3",
 		input:       "(add (sub 3 2) 2)",
 		wantPos:     []Pos{0, 1, 1, 4, 5, 6, 6, 9, 10, 11, 12, 13, 13, 14, 15, 16, 16, 17},
-		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.LParen, lisp.Id, lisp.Nat, lisp.Nat, lisp.RParen, lisp.Nat, lisp.RParen},
+		wantTok:     []lisp.Token{lisp.LParen, lisp.Id, lisp.LParen, lisp.Id, lisp.Id, lisp.Id, lisp.RParen, lisp.Id, lisp.RParen},
 		wantText:    []string{"(", "add", "(", "sub", "3", "2", ")", "2", ")"},
 		wantNodePos: []Pos{0, 17},
 		wantNode: []lisp.Val{lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "add"},
+			lisp.Lit("add"),
 			lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "sub"},
-				lisp.Lit{Token: lisp.Nat, Text: "3"},
-				lisp.Lit{Token: lisp.Nat, Text: "2"},
+				lisp.Lit("sub"),
+				lisp.Lit("3"),
+				lisp.Lit("2"),
 			},
-			lisp.Lit{Token: lisp.Nat, Text: "2"},
+			lisp.Lit("2"),
 		}},
 	}, {
 		name:        "group 4",
@@ -237,7 +252,7 @@ func TestTokenizeGroup(t *testing.T) {
 		wantNodePos: []Pos{0, 5},
 		wantNode: []lisp.Val{lisp.Group{
 			lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "a"},
+				lisp.Lit("a"),
 			},
 		}},
 	}, {
@@ -248,9 +263,9 @@ func TestTokenizeGroup(t *testing.T) {
 		wantText:    []string{"(", "a", ")", "(", "b", ")", "(", "c", ")"},
 		wantNodePos: []Pos{0, 3, 3, 6, 7, 10},
 		wantNode: []lisp.Val{
-			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "a"}},
-			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "b"}},
-			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "c"}},
+			lisp.Group{lisp.Lit("a")},
+			lisp.Group{lisp.Lit("b")},
+			lisp.Group{lisp.Lit("c")},
 		},
 	}, {
 		name:        "group 6",
@@ -260,12 +275,12 @@ func TestTokenizeGroup(t *testing.T) {
 		wantText:    []string{"(", "div", "(", "q", "x", ")", "y", ")"},
 		wantNodePos: []Pos{0, 13},
 		wantNode: []lisp.Val{lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "div"},
+			lisp.Lit("div"),
 			lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "q"},
-				lisp.Lit{Token: lisp.Id, Text: "x"},
+				lisp.Lit("q"),
+				lisp.Lit("x"),
 			},
-			lisp.Lit{Token: lisp.Id, Text: "y"},
+			lisp.Lit("y"),
 		}},
 	}, {
 		name:        "group 7",
@@ -275,8 +290,8 @@ func TestTokenizeGroup(t *testing.T) {
 		wantText:    []string{"(", "(", "a", "b", ")", ")"},
 		wantNodePos: []Pos{0, 7},
 		wantNode: []lisp.Val{lisp.Group{lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "a"},
-			lisp.Lit{Token: lisp.Id, Text: "b"},
+			lisp.Lit("a"),
+			lisp.Lit("b"),
 		}}},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {

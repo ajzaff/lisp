@@ -24,9 +24,7 @@ func equalLitOther(a lisp.Lit, b lisp.Val) bool {
 }
 
 // EqualLit returns whether a and b are syntactically equivalent.
-func EqualLit(a, b lisp.Lit) bool {
-	return a.Token == b.Token && a.Text == b.Text
-}
+func EqualLit(a, b lisp.Lit) bool { return a == b }
 
 func equalGroupOther(a lisp.Group, b lisp.Val) bool {
 	switch second := b.(type) {
