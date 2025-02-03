@@ -1,6 +1,10 @@
 package lisp
 
-import "github.com/ajzaff/lisp"
+import (
+	"strings"
+
+	"github.com/ajzaff/lisp"
+)
 
 // Compare two values of unknown type.
 func Compare(a, b lisp.Val) int {
@@ -26,21 +30,7 @@ func compareLitOther(a lisp.Lit, b lisp.Val) int {
 }
 
 // CompareLit compares the value of two Lits.
-func CompareLit(a, b lisp.Lit) int {
-	if a.Token != b.Token {
-		if a.Token < b.Token {
-			return -1
-		}
-		return 1
-	}
-	if a.Text != b.Text {
-		if a.Text < b.Text {
-			return -1
-		}
-		return 1
-	}
-	return 0
-}
+func CompareLit(a, b lisp.Lit) int { return strings.Compare(string(a), string(b)) }
 
 func compareGroupOther(a lisp.Group, b lisp.Val) int {
 	switch other := b.(type) {

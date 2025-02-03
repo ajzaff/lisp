@@ -22,13 +22,13 @@ func TestVisitor(t *testing.T) {
 		name: "nil node has no visits",
 	}, {
 		name:  "nat",
-		input: lisp.Lit{Token: lisp.Nat, Text: "1"},
+		input: lisp.Lit("1"),
 		wantVisits: []testVisits{{
 			Visitor: "Val",
-			Val:     lisp.Lit{Token: lisp.Nat, Text: "1"},
+			Val:     lisp.Lit("1"),
 		}, {
 			Visitor: "Lit",
-			Val:     lisp.Lit{Token: lisp.Nat, Text: "1"},
+			Val:     lisp.Lit("1"),
 		}},
 	}, {
 		name:  "nil group",
@@ -60,70 +60,70 @@ func TestVisitor(t *testing.T) {
 		name: "simple nested group",
 		// (a b(c))
 		input: lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "a"},
-			lisp.Lit{Token: lisp.Id, Text: "b"},
+			lisp.Lit("a"),
+			lisp.Lit("b"),
 			lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "c"},
+				lisp.Lit("c"),
 			},
 		},
 		wantVisits: []testVisits{{
 			Visitor: "Val",
 			Val: lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "a"},
-				lisp.Lit{Token: lisp.Id, Text: "b"},
+				lisp.Lit("a"),
+				lisp.Lit("b"),
 				lisp.Group{
-					lisp.Lit{Token: lisp.Id, Text: "c"},
+					lisp.Lit("c"),
 				},
 			},
 		}, {
 			Visitor: "BeforeGroup",
 			Val: lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "a"},
-				lisp.Lit{Token: lisp.Id, Text: "b"},
+				lisp.Lit("a"),
+				lisp.Lit("b"),
 				lisp.Group{
-					lisp.Lit{Token: lisp.Id, Text: "c"},
+					lisp.Lit("c"),
 				},
 			},
 		}, {
 			Visitor: "Val",
-			Val:     lisp.Lit{Token: lisp.Id, Text: "a"},
+			Val:     lisp.Lit("a"),
 		}, {
 			Visitor: "Lit",
-			Val:     lisp.Lit{Token: lisp.Id, Text: "a"},
+			Val:     lisp.Lit("a"),
 		}, {
 			Visitor: "Val",
-			Val:     lisp.Lit{Token: lisp.Id, Text: "b"},
+			Val:     lisp.Lit("b"),
 		}, {
 			Visitor: "Lit",
-			Val:     lisp.Lit{Token: lisp.Id, Text: "b"},
+			Val:     lisp.Lit("b"),
 		}, {
 			Visitor: "Val",
 			Val: lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "c"},
+				lisp.Lit("c"),
 			},
 		}, {
 			Visitor: "BeforeGroup",
 			Val: lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "c"},
+				lisp.Lit("c"),
 			},
 		}, {
 			Visitor: "Val",
-			Val:     lisp.Lit{Token: lisp.Id, Text: "c"},
+			Val:     lisp.Lit("c"),
 		}, {
 			Visitor: "Lit",
-			Val:     lisp.Lit{Token: lisp.Id, Text: "c"},
+			Val:     lisp.Lit("c"),
 		}, {
 			Visitor: "AfterGroup",
 			Val: lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "c"},
+				lisp.Lit("c"),
 			},
 		}, {
 			Visitor: "AfterGroup",
 			Val: lisp.Group{
-				lisp.Lit{Token: lisp.Id, Text: "a"},
-				lisp.Lit{Token: lisp.Id, Text: "b"},
+				lisp.Lit("a"),
+				lisp.Lit("b"),
 				lisp.Group{
-					lisp.Lit{Token: lisp.Id, Text: "c"},
+					lisp.Lit("c"),
 				},
 			},
 		}},

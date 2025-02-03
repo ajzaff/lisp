@@ -2,9 +2,7 @@ package lisp
 
 import "github.com/ajzaff/lisp"
 
-func FromId(v lisp.Val) string {
-	return string(v.(lisp.Lit).Text)
-}
+func FromId(v lisp.Val) string { return string(v.(lisp.Lit)) }
 
 func IdTuple(v lisp.Val) []string {
 	group := v.(lisp.Group)

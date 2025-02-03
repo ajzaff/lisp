@@ -20,7 +20,7 @@ type QueryInterface interface {
 
 func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
 	v, w := db.Load(id)
-	if v.Token != lisp.Invalid {
+	if v != "" {
 		return v, w
 	}
 	return queryOneVal(db, id)
@@ -28,7 +28,7 @@ func QueryOneID(db QueryInterface, id ID) (lisp.Val, float64) {
 
 func queryOneVal(db QueryInterface, id ID) (lisp.Val, float64) {
 	v, w := db.Load(id)
-	if v.Token != lisp.Invalid {
+	if v != "" {
 		return v, w
 	}
 	x := lisp.Group{}
@@ -138,7 +138,7 @@ func queryElements(q lisp.Val) (elems []string) {
 	var v visit.Visitor
 	v.SetBeforeGroupVisitor(func(e lisp.Group) {
 		if x := xlisp.Head(e); x != nil {
-			if xlisp.Equal(x, lisp.Lit{Token: lisp.Id, Text: "q"}) {
+			if xlisp.Equal(x, lisp.Lit("q")) {
 				name := xlisp.Head(e[1:])
 				if name != nil {
 					if x, ok := name.(lisp.Lit); ok {

@@ -6,10 +6,16 @@ type Token int
 
 const (
 	Invalid Token = iota
-	Id            // abc. Strings of valid runes having the unicode Letter property.
-	Nat           // 123. Natural number (plus 0), unsigned.
-	LParen        // (
-	RParen        // )
+	// Id tokens comprise unicode Letters, arabic numerals, plus underscore.
+	//
+	// Examples:
+	//
+	//	abc
+	//	123
+	//	abc_123
+	Id
+	LParen // (
+	RParen // )
 )
 
 // Val is an interface for Lisp Values.
@@ -19,23 +25,19 @@ const (
 //
 //	abc
 //	123
-//	abc 123
 //	( abc 123 () )
 type Val interface {
 	val()
 }
 
-// Lit is a basic literal type.
+// Lit is a text identifier.
 //
-// Allowed Token types are Id, Number.
 // Examples:
 //
 //	abc
 //	123
-type Lit struct {
-	Token Token
-	Text  string
-}
+//	abc_123
+type Lit string
 
 func (Lit) val() {}
 

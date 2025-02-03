@@ -11,8 +11,25 @@ It features:
 ## Syntax
 
 ```
-id   = unicode_letter { unicode_letter }.
-nat  = "0" … "9" { "0" … "9" }.
-group = "(" { expr } ")"
-expr = id | nat | group.
+// Whitespace.
+s0 = " " | "\t" | "\r" | "\n".
+s1 = {s0}.
+s2 = s0 s1.
+
+// Literals.
+l0    = ... // Definition of "unicode Letter" omitted.
+d0 = "0" … "9".
+l1 = d0 | l0.
+l2 = l1 { l1 }.
+l3 = l2 {s2 l2}.
+
+// Groups.
+g0 = "(" s1 e2 s1 ")".
+g1 = g0 {s1 g0}. 
+
+// Expression.
+e0  = g1 | l3.
+e1 = e0 {s1 e0}.
+e2 = "" | e1.
+e3 = s1 e2 s1.
 ```

@@ -26,34 +26,34 @@ func TestStdPrint(t *testing.T) {
 		want:  "()\n",
 	}, {
 		name:  "lit",
-		input: lisp.Lit{Token: lisp.Id, Text: "hello"},
+		input: lisp.Lit("hello"),
 		want:  "hello\n",
 	}, {
 		name:  "group",
-		input: lisp.Group{lisp.Lit{Token: lisp.Id, Text: "x"}},
+		input: lisp.Group{lisp.Lit("x")},
 		want:  "(x)\n",
 	}, {
 		name: "cons3",
 		input: lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "x"},
-			lisp.Lit{Token: lisp.Id, Text: "y"},
-			lisp.Lit{Token: lisp.Id, Text: "z"},
+			lisp.Lit("x"),
+			lisp.Lit("y"),
+			lisp.Lit("z"),
 		},
 		want: "(x y z)\n",
 	}, {
 		name: "nested group",
 		input: lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "x"},
-			lisp.Group{lisp.Lit{Token: lisp.Id, Text: "y"}},
-			lisp.Lit{Token: lisp.Id, Text: "z"},
+			lisp.Lit("x"),
+			lisp.Group{lisp.Lit("y")},
+			lisp.Lit("z"),
 		},
 		want: "(x(y)z)\n",
 	}, {
 		name: "numbers andlisp.Ids are delimitable",
 		input: lisp.Group{
-			lisp.Lit{Token: lisp.Id, Text: "add"},
-			lisp.Lit{Token: lisp.Nat, Text: "1"},
-			lisp.Lit{Token: lisp.Nat, Text: "2"},
+			lisp.Lit("add"),
+			lisp.Lit("1"),
+			lisp.Lit("2"),
 		},
 		want: "(add 1 2)\n",
 	}} {

@@ -7,10 +7,7 @@ func DecodeNat(b []byte) (lisp.Val, error) {
 	if err != nil {
 		return nil, err
 	}
-	return lisp.Lit{
-		Token: lisp.Nat,
-		Text:  string(b[:n]),
-	}, nil
+	return lisp.Lit(string(b[:n])), nil
 }
 
 // FIXME: Implement this!

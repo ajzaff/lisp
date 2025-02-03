@@ -5,21 +5,21 @@ package format
 // Source will preserve one space between Id and Nat tokens but will not add them if not present.
 // The returned slice is a formatted slice of the input.
 func Source(src []byte) []byte {
-	var space int
 	var i int
-	var delimClass delimClass
+	var delim bool
 	for j := 0; j < len(src); j++ {
-		class := delimByte(src[j])
 		src[i] = src[j]
 		switch src[j] {
-		case '\t', '\n', ' ':
-			space++
-			if space < 2 && class != delimClass && class != delimNone {
+		case ' ', '\t', '\r', '\n':
+			if delim {
 				i++
+				delim = false
 			}
+		case '(', ')':
+			delim = false
+			i++
 		default:
-			delimClass = class
-			space = 0
+			delim = true
 			i++
 		}
 	}
