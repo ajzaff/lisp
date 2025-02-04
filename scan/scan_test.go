@@ -40,16 +40,16 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 	}
 	gotTokenErr := sc.Err()
 	if diff := cmp.Diff(tc.wantPos, gotPos); diff != "" {
-		t.Errorf("Token(%q) got pos diff (-want, +got):\n%s", tc.name, diff)
+		t.Errorf("TestScanTokens(%q) got pos diff (-want, +got):\n%s", tc.name, diff)
 	}
 	if diff := cmp.Diff(tc.wantTok, gotTok); diff != "" {
-		t.Errorf("Token(%q) got Token diff (-want, +got):\n%s", tc.name, diff)
+		t.Errorf("TestScanTokens(%q) got Token diff (-want, +got):\n%s", tc.name, diff)
 	}
 	if diff := cmp.Diff(tc.wantText, gotText); diff != "" {
-		t.Errorf("Token(%q) got text diff (-want, +got):\n%s", tc.name, diff)
+		t.Errorf("TestScanTokens(%q) got text diff (-want, +got):\n%s", tc.name, diff)
 	}
 	if gotErr := gotTokenErr != nil; gotErr != tc.wantTokenErr {
-		t.Errorf("Token(%q) got token err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
+		t.Errorf("TestScanTokens(%q) got token err: %v, want err? %v", tc.name, gotTokenErr, tc.wantTokenErr)
 	}
 
 	sc.Reset(strings.NewReader(tc.input))
@@ -62,13 +62,13 @@ func (tc scanTestCase) scanTokenTest(t *testing.T) {
 	}
 	gotNodeErr := sc.Err()
 	if diff := cmp.Diff(tc.wantNodePos, gotNodePos); diff != "" {
-		t.Errorf("Node(%q) got pos diff (-want, +got):\n%s", tc.name, diff)
+		t.Errorf("TestScanNodes(%q) got pos diff (-want, +got):\n%s", tc.name, diff)
 	}
 	if diff := cmp.Diff(tc.wantNode, gotVal); diff != "" {
-		t.Errorf("Node(%q) got Val diff (-want, +got):\n%s", tc.name, diff)
+		t.Errorf("TestScanNodes(%q) got Val diff (-want, +got):\n%s", tc.name, diff)
 	}
 	if gotErr := gotNodeErr != nil; gotErr != tc.wantNodeErr {
-		t.Errorf("Node(%q) got node err: %v, want err? %v", tc.name, gotNodeErr, tc.wantNodeErr)
+		t.Errorf("TestScanNodes(%q) got node err: %v, want err? %v", tc.name, gotNodeErr, tc.wantNodeErr)
 	}
 }
 

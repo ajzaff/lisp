@@ -4,7 +4,6 @@ package scan
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"iter"
@@ -13,20 +12,11 @@ import (
 	"github.com/ajzaff/lisp"
 )
 
-var errRune = errors.New("unexpected rune")
-
 // Pos represents a byte position in a source file.
 type Pos int
 
 // NoPos is the canonical value for no position defined.
 const NoPos Pos = -1
-
-// Token emitted from TokenScanner.
-type Token struct {
-	Pos  Pos
-	Tok  lisp.Token
-	Text string
-}
 
 // Scanner scans the Lisp source for Lisp tokens and values.
 type Scanner struct {
@@ -35,16 +25,22 @@ type Scanner struct {
 	pos          Pos
 	err          error
 	lastRuneSize int
-	tokenFunc    func(Token) bool
-	nodeFunc     func(Node) bool
 }
 
-func (s *Scanner) peekByte() (byte, error) {
+func (s *Scanner) peekByteErr() (byte, error) {
 	bs, err := s.r.Peek(1)
 	if err != nil {
 		return 0, err
 	}
 	return bs[0], nil
+}
+
+func (s *Scanner) peekByte() byte {
+	bs, err := s.r.Peek(1)
+	if err != nil {
+		return 0
+	}
+	return bs[0]
 }
 
 func (s *Scanner) readByte() (byte, error) {
@@ -110,22 +106,9 @@ func (s *Scanner) Reset(r io.Reader) {
 	s.lastRuneSize = -1
 	s.pos = 0
 	s.err = nil
-	s.tokenFunc = nil
 }
 
-func (s *Scanner) yieldToken(tok Token) bool {
-	if s.tokenFunc == nil {
-		return true
-	}
-	return s.tokenFunc(tok)
-}
-
-func (s *Scanner) peekSpace0() bool {
-	b, err := s.peekByte()
-	if err != nil {
-		s.setErr(err)
-		return false
-	}
+func (s *Scanner) peekSpace0(b byte) bool {
 	switch b {
 	case ' ', '\t', '\r', '\n':
 		return true
@@ -134,26 +117,30 @@ func (s *Scanner) peekSpace0() bool {
 	}
 }
 
-func (s *Scanner) scanSpace0() bool {
-	if !s.peekSpace0() {
+func (s *Scanner) skipSpace0() bool {
+	b, err := s.readByte()
+	if err != nil {
+		s.setErr(err)
+		return false
+	}
+	if !s.peekSpace0(b) {
 		s.setErr(fmt.Errorf("expected space"))
 		return false
 	}
-	s.discardByte()
 	return true
 }
 
-func (s *Scanner) scanSpace1() {
-	for s.peekSpace0() {
+func (s *Scanner) skipSpace1() {
+	for s.peekSpace0(s.peekByte()) {
 		s.discardByte()
 	}
 }
 
 func (s *Scanner) scanSpace2() bool {
-	if !s.scanSpace0() {
+	if !s.skipSpace0() {
 		return false
 	}
-	s.scanSpace1()
+	s.skipSpace1()
 	return true
 }
 
@@ -165,54 +152,38 @@ func (s *Scanner) scanLit0() bool {
 	}
 	if !unicode.IsLetter(r) {
 		s.unreadRune()
-		s.setErr(fmt.Errorf("expected letter"))
+		s.setErr(fmt.Errorf("expected LIT, got %q", r))
 		return false
 	}
 	s.tb.WriteRune(r)
 	return true
 }
 
-func (s *Scanner) peekDigit0() bool {
-	b, err := s.peekByte()
-	if err != nil {
-		s.setErr(err)
-		return false
-	}
-	switch {
-	case '0' <= b && b <= '9':
-		s.tb.WriteByte(b)
-		return true
-	default:
-		return false
-	}
+func (s *Scanner) peekDigit0(b byte) bool { return '0' <= b && b <= '9' }
+
+func (s *Scanner) peekLit1(b byte) bool {
+	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekSpace0(b)
 }
 
-func (s *Scanner) peekLit1() bool { return s.peekDigit0() || !s.peekGroup0() }
-
 func (s *Scanner) scanLit1() bool {
-	switch {
-	case s.peekDigit0():
+	switch b := s.peekByte(); {
+	case s.peekDigit0(b):
+		s.tb.WriteByte(b)
 		s.discardByte()
 		return true
-	case s.peekGroup0():
+	case s.peekGroup0(b):
 		return false
 	}
 	return s.scanLit0()
 }
 
 func (s *Scanner) scanLit2() bool {
-	tok := Token{
-		Pos: s.pos,
-		Tok: lisp.Id,
-	}
 	s.resetToken()
 	if !s.scanLit1() {
 		return false
 	}
-	for s.peekLit1() && s.scanLit1() {
+	for s.peekLit1(s.peekByte()) && s.scanLit1() {
 	}
-	tok.Text = s.tb.String()
-	s.yieldToken(tok)
 	return true
 }
 
@@ -220,37 +191,28 @@ func (s *Scanner) scanLit3() {
 	if !s.scanLit2() {
 		return
 	}
-	for s.peekSpace0() {
-		s.scanSpace2()
-		if !s.peekLit1() {
+	for s.peekSpace0(s.peekByte()) && s.scanSpace2() {
+		if !s.peekLit1(s.peekByte()) || !s.scanLit2() {
 			break
 		}
-		s.scanLit2()
 	}
 }
 
-func (s *Scanner) peekGroup0() bool {
-	b, err := s.peekByte()
-	if err != nil {
-		s.setErr(err)
-		return false
-	}
-	return b == '('
-}
+func (s *Scanner) peekGroup0(b byte) bool { return b == '(' }
+
+func (s *Scanner) peekGroupEnd(b byte) bool { return b == ')' }
 
 func (s *Scanner) scanGroup0() bool {
-	if !s.peekGroup0() {
+	if !s.peekGroup0(s.peekByte()) {
 		return false
 	}
-	s.yieldToken(Token{Pos: s.pos, Tok: lisp.LParen, Text: "("})
 	s.discardByte()
-	s.scanSpace1()
+	s.skipSpace1()
 	s.scanExpr2()
-	s.scanSpace1()
-	if !s.peekGroup0() {
+	s.skipSpace1()
+	if !s.peekGroup0(s.peekByte()) {
 		return false
 	}
-	s.yieldToken(Token{Pos: s.pos, Tok: lisp.RParen, Text: ")"})
 	s.discardByte()
 	return true
 }
@@ -260,60 +222,73 @@ func (s *Scanner) scanGroup1() bool {
 		return false
 	}
 	for {
-		s.scanSpace1()
-		if !s.peekGroup0() {
+		s.skipSpace1()
+		if !s.scanGroup0() {
 			break
 		}
 	}
 	return true
 }
 
-func (s *Scanner) peekExpr0() bool { return s.peekGroup0() || s.peekLit1() }
+func (s *Scanner) peekExpr0(b byte) bool { return s.peekGroup0(b) || s.peekLit1(b) }
 
-func (s *Scanner) scanExpr0() bool { return s.peekGroup0() && s.scanGroup0() || s.scanLit2() }
+func (s *Scanner) scanExpr0() bool {
+	return s.peekGroup0(s.peekByte()) && s.scanGroup0() || s.scanLit2()
+}
 
 func (s *Scanner) scanExpr1() bool {
 	if !s.scanExpr0() {
 		return false
 	}
-	for s.peekExpr0() && s.scanExpr0() {
+	for s.peekExpr0(s.peekByte()) && s.scanExpr0() {
 	}
 	return true
 }
 
 func (s *Scanner) scanExpr2() bool {
-	if s.peekExpr0() {
+	if s.peekExpr0(s.peekByte()) {
 		return s.scanExpr1()
 	}
 	return true
 }
 
 func (s *Scanner) scanExpr3() {
-	s.scanSpace1()
+	s.skipSpace1()
 	if !s.scanExpr2() {
 		return
 	}
-	s.scanSpace1()
+	s.skipSpace1()
+}
+
+// Token emitted from TokenScanner.
+type Token struct {
+	Pos  Pos
+	Tok  lisp.Token
+	Text string
 }
 
 // Tokens returns a iteration over tokens without respect for correct syntax.
 func (s *Scanner) Tokens() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
-		s.tokenFunc = yield
-		defer func() { s.tokenFunc = nil }()
 		for {
-			s.scanSpace1()
-			switch {
-			case s.peekGroup0():
-				s.yieldToken(Token{Pos: s.pos, Tok: lisp.LParen, Text: "("})
+			s.skipSpace1()
+			switch b, err := s.peekByteErr(); {
+			case err != nil:
+				s.setErr(err)
+				return
+			case s.peekGroup0(b):
+				if !yield(Token{Pos: s.pos, Tok: lisp.LParen, Text: "("}) {
+					return
+				}
+				s.discardByte()
+			case s.peekGroupEnd(b):
+				if !yield(Token{Pos: s.pos, Tok: lisp.RParen, Text: ")"}) {
+					return
+				}
 				s.discardByte()
 			default:
-				if b, err := s.peekByte(); err != nil {
-					s.setErr(err)
-					return
-				} else if b == ')' {
-					s.yieldToken(Token{Pos: s.pos, Tok: lisp.RParen, Text: ")"})
-				} else if !s.scanLit2() {
+				pos := s.pos
+				if !s.scanLit2() || !yield(Token{Pos: pos, Tok: lisp.Id, Text: s.tb.String()}) {
 					return
 				}
 			}
@@ -329,8 +304,55 @@ type Node struct {
 
 func (s *Scanner) Nodes() iter.Seq[Node] {
 	return func(yield func(Node) bool) {
-		s.nodeFunc = yield
-		s.scanExpr3()
-		s.nodeFunc = nil
+		nodeStack := []Node{}
+		for {
+			s.skipSpace1()
+			switch b, err := s.peekByteErr(); {
+			case err != nil:
+				s.setErr(err)
+				return
+			case s.peekGroup0(b):
+				nodeStack = append(nodeStack, Node{
+					Pos: s.pos,
+					Val: lisp.Group{},
+					End: NoPos,
+				})
+				s.discardByte()
+			case s.peekGroupEnd(b):
+				if len(nodeStack) == 0 {
+					s.setErr(fmt.Errorf("unexpected )"))
+					return
+				}
+				s.discardByte()
+				n := len(nodeStack) - 1
+				e := nodeStack[n]
+				nodeStack = nodeStack[:n]
+				if len(nodeStack) == 0 {
+					e.End = s.pos
+					if !yield(e) {
+						return
+					}
+					continue
+				}
+				prev := nodeStack[len(nodeStack)-1]
+				prev.Val = append(prev.Val.(lisp.Group), e.Val)
+			default:
+				pos := s.pos
+				if !s.scanLit2() {
+					return
+				}
+				text := s.tb.String()
+				if len(nodeStack) > 0 {
+					g := nodeStack[len(nodeStack)-1]
+					g.Val = append(g.Val.(lisp.Group), lisp.Lit(s.tb.String()))
+				} else if !yield(Node{
+					Pos: pos,
+					Val: lisp.Lit(text),
+					End: pos + Pos(len(text)),
+				}) {
+					return
+				}
+			}
+		}
 	}
 }

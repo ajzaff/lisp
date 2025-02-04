@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -40,12 +41,15 @@ func main() {
 	stack := make([]entry, 0, 512)
 	stack = append(stack, entry{deriv: "", nonterminals: *start})
 
-	for len(stack) > 0 {
+	steps := 0
+	maxStack := 1
+
+	startTime := time.Now()
+
+	for ; len(stack) > 0; steps++ {
 		n := len(stack) - 1
 		e := stack[n]
 		stack = stack[:n]
-
-		// fmt.Printf("%q %q\n", e.deriv, e.nonterminals)
 
 		if strings.HasPrefix(src, e.deriv) {
 			if e.nonterminals == "" && e.deriv == src {
@@ -95,8 +99,17 @@ func main() {
 					stack = append(stack, next)
 				}
 			}
+			if n := len(stack); n > maxStack {
+				maxStack = n
+			}
 		}
 	}
+
+	duration := time.Since(startTime)
+
+	fmt.Printf("%d iterations\n", steps)
+	fmt.Printf("%d max stack\n", maxStack)
+	fmt.Printf("%s time\n", duration)
 }
 
 type entry struct {
@@ -156,6 +169,8 @@ func (e entry) PrintDerivation() {
 	for i := len(entries) - 1; i >= 0; i-- {
 		entries[i].Print(len(entries) - i - 1)
 	}
+	fmt.Println()
+	fmt.Printf("%d steps\n", len(entries))
 }
 
 func init() {
