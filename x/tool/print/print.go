@@ -29,7 +29,7 @@ var (
 	file  = flag.String("file", "", "File to read lisp code from.")
 )
 
-var tokStr = []string{"?", "Id", "Nat", "(", ")"}
+var tokStr = []string{"?", "Id", "(", ")"}
 
 func main() {
 	flag.Parse()
@@ -45,13 +45,10 @@ func main() {
 	}
 
 	var vs []lisp.Val
-	var s scan.Scanner
-	s.Reset(bytes.NewReader(src))
-	var sc scan.NodeScanner
-	sc.Reset(&s)
-	for sc.Scan() {
-		_, _, v := sc.Node()
-		vs = append(vs, v)
+	var sc scan.Scanner
+	sc.Reset(bytes.NewReader(src))
+	for n := range sc.Nodes() {
+		vs = append(vs, n.Val)
 	}
 	if err := sc.Err(); err != nil {
 		log.Fatal(err)
@@ -65,9 +62,8 @@ func main() {
 	case "tok":
 		var sc scan.Scanner
 		sc.Reset(bytes.NewReader(src))
-		for sc.Scan() {
-			pos, tok, text := sc.Token()
-			println(strconv.Itoa(int(pos)), "\t", tokStr[tok], "\t", text)
+		for t := range sc.Tokens() {
+			println(strconv.Itoa(int(t.Pos)), "\t", tokStr[t.Tok], "\t", t.Text)
 		}
 	case "ast":
 		var v visit.Visitor

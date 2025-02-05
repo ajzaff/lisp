@@ -29,22 +29,19 @@ func main() {
 		os.Exit(0)
 	}()
 
-	var ts scan.Scanner
-	var s scan.NodeScanner
+	var ss scan.Scanner
 
 	var sb strings.Builder
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
 		switch input := strings.TrimSpace(sc.Text()); {
 		case sb.Len() > 0 && input == "":
-			ts.Reset(strings.NewReader(sb.String()))
-			s.Reset(&ts)
+			ss.Reset(strings.NewReader(sb.String()))
 			var vs []lisp.Val
-			for s.Scan() {
-				_, _, v := s.Node()
-				vs = append(vs, v)
+			for n := range ss.Nodes() {
+				vs = append(vs, n.Val)
 			}
-			if err := s.Err(); err != nil {
+			if err := ss.Err(); err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				sb.Reset()
 				continue

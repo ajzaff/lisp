@@ -3,13 +3,14 @@ package lispjson
 import (
 	"bytes"
 	"io"
+	"iter"
 
 	"github.com/ajzaff/lisp"
 	"github.com/ajzaff/lisp/scan"
 )
 
 type Decoder struct {
-	sc *scan.NodeScanner
+	sc scan.Scanner
 }
 
 func NewDecoder(r io.Reader) *Decoder {
@@ -19,6 +20,8 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 func (d *Decoder) decodeSrc(r io.Reader) {
+	// TODO: Implement JSON <-> Lisp readers
+	//       That don't buffer the full reader.
 	// Transform JSON source to Lisp in-place.
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
@@ -38,18 +41,19 @@ func (d *Decoder) decodeSrc(r io.Reader) {
 		}
 	}
 	// Tokenize and parse normally.
-	var s scan.Scanner
-	s.Reset(bytes.NewReader(src))
-	var sc scan.NodeScanner
-	sc.Reset(&s)
-	d.sc = &sc
+	var sc scan.Scanner
+	sc.Reset(bytes.NewReader(src))
+	d.sc = sc
 }
 
-func (d *Decoder) Decode() (lisp.Val, error) {
-	d.sc.Scan()
-	if err := d.sc.Err(); err != nil {
-		return nil, err
+func (d *Decoder) Values() iter.Seq[lisp.Val] {
+	return func(yield func(lisp.Val) bool) {
+		for n := range d.sc.Nodes() {
+			if !yield(n.Val) {
+				break
+			}
+		}
 	}
-	_, _, v := d.sc.Node()
-	return v, nil
 }
+
+func (d *Decoder) Err() error { return d.sc.Err() }

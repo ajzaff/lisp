@@ -162,7 +162,7 @@ func (s *Scanner) scanLit0() bool {
 func (s *Scanner) peekDigit0(b byte) bool { return '0' <= b && b <= '9' }
 
 func (s *Scanner) peekLit1(b byte) bool {
-	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekSpace0(b)
+	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekGroupEnd(b) && !s.peekSpace0(b)
 }
 
 func (s *Scanner) scanLit1() bool {
@@ -171,7 +171,7 @@ func (s *Scanner) scanLit1() bool {
 		s.tb.WriteByte(b)
 		s.discardByte()
 		return true
-	case s.peekGroup0(b):
+	case s.peekGroup0(b), s.peekGroupEnd(b), s.peekSpace0(b):
 		return false
 	}
 	return s.scanLit0()

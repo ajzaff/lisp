@@ -8,41 +8,28 @@ import (
 	"github.com/ajzaff/lisp/scan"
 )
 
-type FreqMap struct {
-	sc   *scan.Scanner
-	err  error
-	data map[lisp.Lit]int
+type FreqMap map[string]int
+
+func (m FreqMap) Clear() {
+	for k := range m {
+		delete(m, k)
+	}
 }
 
-func NewFreqMap() *FreqMap {
+func (m FreqMap) Count(r io.Reader) {
 	var sc scan.Scanner
-	return &FreqMap{sc: &sc, data: make(map[lisp.Lit]int)}
-}
-
-func (m *FreqMap) Init(r io.Reader) {
-	m.sc.Reset(r)
-}
-
-func (m *FreqMap) Scan() bool {
-	res := m.sc.Scan()
-	if _, t, text := m.sc.Token(); t != lisp.Invalid {
-		lit := lisp.Lit(text)
-		m.data[lit]++
+	sc.Reset(r)
+	for t := range sc.Tokens() {
+		if t.Tok == lisp.Id {
+			m[t.Text]++
+		}
 	}
-	return res
 }
 
-func (m *FreqMap) Err() error {
-	if err := m.sc.Err(); err != nil {
-		return err
-	}
-	return m.err
+func (m FreqMap) Put(key string, v int) {
+	m[key] += v
 }
 
-func (m *FreqMap) Put(key lisp.Lit, v int) {
-	m.data[key] += v
-}
-
-func (m *FreqMap) Get(key lisp.Lit) int {
-	return m.data[key]
+func (m FreqMap) Get(key string) int {
+	return m[key]
 }

@@ -11,21 +11,21 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func mustParse(t *testing.T, src string) lisp.Val {
+func mustParse(t *testing.T, src string) (val lisp.Val) {
 	t.Helper()
-	var v lisp.Val
-	var s scan.Scanner
-	s.Reset(strings.NewReader(src))
-	var sc scan.NodeScanner
-	sc.Reset(&s)
-	for sc.Scan() {
-		_, _, v = sc.Node()
+	var sc scan.Scanner
+	sc.Reset(strings.NewReader(src))
+	for n := range sc.Nodes() {
+		if val != nil {
+			panic("mustParse: consumed more than one value")
+		}
+		val = n.Val
 		break
 	}
 	if err := sc.Err(); err != nil {
-		panic(fmt.Sprintf("mustParse: failed to parse: %v", src))
+		panic(fmt.Sprintf("mustParse: failed to parse: %q: %v", src, err))
 	}
-	return v
+	return val
 }
 
 func TestEncode(t *testing.T) {
