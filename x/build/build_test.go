@@ -166,17 +166,18 @@ func mustParseFunc(input string) func(t *testing.T) lisp.Val {
 	return func(t *testing.T) lisp.Val { return mustParse(t, input) }
 }
 
-func mustParse(t *testing.T, input string) lisp.Val {
-	var s scan.NodeScanner
+func mustParse(t *testing.T, input string) (val lisp.Val) {
+	t.Helper()
 	var sc scan.Scanner
 	sc.Reset(strings.NewReader(input))
-	s.Reset(&sc)
-	for s.Scan() {
-		_, _, v := s.Node()
-		return v
+	for n := range sc.Nodes() {
+		if val != nil {
+			panic("mustParse: consumed more than one value")
+		}
+		val = n.Val
 	}
-	if err := s.Err(); err != nil {
-		t.Fatalf("mustParse(%q): failed: %v", input, err)
+	if err := sc.Err(); err != nil {
+		t.Fatalf("mustParse: failed: %q: %v", input, err)
 	}
 	return nil
 }

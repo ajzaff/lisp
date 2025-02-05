@@ -71,15 +71,18 @@ func TestDistictHashes(t *testing.T) {
 	}
 }
 
-func mustParse(t *testing.T, input string) lisp.Val {
-	var s scan.NodeScanner
+func mustParse(t *testing.T, input string) (val lisp.Val) {
+	t.Helper()
 	var sc scan.Scanner
 	sc.Reset(strings.NewReader(input))
-	s.Reset(&sc)
-	for s.Scan() {
-		_, _, v := s.Node()
-		return v
+	for n := range sc.Nodes() {
+		if val != nil {
+			t.Fatalf("mustParse(%q): consumed more than one node", input)
+		}
+		val = n.Val
 	}
-	t.Fatalf("mustParse(%q): failed: %v", input, s.Err())
+	if err := sc.Err(); err != nil {
+		t.Fatalf("mustParse(%q): failed: %v", input, err)
+	}
 	return nil
 }

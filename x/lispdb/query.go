@@ -106,13 +106,10 @@ func (r *QueryResult) EachMatch(fn func(id []ID) bool) {
 func Query(db QueryInterface, q string) *QueryResult {
 	var r QueryResult
 	var qv []lisp.Val
-	var s scan.Scanner
-	s.Reset(strings.NewReader(q))
-	var sc scan.NodeScanner
-	sc.Reset(&s)
-	for sc.Scan() {
-		_, _, v := sc.Node()
-		qv = append(qv, v)
+	var sc scan.Scanner
+	sc.Reset(strings.NewReader(q))
+	for n := range sc.Nodes() {
+		qv = append(qv, n.Val)
 	}
 	if err := sc.Err(); err != nil {
 		r.err = err

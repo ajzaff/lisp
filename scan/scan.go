@@ -162,7 +162,7 @@ func (s *Scanner) scanLit0() bool {
 func (s *Scanner) peekDigit0(b byte) bool { return '0' <= b && b <= '9' }
 
 func (s *Scanner) peekLit1(b byte) bool {
-	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekSpace0(b)
+	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekGroupEnd(b) && !s.peekSpace0(b)
 }
 
 func (s *Scanner) scanLit1() bool {
@@ -171,7 +171,7 @@ func (s *Scanner) scanLit1() bool {
 		s.tb.WriteByte(b)
 		s.discardByte()
 		return true
-	case s.peekGroup0(b):
+	case s.peekGroup0(b), s.peekGroupEnd(b), s.peekSpace0(b):
 		return false
 	}
 	return s.scanLit0()
@@ -304,7 +304,7 @@ type Node struct {
 
 func (s *Scanner) Nodes() iter.Seq[Node] {
 	return func(yield func(Node) bool) {
-		nodeStack := []Node{}
+		nodeStack := []*Node{}
 		for {
 			s.skipSpace1()
 			switch b, err := s.peekByteErr(); {
@@ -312,7 +312,7 @@ func (s *Scanner) Nodes() iter.Seq[Node] {
 				s.setErr(err)
 				return
 			case s.peekGroup0(b):
-				nodeStack = append(nodeStack, Node{
+				nodeStack = append(nodeStack, &Node{
 					Pos: s.pos,
 					Val: lisp.Group{},
 					End: NoPos,
@@ -329,7 +329,7 @@ func (s *Scanner) Nodes() iter.Seq[Node] {
 				nodeStack = nodeStack[:n]
 				if len(nodeStack) == 0 {
 					e.End = s.pos
-					if !yield(e) {
+					if !yield(*e) {
 						return
 					}
 					continue
