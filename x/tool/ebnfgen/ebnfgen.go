@@ -9,16 +9,34 @@ import (
 )
 
 func main() {
-	fmt.Println(`ws = { " " | "\t" | "\r" | "\n" }.`)
-	fmt.Println(`nat = "0" … "9" { "0" … "9" }.`)
+	fmt.Println(`// Whitespace.
+s0 = " " | "\t" | "\r" | "\n".
+s1 = {s0}.
+s2 = s0 s1.
+d0 = "0" … "9".`)
+	fmt.Println()
+
 	outputIdProds()
-	fmt.Println(`expr = nat | id | "(" { ws expr ws } ")".`)
-	fmt.Println("lisp = { ws expr ws }.")
+
+	fmt.Println(`l1 = d0 | l0.
+l2 = l1 { l1 }.
+l3 = l2 { s2 l2 }.
+
+// Groups.
+g0 = "(" s1 e2 s1 ")".
+g1 = g0 {s1 g0}. 
+
+// Expressions.
+e0  = g0 | l2.
+e1 = e0 {s1 e0}.
+e2 = "" | e1.
+e3 = s1 e2 s1.`)
 }
 
 func outputIdProds() {
-	prod := 0
+	fmt.Println("// Literals.")
 
+	prod := 0
 	for _, r16 := range unicode.Letter.R16 {
 		if r16.Stride == 1 {
 			fmt.Printf("u%d = %q … %q.\n", prod, r16.Lo, r16.Hi)
@@ -47,10 +65,9 @@ func outputIdProds() {
 		}
 	}
 
-	fmt.Print("unicode_letter = u0")
+	fmt.Print("l0 = u0")
 	for i := 1; i < prod; i++ {
 		fmt.Printf(" | u%d", i)
 	}
 	fmt.Println(".")
-	fmt.Println("id = unicode_letter { unicode_letter }.")
 }
