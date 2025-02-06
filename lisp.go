@@ -1,26 +1,27 @@
 // Package lisp implements minimal LISP expressions.
 package lisp
 
-// Token is an enumeration which specifies a kind of AST token.
+// Token is an enumeration which specifies a kind of symbol in Lisp.
 type Token int
 
 const (
 	Invalid Token = iota
-	// Id tokens comprise unicode Letters, arabic numerals, plus underscore.
+	// Id tokens comprise strings of consecutive unicode letters and digits.
 	//
 	// Examples:
 	//
 	//	abc
 	//	123
-	//	abc_123
+	//	abc123
 	Id
 	LParen // (
 	RParen // )
 )
 
-// Val is an interface for Lisp Values.
+// Val is a closed interface for Lisp Values.
 //
-// Only allowed types are Lit, Group, and Seq.
+// The only allowed types are Lit or Group.
+//
 // Examples:
 //
 //	abc
@@ -30,22 +31,23 @@ type Val interface {
 	val()
 }
 
-// Lit is a text identifier.
+// Lit is a text identifier comprising strings of consecutive unicode letters and digits.
 //
 // Examples:
 //
 //	abc
 //	123
-//	abc_123
+//	abc123
 type Lit string
 
 func (Lit) val() {}
 
-// Group is a construct which groups a sequence of Vals together
-// between parens.
+// Group is a construct which encloses a sequence of Lisp values between parens.
 //
 // Example:
 //
+//	( )
+//	( abc )
 //	( abc 123 () )
 type Group []Val
 
