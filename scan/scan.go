@@ -21,7 +21,6 @@ const NoPos Pos = -1
 // Scanner scans the Lisp source for Lisp tokens and values.
 type Scanner struct {
 	r            bufio.Reader
-	tb           bytes.Buffer
 	pos          Pos
 	err          error
 	lastRuneSize int
@@ -41,24 +40,6 @@ func (s *Scanner) peekByte() byte {
 		return 0
 	}
 	return bs[0]
-}
-
-func (s *Scanner) readByte() (byte, error) {
-	b, err := s.r.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-	s.pos++
-	return b, nil
-}
-
-func (s *Scanner) unreadByte() error {
-	err := s.r.UnreadByte()
-	if err != nil {
-		return err
-	}
-	s.pos--
-	return nil
 }
 
 func (s *Scanner) readRune() (rune, int, error) {
@@ -95,11 +76,7 @@ func (s *Scanner) setErr(err error) {
 	}
 }
 
-func (s *Scanner) hasErr() bool { return s.err != nil }
-
 func (s *Scanner) Err() error { return s.err }
-
-func (s *Scanner) resetToken() { s.tb.Reset() }
 
 func (s *Scanner) Reset(r io.Reader) {
 	s.r.Reset(r)
@@ -117,34 +94,19 @@ func (s *Scanner) peekSpace0(b byte) bool {
 	}
 }
 
-func (s *Scanner) skipSpace0() bool {
-	b, err := s.readByte()
-	if err != nil {
-		s.setErr(err)
-		return false
-	}
-	if !s.peekSpace0(b) {
-		s.setErr(fmt.Errorf("expected space"))
-		return false
-	}
-	return true
-}
-
 func (s *Scanner) skipSpace1() {
 	for s.peekSpace0(s.peekByte()) {
 		s.discardByte()
 	}
 }
 
-func (s *Scanner) scanSpace2() bool {
-	if !s.skipSpace0() {
-		return false
-	}
-	s.skipSpace1()
-	return true
+func (s *Scanner) peekDigit0(b byte) bool { return '0' <= b && b <= '9' }
+
+func (s *Scanner) peekLit1(b byte) bool {
+	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekGroupEnd(b) && !s.peekSpace0(b)
 }
 
-func (s *Scanner) scanLit0() bool {
+func (s *Scanner) writeLit0(buf *bytes.Buffer) bool {
 	r, _, err := s.readRune()
 	if err != nil {
 		s.setErr(err)
@@ -155,110 +117,35 @@ func (s *Scanner) scanLit0() bool {
 		s.setErr(fmt.Errorf("expected LIT, got %q", r))
 		return false
 	}
-	s.tb.WriteRune(r)
+	buf.WriteRune(r)
 	return true
 }
 
-func (s *Scanner) peekDigit0(b byte) bool { return '0' <= b && b <= '9' }
-
-func (s *Scanner) peekLit1(b byte) bool {
-	return s.peekDigit0(b) || !s.peekGroup0(b) && !s.peekGroupEnd(b) && !s.peekSpace0(b)
-}
-
-func (s *Scanner) scanLit1() bool {
+func (s *Scanner) writeLit1(buf *bytes.Buffer) bool {
 	switch b := s.peekByte(); {
 	case s.peekDigit0(b):
-		s.tb.WriteByte(b)
+		buf.WriteByte(b)
 		s.discardByte()
 		return true
 	case s.peekGroup0(b), s.peekGroupEnd(b), s.peekSpace0(b):
 		return false
+	default:
+		return s.writeLit0(buf)
 	}
-	return s.scanLit0()
 }
 
-func (s *Scanner) scanLit2() bool {
-	s.resetToken()
-	if !s.scanLit1() {
+func (s *Scanner) writeLit2(buf *bytes.Buffer) bool {
+	if !s.writeLit1(buf) {
 		return false
 	}
-	for s.peekLit1(s.peekByte()) && s.scanLit1() {
+	for s.peekLit1(s.peekByte()) && s.writeLit1(buf) {
 	}
 	return true
-}
-
-func (s *Scanner) scanLit3() {
-	if !s.scanLit2() {
-		return
-	}
-	for s.peekSpace0(s.peekByte()) && s.scanSpace2() {
-		if !s.peekLit1(s.peekByte()) || !s.scanLit2() {
-			break
-		}
-	}
 }
 
 func (s *Scanner) peekGroup0(b byte) bool { return b == '(' }
 
 func (s *Scanner) peekGroupEnd(b byte) bool { return b == ')' }
-
-func (s *Scanner) scanGroup0() bool {
-	if !s.peekGroup0(s.peekByte()) {
-		return false
-	}
-	s.discardByte()
-	s.skipSpace1()
-	s.scanExpr2()
-	s.skipSpace1()
-	if !s.peekGroup0(s.peekByte()) {
-		return false
-	}
-	s.discardByte()
-	return true
-}
-
-func (s *Scanner) scanGroup1() bool {
-	if !s.scanGroup0() {
-		return false
-	}
-	for {
-		s.skipSpace1()
-		if !s.scanGroup0() {
-			break
-		}
-	}
-	return true
-}
-
-func (s *Scanner) peekExpr0(b byte) bool { return s.peekGroup0(b) || s.peekLit1(b) }
-
-func (s *Scanner) scanExpr0() bool {
-	return s.peekGroup0(s.peekByte()) && s.scanGroup0() || s.scanLit2()
-}
-
-func (s *Scanner) scanExpr1() bool {
-	if !s.scanExpr0() {
-		return false
-	}
-	for s.peekExpr0(s.peekByte()) && s.scanExpr0() {
-	}
-	return true
-}
-
-func (s *Scanner) scanExpr2() bool {
-	if s.peekExpr0(s.peekByte()) {
-		return s.scanExpr1()
-	}
-	return true
-}
-
-func (s *Scanner) scanExpr3() {
-	s.skipSpace1()
-	if !s.scanExpr2() {
-		return
-	}
-	s.skipSpace1()
-}
 
 // Token emitted from TokenScanner.
 type Token struct {
@@ -270,6 +157,7 @@ type Token struct {
 // Tokens returns a iteration over tokens without respect for correct syntax.
 func (s *Scanner) Tokens() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
+		var buf bytes.Buffer
 		for {
 			s.skipSpace1()
 			switch b, err := s.peekByteErr(); {
@@ -288,7 +176,8 @@ func (s *Scanner) Tokens() iter.Seq[Token] {
 				s.discardByte()
 			default:
 				pos := s.pos
-				if !s.scanLit2() || !yield(Token{Pos: pos, Tok: lisp.Id, Text: s.tb.String()}) {
+				buf.Reset()
+				if !s.writeLit2(&buf) || !yield(Token{Pos: pos, Tok: lisp.Id, Text: buf.String()}) {
 					return
 				}
 			}
@@ -305,6 +194,7 @@ type Node struct {
 func (s *Scanner) Nodes() iter.Seq[Node] {
 	return func(yield func(Node) bool) {
 		nodeStack := []*Node{}
+		var buf bytes.Buffer
 		for {
 			s.skipSpace1()
 			switch b, err := s.peekByteErr(); {
@@ -338,18 +228,66 @@ func (s *Scanner) Nodes() iter.Seq[Node] {
 				prev.Val = append(prev.Val.(lisp.Group), e.Val)
 			default:
 				pos := s.pos
-				if !s.scanLit2() {
+				buf.Reset()
+				if !s.writeLit2(&buf) {
 					return
 				}
-				text := s.tb.String()
+				text := buf.String()
 				if len(nodeStack) > 0 {
 					g := nodeStack[len(nodeStack)-1]
-					g.Val = append(g.Val.(lisp.Group), lisp.Lit(s.tb.String()))
+					g.Val = append(g.Val.(lisp.Group), lisp.Lit(buf.String()))
 				} else if !yield(Node{
 					Pos: pos,
 					Val: lisp.Lit(text),
 					End: pos + Pos(len(text)),
 				}) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (s *Scanner) Values() iter.Seq[lisp.Val] {
+	return func(yield func(lisp.Val) bool) {
+		groupStack := []*lisp.Group{}
+		var buf bytes.Buffer
+		for {
+			s.skipSpace1()
+			switch b, err := s.peekByteErr(); {
+			case err != nil:
+				s.setErr(err)
+				return
+			case s.peekGroup0(b):
+				groupStack = append(groupStack, &lisp.Group{})
+				s.discardByte()
+			case s.peekGroupEnd(b):
+				if len(groupStack) == 0 {
+					s.setErr(fmt.Errorf("unexpected )"))
+					return
+				}
+				s.discardByte()
+				n := len(groupStack) - 1
+				e := groupStack[n]
+				groupStack = groupStack[:n]
+				if len(groupStack) == 0 {
+					if !yield(*e) {
+						return
+					}
+					continue
+				}
+				prev := groupStack[len(groupStack)-1]
+				*prev = append(*prev, *e)
+			default:
+				buf.Reset()
+				if !s.writeLit2(&buf) {
+					return
+				}
+				text := buf.String()
+				if len(groupStack) > 0 {
+					g := groupStack[len(groupStack)-1]
+					*g = append(*g, lisp.Lit(buf.String()))
+				} else if !yield(lisp.Lit(text)) {
 					return
 				}
 			}
