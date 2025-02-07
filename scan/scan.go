@@ -29,6 +29,7 @@ type Scanner struct {
 func (s *Scanner) peekByteErr() (byte, error) {
 	bs, err := s.r.Peek(1)
 	if err != nil {
+		s.setErr(err)
 		return 0, err
 	}
 	return bs[0], nil

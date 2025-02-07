@@ -24,7 +24,7 @@ l2 = l1 { l1 }.
 l3 = l2 { s2 l2 }.
 
 // Groups.
-g0 = "(" s1 e2 s1 ")".
+g0 = "(" e3 ")".
 g1 = g0 { s1 g0 }.
 
 // Expressions.

@@ -27,6 +27,7 @@ func (s *Scanner) Pos() Pos { return s.pos }
 func (s *Scanner) PeekByteErr() (byte, error) {
 	bs, err := s.r.Peek(1)
 	if err != nil {
+		s.setErr(err)
 		return 0, err
 	}
 	return bs[0], nil
@@ -199,10 +200,7 @@ func (s *Scanner) ScanGroup0() bool {
 		return false
 	}
 	s.DiscardByte()
-	s.SkipSpace1()
-	s.ScanExpr2()
-	s.SkipSpace1()
-	if !s.PeekGroup0(s.PeekByte()) {
+	if !s.ScanExpr3() || !s.PeekGroupEnd(s.PeekByte()) {
 		return false
 	}
 	s.DiscardByte()
@@ -244,10 +242,11 @@ func (s *Scanner) ScanExpr2() bool {
 	return true
 }
 
-func (s *Scanner) ScanExpr3() {
+func (s *Scanner) ScanExpr3() bool {
 	s.SkipSpace1()
 	if !s.ScanExpr2() {
-		return
+		return false
 	}
 	s.SkipSpace1()
+	return true
 }
