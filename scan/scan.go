@@ -148,6 +148,38 @@ func (s *Scanner) peekGroup0(b byte) bool { return b == '(' }
 
 func (s *Scanner) peekGroupEnd(b byte) bool { return b == ')' }
 
+func (s *Scanner) peekInvalid0(b byte) bool {
+	return !s.peekGroup0(b) && !s.peekGroupEnd(b) && !s.peekLit1(b)
+}
+
+func (s *Scanner) skipInvalid0() bool {
+	if _, _, err := s.readRune(); err != nil {
+		s.setErr(err)
+		return false
+	}
+	return true
+}
+
+func (s *Scanner) skipInvalid1() {
+	for s.peekInvalid0(s.peekByte()) && s.skipInvalid0() {
+	}
+}
+
+func (s *Scanner) writeInvalid0(buf *bytes.Buffer) bool {
+	r, _, err := s.readRune()
+	if err != nil {
+		s.setErr(err)
+		return false
+	}
+	buf.WriteRune(r)
+	return true
+}
+
+func (s *Scanner) writeInvalid1(buf *bytes.Buffer) {
+	for s.peekInvalid0(s.peekByte()) && s.writeInvalid0(buf) {
+	}
+}
+
 // Token emitted from TokenScanner.
 type Token struct {
 	Pos  Pos
@@ -176,9 +208,16 @@ func (s *Scanner) Tokens() iter.Seq[Token] {
 				}
 				s.discardByte()
 			default:
+				tok := lisp.Id
 				pos := s.pos
 				buf.Reset()
-				if !s.writeLit2(&buf) || !yield(Token{Pos: pos, Tok: lisp.Id, Text: buf.String()}) {
+				if !s.writeLit2(&buf) {
+					s.err = nil
+					tok = lisp.Invalid
+					buf.Reset()
+					s.writeInvalid1(&buf)
+				}
+				if !yield(Token{Pos: pos, Tok: tok, Text: buf.String()}) {
 					return
 				}
 			}
@@ -236,7 +275,7 @@ func (s *Scanner) Nodes() iter.Seq[Node] {
 				text := buf.String()
 				if len(nodeStack) > 0 {
 					g := nodeStack[len(nodeStack)-1]
-					g.Val = append(g.Val.(lisp.Group), lisp.Lit(buf.String()))
+					g.Val = append(g.Val.(lisp.Group), lisp.Lit(text))
 				} else if !yield(Node{
 					Pos: pos,
 					Val: lisp.Lit(text),
@@ -282,7 +321,10 @@ func (s *Scanner) Values() iter.Seq[lisp.Val] {
 			default:
 				buf.Reset()
 				if !s.writeLit2(&buf) {
-					return
+					// Silently skip invalid values.
+					s.err = nil
+					s.skipInvalid1()
+					continue
 				}
 				text := buf.String()
 				if len(groupStack) > 0 {
